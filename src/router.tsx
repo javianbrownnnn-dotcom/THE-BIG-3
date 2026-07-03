@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, createHashRouter } from "react-router-dom";
 import { AppShell } from "@/components/layout/AppShell";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { ChannelsPage } from "@/features/channels/ChannelsPage";
@@ -13,7 +13,12 @@ import { ReportsPage } from "@/features/reports/ReportsPage";
 import { CoachPage } from "@/features/coach/CoachPage";
 import { SettingsPage } from "@/features/settings/SettingsPage";
 
-export const router = createBrowserRouter(
+// Hash routing for hosts without SPA fallback (single-file builds).
+const createRouter = import.meta.env.VITE_HASH_ROUTER
+  ? createHashRouter
+  : createBrowserRouter;
+
+export const router = createRouter(
   [
   {
     element: <AppShell />,
@@ -35,5 +40,7 @@ export const router = createBrowserRouter(
   },
   ],
   // Supports subpath hosting (GitHub Pages serves from /<repo>/).
-  { basename: import.meta.env.BASE_URL.replace(/\/$/, "") || "/" },
+  import.meta.env.VITE_HASH_ROUTER
+    ? undefined
+    : { basename: import.meta.env.BASE_URL.replace(/\/$/, "") || "/" },
 );
