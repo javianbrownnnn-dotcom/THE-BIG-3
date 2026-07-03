@@ -1,0 +1,133 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * The Big 3 OS design tokens.
+ * Dark mode first: <html class="dark"> is the default; light mode is the override.
+ * Chart series/chrome colors come from a CVD-validated palette — see docs/DESIGN.md.
+ */
+
+@layer base {
+  :root {
+    --background: 60 5% 98%;
+    --foreground: 0 0% 4%;
+    --card: 60 8% 99%;
+    --card-foreground: 0 0% 4%;
+    --popover: 60 8% 99%;
+    --popover-foreground: 0 0% 4%;
+    --primary: 213 68% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 60 5% 93%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 60 5% 93%;
+    --muted-foreground: 40 2% 45%;
+    --accent: 60 5% 92%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 62% 52%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 120 80% 26%;
+    --warning: 40 96% 54%;
+    --border: 51 12% 87%;
+    --input: 51 12% 84%;
+    --ring: 213 68% 50%;
+    --radius: 0.5rem;
+
+    /* Chart chrome (validated palette, light mode) */
+    --chart-grid: #e1e0d9;
+    --chart-axis: #c3c2b7;
+    --chart-tick: #898781;
+    --chart-surface: #fcfcfb;
+    /* Categorical series, fixed order — never cycled */
+    --series-1: #2a78d6;
+    --series-2: #1baf7a;
+    --series-3: #eda100;
+    --series-4: #008300;
+    --series-5: #4a3aa7;
+    --series-6: #e34948;
+    /* Status (reserved — never reused as series colors) */
+    --status-good: #0ca30c;
+    --status-warning: #fab219;
+    --status-serious: #ec835a;
+    --status-critical: #d03b3b;
+    --delta-up: #006300;
+    --delta-down: #d03b3b;
+  }
+
+  .dark {
+    --background: 0 0% 5%;
+    --foreground: 0 0% 100%;
+    --card: 60 2% 10%;
+    --card-foreground: 0 0% 98%;
+    --popover: 60 2% 9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 213 78% 56%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 60 2% 14%;
+    --secondary-foreground: 0 0% 92%;
+    --muted: 60 2% 14%;
+    --muted-foreground: 47 5% 62%;
+    --accent: 60 2% 16%;
+    --accent-foreground: 0 0% 96%;
+    --destructive: 0 65% 65%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 120 86% 34%;
+    --warning: 40 96% 54%;
+    --border: 60 2% 17%;
+    --input: 60 2% 19%;
+    --ring: 213 78% 56%;
+
+    /* Chart chrome (validated palette, dark mode) */
+    --chart-grid: #2c2c2a;
+    --chart-axis: #383835;
+    --chart-tick: #898781;
+    --chart-surface: #1a1a19;
+    /* Same eight hues, stepped for the dark surface */
+    --series-1: #3987e5;
+    --series-2: #199e70;
+    --series-3: #c98500;
+    --series-4: #008300;
+    --series-5: #9085e9;
+    --series-6: #e66767;
+    --status-good: #0ca30c;
+    --status-warning: #fab219;
+    --status-serious: #ec835a;
+    --status-critical: #d03b3b;
+    --delta-up: #0ca30c;
+    --delta-down: #d03b3b;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-feature-settings: "cv02", "cv03";
+  }
+
+  /* Recessive, consistent scrollbars */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-muted;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+@layer utilities {
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}

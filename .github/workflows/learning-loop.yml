@@ -1,0 +1,26 @@
+# Runs the AI learning loop daily. The loop collects metric shifts and
+# competitor outliers, generates insights and SOP recommendations via Claude,
+# and scores past recommendations against real outcomes.
+#
+# Required repository secrets:
+#   SUPABASE_URL               e.g. https://xyzcompany.supabase.co
+#   SUPABASE_SERVICE_ROLE_KEY  service role key (the loop runs across all orgs)
+
+name: AI Learning Loop
+
+on:
+  schedule:
+    - cron: "0 6 * * *" # daily at 06:00 UTC
+  workflow_dispatch: {}
+
+jobs:
+  run-loop:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Invoke learning-loop edge function
+        run: |
+          curl --fail-with-body -sS -X POST \
+            "${{ secrets.SUPABASE_URL }}/functions/v1/learning-loop" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{}'
