@@ -177,6 +177,19 @@ export function useGenerateReport() {
   });
 }
 
+export function useRunLearningLoop() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => data.runLearningLoop(),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: keys.insights });
+      qc.invalidateQueries({ queryKey: keys.recommendations });
+      qc.invalidateQueries({ queryKey: keys.notifications });
+      qc.invalidateQueries({ queryKey: keys.activity });
+    },
+  });
+}
+
 export function useMarkNotificationRead() {
   const qc = useQueryClient();
   return useMutation({

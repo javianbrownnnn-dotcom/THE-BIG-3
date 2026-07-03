@@ -20,6 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useAddSopVersion, useCompetitorVideos, useSop, useVideos } from "@/hooks/queries";
+import { useRecordRecent } from "@/hooks/useRecents";
 import { relativeTime, shortDate } from "@/lib/format";
 import type { SopVersion } from "@/types";
 
@@ -75,6 +76,7 @@ export function SopDetailPage() {
   const addVersion = useAddSopVersion();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({ purpose: "", whenToUse: "", steps: "", examples: "", changeSummary: "" });
+  useRecordRecent(sop ? { to: `/sops/${sop.id}`, label: sop.title, kind: "sop" } : null);
 
   if (isLoading) return <Skeleton className="h-96" />;
   if (!sop) return <div className="py-20 text-center text-muted-foreground">SOP not found.</div>;

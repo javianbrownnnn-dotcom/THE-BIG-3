@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Bell, Moon, Search, Sun } from "lucide-react";
+import { Bell, LogOut, Moon, Search, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +14,7 @@ import {
 import { useTheme } from "@/hooks/useTheme";
 import { useMarkNotificationRead, useMe, useNotifications } from "@/hooks/queries";
 import { relativeTime } from "@/lib/format";
-import { data } from "@/lib/data";
+import { data, getSupabaseClient } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
 export function Topbar({ onOpenPalette }: { onOpenPalette: () => void }) {
@@ -104,9 +104,28 @@ export function Topbar({ onOpenPalette }: { onOpenPalette: () => void }) {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Avatar className="ml-1 h-8 w-8">
-          <AvatarFallback>{me?.displayName?.slice(0, 2).toUpperCase() ?? "?"}</AvatarFallback>
-        </Avatar>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="ml-1 rounded-full focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+              <Avatar className="h-8 w-8">
+                <AvatarFallback>
+                  {me?.displayName?.slice(0, 2).toUpperCase() ?? "?"}
+                </AvatarFallback>
+              </Avatar>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuLabel>{me?.displayName ?? "You"}</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {data.isDemo ? (
+              <DropdownMenuItem disabled>Demo user — no sign-in needed</DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem onSelect={() => getSupabaseClient()?.auth.signOut()}>
+                <LogOut /> Sign out
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );

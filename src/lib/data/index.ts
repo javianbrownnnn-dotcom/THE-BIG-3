@@ -12,4 +12,9 @@ const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 export const data: DataProvider =
   url && anonKey ? new SupabaseProvider(url, anonKey) : new DemoProvider();
 
+/** The raw Supabase client when running against the real backend; null in demo mode. */
+export function getSupabaseClient() {
+  return data instanceof SupabaseProvider ? data.client : null;
+}
+
 export type { DataProvider } from "./provider";

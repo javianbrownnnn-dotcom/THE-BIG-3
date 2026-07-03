@@ -86,4 +86,18 @@ export interface DataProvider {
   listActivity(): Promise<ActivityItem[]>;
 
   askCoach(message: string, history: ChatMessage[]): Promise<CoachReply>;
+
+  /**
+   * Run one iteration of the learning loop now (it also runs on a schedule):
+   * detect metric shifts and competitor outliers, generate insights and
+   * recommendations, notify. Returns what was produced.
+   */
+  runLearningLoop(): Promise<{
+    insights: number;
+    recommendations: number;
+    notifications: number;
+  }>;
+
+  /** Demo mode only: wipe locally persisted edits back to the seed. */
+  resetLocalData(): void;
 }

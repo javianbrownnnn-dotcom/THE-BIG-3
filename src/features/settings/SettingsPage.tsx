@@ -1,5 +1,6 @@
-import { Keyboard, Plug, Users, Webhook } from "lucide-react";
+import { Keyboard, Plug, RotateCcw, Users, Webhook } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -131,6 +132,23 @@ export function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        {data.isDemo && (
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Demo data</CardTitle>
+              <CardDescription>
+                You're in demo mode — everything you add or change is saved in this browser. Reset
+                restores the original seeded company.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button variant="outline" size="sm" onClick={() => data.resetLocalData()}>
+                <RotateCcw /> Reset demo data
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

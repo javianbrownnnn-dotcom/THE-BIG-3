@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Bot, Check, FlaskConical, Lightbulb, Send, ThumbsDown, X } from "lucide-react";
+import { Bot, Check, FlaskConical, Lightbulb, RefreshCw, Send, ThumbsDown, X } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Markdown } from "@/components/Markdown";
@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   useInsights,
   useRecommendations,
+  useRunLearningLoop,
   useSetRecommendationStatus,
 } from "@/hooks/queries";
 import { data } from "@/lib/data";
@@ -91,6 +92,7 @@ function RecommendationCard({ rec }: { rec: AiRecommendation }) {
 export function CoachPage() {
   const { data: recommendations } = useRecommendations();
   const { data: insights } = useInsights();
+  const runLoop = useRunLearningLoop();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [thinking, setThinking] = useState(false);
@@ -128,6 +130,27 @@ export function CoachPage() {
       <PageHeader
         title="AI Coach"
         description="The company strategist. Ask anything — answers are grounded in your actual performance data."
+        actions={
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={runLoop.isPending}
+            onClick={() =>
+              runLoop.mutate(undefined, {
+                onSuccess: (r) =>
+                  toast.success(
+                    r.insights + r.recommendations + r.notifications > 0
+                      ? `Loop complete: ${r.insights} insights, ${r.recommendations} recommendations, ${r.notifications} notifications`
+                      : "Loop complete — nothing statistically new since the last run",
+                  ),
+                onError: (e) => toast.error(`Loop failed: ${String(e)}`),
+              })
+            }
+          >
+            <RefreshCw className={runLoop.isPending ? "animate-spin" : ""} />
+            {runLoop.isPending ? "Analyzing…" : "Run learning loop"}
+          </Button>
+        }
       />
 
       <Tabs defaultValue="chat">

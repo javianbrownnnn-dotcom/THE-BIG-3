@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import {
   Bot,
+  Clock,
   FileText,
   Lightbulb,
   LayoutDashboard,
@@ -20,6 +21,7 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import { useSops, useVideos } from "@/hooks/queries";
+import { getRecents } from "@/hooks/useRecents";
 
 const PAGES = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -49,11 +51,26 @@ export function CommandPalette({
     navigate(to);
   };
 
+  const recents = open ? getRecents() : [];
+
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
       <CommandInput placeholder="Search pages, videos, SOPs…" />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
+        {recents.length > 0 && (
+          <>
+            <CommandGroup heading="Recent">
+              {recents.map((r) => (
+                <CommandItem key={r.to} value={`recent ${r.label}`} onSelect={() => go(r.to)}>
+                  <Clock />
+                  {r.label}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+            <CommandSeparator />
+          </>
+        )}
         <CommandGroup heading="Go to">
           {PAGES.map(({ to, label, icon: Icon }) => (
             <CommandItem key={to} onSelect={() => go(to)}>

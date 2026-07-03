@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "react-router-dom";
 import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthGate } from "@/features/auth/AuthGate";
 import { router } from "./router";
 import "./index.css";
 
@@ -21,7 +22,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <TooltipProvider delayDuration={200}>
-        <RouterProvider router={router} />
+        <AuthGate>
+          <RouterProvider router={router} />
+        </AuthGate>
         <Toaster position="bottom-right" theme="system" richColors />
       </TooltipProvider>
     </QueryClientProvider>

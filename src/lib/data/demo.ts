@@ -765,6 +765,58 @@ const activity: ActivityItem[] = [
 ];
 
 // ---------------------------------------------------------------------------
+// Persistence — demo edits survive reloads (localStorage), so the demo is a
+// usable tool, not just a showcase. Seeded arrays are replaced in place so
+// every reference stays valid.
+// ---------------------------------------------------------------------------
+const STORAGE_KEY = "big3.demo.v1";
+
+function persist() {
+  try {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        videos, competitorVideos, ideas, sops, insights,
+        recommendations, reports, notifications, activity,
+      }),
+    );
+  } catch {
+    // Storage full or unavailable — demo keeps working in memory.
+  }
+}
+
+function replaceInPlace<T>(target: T[], source: T[] | undefined) {
+  if (!Array.isArray(source)) return;
+  target.length = 0;
+  target.push(...source);
+}
+
+(function hydrate() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    replaceInPlace(videos, s.videos);
+    replaceInPlace(competitorVideos, s.competitorVideos);
+    replaceInPlace(ideas, s.ideas);
+    replaceInPlace(sops, s.sops);
+    replaceInPlace(insights, s.insights);
+    replaceInPlace(recommendations, s.recommendations);
+    replaceInPlace(reports, s.reports);
+    replaceInPlace(notifications, s.notifications);
+    replaceInPlace(activity, s.activity);
+  } catch {
+    // Corrupt state — fall back to the fresh seed.
+    localStorage.removeItem(STORAGE_KEY);
+  }
+})();
+
+// Ids for entities created at runtime must not collide with persisted ones
+// across reloads (the seed counter restarts), so they get a time component.
+const runtimeId = (prefix: string) =>
+  `${prefix}_${Date.now().toString(36)}${Math.floor(Math.random() * 1e6).toString(36)}`;
+
+// ---------------------------------------------------------------------------
 // Demo coach — answers from the actual seeded data, so the demo is honest.
 // ---------------------------------------------------------------------------
 function groupStat(
@@ -848,13 +900,14 @@ export class DemoProvider implements DataProvider {
       ? { capturedAt: new Date().toISOString(), ...metrics }
       : undefined;
     const row: VideoRow = {
-      id: uid("vid"),
+      id: runtimeId("vid"),
       ...input,
       metrics: snapshot,
       snapshots: snapshot ? [snapshot] : [],
       createdAt: new Date().toISOString(),
     };
     videos.unshift(row);
+    persist();
     const { snapshots: _snapshots, ...video } = row;
     return clone(video);
   }
@@ -865,6 +918,7 @@ export class DemoProvider implements DataProvider {
     const snap: VideoMetrics = { capturedAt: new Date().toISOString(), ...metrics };
     v.snapshots.push(snap);
     v.metrics = snap;
+    persist();
   }
 
   async listCompetitorChannels() { return clone(competitorChannels); }
@@ -881,12 +935,13 @@ export class DemoProvider implements DataProvider {
 
   async createCompetitorVideo(input: CompetitorVideoInput) {
     const row: CompetitorVideo = {
-      id: uid("cv"),
+      id: runtimeId("cv"),
       isOutlier: false,
       competitorChannelName: competitorChannels.find((c) => c.id === input.competitorChannelId)?.name,
       ...input,
     };
     competitorVideos.unshift(row);
+    persist();
     return clone(row);
   }
 
@@ -894,10 +949,11 @@ export class DemoProvider implements DataProvider {
 
   async createIdea(input: IdeaInput) {
     const row: Idea = {
-      id: uid("idea"), organizationId: org.id,
+      id: runtimeId("idea"), organizationId: org.id,
       createdAt: new Date().toISOString(), ...input,
     };
     ideas.unshift(row);
+    persist();
     return clone(row);
   }
 
@@ -905,6 +961,7 @@ export class DemoProvider implements DataProvider {
     const idea = ideas.find((i) => i.id === id);
     if (!idea) throw new Error("idea not found");
     Object.assign(idea, patch);
+    persist();
     return clone(idea);
   }
 
@@ -918,9 +975,9 @@ export class DemoProvider implements DataProvider {
   }
 
   async createSop(input: SopInput) {
-    const id = uid("sop");
+    const id = runtimeId("sop");
     const version: SopVersion = {
-      id: uid("sopv"), sopId: id, versionNumber: 1,
+      id: runtimeId("sopv"), sopId: id, versionNumber: 1,
       purpose: input.purpose, whenToUse: input.whenToUse,
       steps: input.steps, examples: input.examples,
       source: "human", createdAt: new Date().toISOString(),
@@ -934,6 +991,7 @@ export class DemoProvider implements DataProvider {
       createdAt: new Date().toISOString(), versions: [version],
     };
     sops.unshift(row);
+    persist();
     const { versions: _versions, ...sop } = row;
     return clone(sop);
   }
@@ -942,7 +1000,7 @@ export class DemoProvider implements DataProvider {
     const sop = sops.find((s) => s.id === sopId);
     if (!sop) throw new Error("SOP not found");
     const version: SopVersion = {
-      id: uid("sopv"), sopId,
+      id: runtimeId("sopv"), sopId,
       versionNumber: (sop.versions[0]?.versionNumber ?? 0) + 1,
       purpose: input.purpose, whenToUse: input.whenToUse, steps: input.steps,
       examples: input.examples, changeSummary: input.changeSummary,
@@ -951,6 +1009,7 @@ export class DemoProvider implements DataProvider {
     sop.versions.unshift(version); // append-only: prior versions untouched
     sop.currentVersion = version;
     sop.nextReviewAt = new Date(NOW + sop.reviewFrequencyDays * DAY).toISOString();
+    persist();
     return clone(sop);
   }
 
@@ -959,7 +1018,10 @@ export class DemoProvider implements DataProvider {
 
   async setRecommendationStatus(id: string, status: RecommendationStatus) {
     const rec = recommendations.find((r) => r.id === id);
-    if (rec) rec.status = status;
+    if (rec) {
+      rec.status = status;
+      persist();
+    }
   }
 
   async listReports() { await delay(); return clone(reports); }
@@ -974,7 +1036,7 @@ export class DemoProvider implements DataProvider {
     await delay(900); // simulate generation
     const channel = channels.find((c) => c.id === input.channelId);
     const row: Report = {
-      id: uid("rep"), organizationId: org.id, channelId: input.channelId,
+      id: runtimeId("rep"), organizationId: org.id, channelId: input.channelId,
       type: input.type,
       title: `${input.type.replace(/_/g, " ")} report — ${channel?.name ?? "all channels"}`,
       periodStart: input.periodStart, periodEnd: input.periodEnd,
@@ -982,6 +1044,7 @@ export class DemoProvider implements DataProvider {
       contentMd: `# ${input.type.replace(/_/g, " ")} report — ${channel?.name ?? "all channels"}\n\n## Summary\nDemo mode generates reports locally. Connect Supabase + the Claude API (see README) and this report is written by the generate-report edge function from your real data.\n\n## What worked\n- Story cold opens continue to lead CTR (~1.35x baseline).\n\n## What didn't\n- Statistic-led hooks remain the weakest opener.\n\n## Recommended focus for next period\nFollow the open recommendations in the AI Coach tab.`,
     };
     reports.unshift(row);
+    persist();
     return clone(row);
   }
 
@@ -989,7 +1052,10 @@ export class DemoProvider implements DataProvider {
 
   async markNotificationRead(id: string) {
     const n = notifications.find((x) => x.id === id);
-    if (n) n.readAt = new Date().toISOString();
+    if (n) {
+      n.readAt = new Date().toISOString();
+      persist();
+    }
   }
 
   async listActivity() { return clone(activity); }
@@ -997,5 +1063,117 @@ export class DemoProvider implements DataProvider {
   async askCoach(message: string, _history: ChatMessage[]): Promise<CoachReply> {
     await delay(700);
     return { conversationId: "demo", answer: demoCoachAnswer(message) };
+  }
+
+  // Client-side mirror of the learning-loop edge function: same statistics,
+  // computed over the demo dataset, so the loop is tangible without a backend.
+  async runLearningLoop() {
+    await delay(1100);
+    const counts = { insights: 0, recommendations: 0, notifications: 0 };
+    const nowIso = new Date().toISOString();
+
+    const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+    const sd = (xs: number[]) => {
+      const m = mean(xs);
+      return Math.sqrt(mean(xs.map((x) => (x - m) ** 2)));
+    };
+    const tStat = (a: number[], b: number[]) => {
+      const va = sd(a) ** 2 / a.length;
+      const vb = sd(b) ** 2 / b.length;
+      return va + vb === 0 ? 0 : (mean(a) - mean(b)) / Math.sqrt(va + vb);
+    };
+
+    const addInsight = (ins: Omit<AiInsight, "id" | "organizationId" | "createdAt">) => {
+      insights.unshift({
+        id: runtimeId("ins"), organizationId: org.id, createdAt: nowIso, ...ins,
+      });
+      counts.insights++;
+    };
+    const notify = (type: AppNotification["type"], title: string, body: string) => {
+      notifications.unshift({
+        id: runtimeId("ntf"), organizationId: org.id, type, title, body, createdAt: nowIso,
+      });
+      counts.notifications++;
+    };
+
+    // 1. Metric shifts per channel: last 4 videos vs. the prior baseline.
+    for (const ch of channels) {
+      const series = videos
+        .filter((v) => v.channelId === ch.id && v.metrics?.ctr != null)
+        .sort((a, b) => (b.publishedAt ?? "").localeCompare(a.publishedAt ?? ""))
+        .map((v) => v.metrics!.ctr!) as number[];
+      if (series.length < 8) continue;
+      const recent = series.slice(0, 4);
+      const baseline = series.slice(4);
+      const t = tStat(recent, baseline);
+      if (Math.abs(t) >= 2) {
+        const dir = t > 0 ? "up" : "down";
+        addInsight({
+          channelId: ch.id,
+          kind: "anomaly",
+          title: `${ch.name}: CTR trending ${dir}`,
+          body: `Last 4 uploads average ${mean(recent).toFixed(1)}% CTR vs ${mean(baseline).toFixed(1)}% baseline (t=${t.toFixed(1)}, n=${recent.length}/${baseline.length}).`,
+          confidence: Math.min(0.9, 0.5 + Math.abs(t) / 10),
+        });
+        notify(
+          dir === "down" ? "ctr_drop" : "retention_improved",
+          `CTR trending ${dir} on ${ch.name}`,
+          `Recent mean ${mean(recent).toFixed(1)}% vs baseline ${mean(baseline).toFixed(1)}% (t=${t.toFixed(1)}).`,
+        );
+      }
+    }
+
+    // 2. Hook-type pattern across the org.
+    const hookStats = groupStat(videos, (v) => v.hookType, (v) => v.metrics?.ctr);
+    if (hookStats.length >= 2) {
+      const best = hookStats[0];
+      const worst = hookStats[hookStats.length - 1];
+      addInsight({
+        kind: "pattern",
+        title: `Hook check: "${best.key.replace(/_/g, " ")}" still leads at ${best.mean.toFixed(1)}% CTR`,
+        body: `Across ${videos.length} videos, ${best.key.replace(/_/g, " ")} averages ${best.mean.toFixed(1)}% CTR (n=${best.n}) vs ${worst.mean.toFixed(1)}% for ${worst.key.replace(/_/g, " ")} (n=${worst.n}). Ranking is stable since the last run.`,
+        confidence: 0.85,
+      });
+
+      // 3. Recommendation if any channel ignored the best hook recently.
+      for (const ch of channels) {
+        const lastFour = videos
+          .filter((v) => v.channelId === ch.id)
+          .sort((a, b) => (b.publishedAt ?? "").localeCompare(a.publishedAt ?? ""))
+          .slice(0, 4);
+        const weakCount = lastFour.filter((v) => v.hookType === worst.key).length;
+        const alreadyOpen = recommendations.some(
+          (r) => r.status === "proposed" && r.title.includes(ch.name),
+        );
+        if (weakCount >= 2 && !alreadyOpen) {
+          recommendations.unshift({
+            id: runtimeId("rec"), organizationId: org.id, sopId: "sop_hooks",
+            title: `${ch.name}: replace ${worst.key.replace(/_/g, " ")} hooks`,
+            rationale: `${weakCount} of the last 4 uploads used "${worst.key.replace(/_/g, " ")}" — the weakest hook org-wide (${worst.mean.toFixed(1)}% vs ${best.mean.toFixed(1)}% for ${best.key.replace(/_/g, " ")}). Re-apply the Hook Writing SOP default on the next 3 uploads, then re-measure.`,
+            status: "proposed", createdAt: nowIso,
+          });
+          notify(
+            "ai_recommendation",
+            `New recommendation for ${ch.name}`,
+            `Replace ${worst.key.replace(/_/g, " ")} hooks on upcoming uploads.`,
+          );
+          counts.recommendations++;
+        }
+      }
+    }
+
+    activity.unshift({
+      id: runtimeId("act"), actorName: "AI Coach", action: "ran the learning loop —",
+      entityType: "analysis",
+      entityLabel: `${counts.insights} insights, ${counts.recommendations} recommendations`,
+      createdAt: nowIso,
+    });
+    persist();
+    return counts;
+  }
+
+  resetLocalData() {
+    localStorage.removeItem(STORAGE_KEY);
+    location.reload();
   }
 }

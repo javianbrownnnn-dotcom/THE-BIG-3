@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VideoTable } from "@/features/videos/VideoTable";
 import { useChannel, useVideos } from "@/hooks/queries";
+import { useRecordRecent } from "@/hooks/useRecents";
 import { compactNumber, percent } from "@/lib/format";
 import { THIRTY_DAYS, last30Spark, pctDelta, windowStats } from "@/features/dashboard/stats";
 
@@ -16,6 +17,9 @@ export function ChannelDetailPage() {
   const { id = "" } = useParams();
   const { data: channel, isLoading } = useChannel(id);
   const { data: videos } = useVideos(id);
+  useRecordRecent(
+    channel ? { to: `/channels/${channel.id}`, label: channel.name, kind: "channel" } : null,
+  );
 
   if (isLoading || !channel) {
     return <Skeleton className="h-96" />;

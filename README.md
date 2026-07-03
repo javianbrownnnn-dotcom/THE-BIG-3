@@ -41,10 +41,21 @@ three-channel media company (Business Storytelling, Ancient Religions &
 Storytelling, Sales Psychology) with realistic patterns baked into the data —
 so every screen, chart, and even the AI Coach works out of the box.
 
+Demo mode is a real tool, not a mockup: everything you add or change persists
+in your browser (reset it any time from Settings), and the **Run learning
+loop** button on the AI Coach page executes the same statistical analysis the
+scheduled backend loop runs — live, on your data.
+
+A hosted build deploys automatically to **GitHub Pages** on every push
+(`.github/workflows/deploy-pages.yml`), so there is always a live URL with no
+manual deploy steps.
+
 ## Running against a real backend
 
-1. Create a Supabase project and apply `supabase/migrations/0001_init.sql`
-   (or `supabase db push` with the CLI).
+1. Create a Supabase project and apply the migrations in
+   `supabase/migrations/` (or `supabase db push` with the CLI). Sign-up,
+   sign-in, and create-your-company onboarding are built in — the first user
+   becomes the organization owner.
 2. Deploy the edge functions:
    ```bash
    supabase functions deploy ai-coach learning-loop generate-report

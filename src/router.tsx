@@ -13,7 +13,8 @@ import { ReportsPage } from "@/features/reports/ReportsPage";
 import { CoachPage } from "@/features/coach/CoachPage";
 import { SettingsPage } from "@/features/settings/SettingsPage";
 
-export const router = createBrowserRouter([
+export const router = createBrowserRouter(
+  [
   {
     element: <AppShell />,
     children: [
@@ -32,4 +33,7 @@ export const router = createBrowserRouter([
       { path: "/settings", element: <SettingsPage /> },
     ],
   },
-]);
+  ],
+  // Supports subpath hosting (GitHub Pages serves from /<repo>/).
+  { basename: import.meta.env.BASE_URL.replace(/\/$/, "") || "/" },
+);

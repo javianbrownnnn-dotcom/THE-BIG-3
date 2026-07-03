@@ -636,4 +636,17 @@ export class SupabaseProvider implements DataProvider {
     if (error) throw error;
     return { conversationId: data.conversationId, answer: data.answer };
   }
+
+  async runLearningLoop() {
+    const { data, error } = await this.db.functions.invoke("learning-loop", { body: {} });
+    if (error) throw error;
+    const results: Array<{ insights?: number; recommendations?: number }> = data?.results ?? [];
+    const insights = results.reduce((a, r) => a + (r.insights ?? 0), 0);
+    const recommendations = results.reduce((a, r) => a + (r.recommendations ?? 0), 0);
+    return { insights, recommendations, notifications: 0 };
+  }
+
+  resetLocalData() {
+    // Real backend — nothing local to reset.
+  }
 }

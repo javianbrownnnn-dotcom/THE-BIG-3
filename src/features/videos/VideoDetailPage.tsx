@@ -27,6 +27,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAddVideoSnapshot, useChannel, useVideo } from "@/hooks/queries";
+import { useRecordRecent } from "@/hooks/useRecents";
 import { compactNumber, duration, humanize, percent, shortDate } from "@/lib/format";
 
 export function VideoDetailPage() {
@@ -36,6 +37,9 @@ export function VideoDetailPage() {
   const addSnapshot = useAddVideoSnapshot();
   const [snapOpen, setSnapOpen] = useState(false);
   const [snap, setSnap] = useState({ views: "", ctr: "", pct: "", subs: "" });
+  useRecordRecent(
+    video ? { to: `/videos/${video.id}`, label: video.title, kind: "video" } : null,
+  );
 
   if (isLoading) return <Skeleton className="h-96" />;
   if (!video) {
