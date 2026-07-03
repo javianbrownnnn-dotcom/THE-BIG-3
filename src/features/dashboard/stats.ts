@@ -83,4 +83,26 @@ export function last30Spark(videos: Video[], metric: (v: Video) => number | unde
     .filter((x): x is number => x != null);
 }
 
+/** Mean of a metric grouped by a video attribute, sorted descending. */
+export function metricByGroup(
+  videos: Video[],
+  group: (v: Video) => string | undefined,
+  metric: (v: Video) => number | undefined,
+): Array<{ label: string; value: number; n: number }> {
+  const buckets = new Map<string, number[]>();
+  for (const v of videos) {
+    const g = group(v);
+    const m = metric(v);
+    if (!g || m == null) continue;
+    buckets.set(g, [...(buckets.get(g) ?? []), m]);
+  }
+  return [...buckets.entries()]
+    .map(([label, xs]) => ({
+      label,
+      value: +(xs.reduce((a, b) => a + b, 0) / xs.length).toFixed(2),
+      n: xs.length,
+    }))
+    .sort((a, b) => b.value - a.value);
+}
+
 export const THIRTY_DAYS = 30 * DAY;

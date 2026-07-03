@@ -9,6 +9,7 @@ import {
   Video as VideoIcon,
 } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { BarBreakdown } from "@/components/charts/BarBreakdown";
 import { MetricCard } from "@/components/charts/MetricCard";
 import { TrendChart } from "@/components/charts/TrendChart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,10 +25,11 @@ import {
   useSops,
   useVideos,
 } from "@/hooks/queries";
-import { compactNumber, duration, percent, relativeTime } from "@/lib/format";
+import { compactNumber, duration, humanize, percent, relativeTime } from "@/lib/format";
 import {
   THIRTY_DAYS,
   last30Spark,
+  metricByGroup,
   monthlyByChannel,
   pctDelta,
   windowStats,
@@ -144,6 +146,40 @@ export function DashboardPage() {
           />
         </CardContent>
       </Card>
+
+      {/* What's working: the packaging decisions behind the numbers */}
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Average CTR by hook type</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <BarBreakdown
+              data={metricByGroup(videos, (v) => v.hookType, (v) => v.metrics?.ctr).map(
+                (g) => ({ label: `${humanize(g.label)} (${g.n})`, value: g.value }),
+              )}
+              valueLabel="CTR"
+              formatter={(v) => `${v}%`}
+            />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Average percent viewed by story structure</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <BarBreakdown
+              data={metricByGroup(
+                videos,
+                (v) => v.storyStructure,
+                (v) => v.metrics?.avgPercentViewed,
+              ).map((g) => ({ label: `${humanize(g.label)} (${g.n})`, value: g.value }))}
+              valueLabel="% viewed"
+              formatter={(v) => `${v}%`}
+            />
+          </CardContent>
+        </Card>
+      </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         {/* Latest AI recommendations */}
