@@ -60,9 +60,22 @@ function IdeaCard({ idea }: { idea: Idea }) {
       </div>
       <Select
         value={idea.status}
-        onValueChange={(status) =>
-          updateIdea.mutate({ id: idea.id, patch: { status: status as IdeaStatus } })
-        }
+        onValueChange={(status) => {
+          const previous = idea.status;
+          updateIdea.mutate(
+            { id: idea.id, patch: { status: status as IdeaStatus } },
+            {
+              onSuccess: () =>
+                toast(`Moved to ${status.replace(/_/g, " ")}`, {
+                  action: {
+                    label: "Undo",
+                    onClick: () =>
+                      updateIdea.mutate({ id: idea.id, patch: { status: previous } }),
+                  },
+                }),
+            },
+          );
+        }}
       >
         <SelectTrigger className="h-7 text-xs">
           <SelectValue />

@@ -13,7 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useOrg } from "@/hooks/queries";
 
-const NAV = [
+export const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/channels", label: "Channels", icon: Tv },
   { to: "/videos", label: "Videos", icon: Video },

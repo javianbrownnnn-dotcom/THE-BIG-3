@@ -17,6 +17,8 @@ import { relativeTime } from "@/lib/format";
 import { data, getSupabaseClient } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
+import { MobileNav } from "./MobileNav";
+
 export function Topbar({ onOpenPalette }: { onOpenPalette: () => void }) {
   const { dark, toggle } = useTheme();
   const { data: me } = useMe();
@@ -29,7 +31,8 @@ export function Topbar({ onOpenPalette }: { onOpenPalette: () => void }) {
   );
 
   return (
-    <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur md:px-6">
+    <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b bg-background/80 px-3 backdrop-blur md:gap-3 md:px-6">
+      <MobileNav />
       <button
         onClick={onOpenPalette}
         className="flex h-9 w-full max-w-xs items-center gap-2 rounded-md border bg-card px-3 text-sm text-muted-foreground transition-colors hover:bg-accent/50"

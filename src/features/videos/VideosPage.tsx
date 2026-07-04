@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Plus, Video as VideoIcon } from "lucide-react";
+import { Download, Plus, Star, Video as VideoIcon } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { EmptyState } from "@/components/layout/EmptyState";
 import { Button } from "@/components/ui/button";
@@ -14,11 +14,36 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useChannels, useVideos } from "@/hooks/queries";
+import { useFavorites } from "@/hooks/useFavorites";
 import { humanize } from "@/lib/format";
+import { cn } from "@/lib/utils";
+import type { Video } from "@/types";
 import { VideoTable } from "./VideoTable";
 import { VideoFormDialog } from "./VideoFormDialog";
 
 const ALL = "__all__";
+
+function exportCsv(videos: Video[], channelName: (id: string) => string) {
+  const esc = (x: unknown) => `"${String(x ?? "").replace(/"/g, '""')}"`;
+  const rows = [
+    ["title", "channel", "published", "hook", "structure", "duration_secs",
+     "views", "impressions", "ctr_pct", "avg_pct_viewed", "watch_hours", "subs_gained"],
+    ...videos.map((v) => [
+      v.title, channelName(v.channelId), v.publishedAt?.slice(0, 10),
+      v.hookType, v.storyStructure, v.durationSeconds,
+      v.metrics?.views, v.metrics?.impressions, v.metrics?.ctr,
+      v.metrics?.avgPercentViewed, v.metrics?.watchTimeHours,
+      v.metrics?.subscribersGained,
+    ]),
+  ];
+  const csv = rows.map((r) => r.map(esc).join(",")).join("\n");
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "big3-videos.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 export function VideosPage() {
   const { data: videos, isLoading } = useVideos();
@@ -26,7 +51,9 @@ export function VideosPage() {
   const [search, setSearch] = useState("");
   const [channelId, setChannelId] = useState(ALL);
   const [hook, setHook] = useState(ALL);
+  const [favOnly, setFavOnly] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const { favorites } = useFavorites();
 
   const hooks = useMemo(
     () => [...new Set((videos ?? []).map((v) => v.hookType).filter(Boolean))] as string[],
@@ -36,12 +63,13 @@ export function VideosPage() {
   const filtered = useMemo(
     () =>
       (videos ?? []).filter((v) => {
+        if (favOnly && !favorites.has(v.id)) return false;
         if (channelId !== ALL && v.channelId !== channelId) return false;
         if (hook !== ALL && v.hookType !== hook) return false;
         if (search && !v.title.toLowerCase().includes(search.toLowerCase())) return false;
         return true;
       }),
-    [videos, channelId, hook, search],
+    [videos, channelId, hook, search, favOnly, favorites],
   );
 
   if (isLoading) return <Skeleton className="h-96" />;
@@ -92,9 +120,26 @@ export function VideosPage() {
             ))}
           </SelectContent>
         </Select>
+        <Button
+          variant={favOnly ? "secondary" : "ghost"}
+          size="sm"
+          onClick={() => setFavOnly((f) => !f)}
+        >
+          <Star className={cn("h-4 w-4", favOnly && "fill-warning text-warning")} />
+          Favorites
+        </Button>
         <span className="ml-auto text-sm text-muted-foreground">
           {filtered.length} video{filtered.length === 1 ? "" : "s"}
         </span>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            exportCsv(filtered, (id) => channels?.find((c) => c.id === id)?.name ?? "")
+          }
+        >
+          <Download /> CSV
+        </Button>
       </div>
 
       {filtered.length === 0 ? (

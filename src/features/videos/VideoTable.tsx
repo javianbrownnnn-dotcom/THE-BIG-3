@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { Star } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -9,17 +10,21 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useChannels } from "@/hooks/queries";
+import { useFavorites } from "@/hooks/useFavorites";
 import { compactNumber, duration, humanize, percent, shortDate } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import type { Video } from "@/types";
 
 export function VideoTable({ videos, hideChannel }: { videos: Video[]; hideChannel?: boolean }) {
   const { data: channels } = useChannels();
+  const { favorites, toggle } = useFavorites();
   const channelName = (id: string) => channels?.find((c) => c.id === id)?.name ?? "—";
 
   return (
     <Table>
       <TableHeader>
         <TableRow>
+          <TableHead className="w-8" aria-label="Favorite" />
           <TableHead>Title</TableHead>
           {!hideChannel && <TableHead>Channel</TableHead>}
           <TableHead>Published</TableHead>
@@ -35,6 +40,20 @@ export function VideoTable({ videos, hideChannel }: { videos: Video[]; hideChann
       <TableBody>
         {videos.map((v) => (
           <TableRow key={v.id}>
+            <TableCell className="pr-0">
+              <button
+                onClick={() => toggle(v.id)}
+                aria-label={favorites.has(v.id) ? "Remove from favorites" : "Add to favorites"}
+                className="text-muted-foreground/50 transition-colors hover:text-warning"
+              >
+                <Star
+                  className={cn(
+                    "h-4 w-4",
+                    favorites.has(v.id) && "fill-warning text-warning",
+                  )}
+                />
+              </button>
+            </TableCell>
             <TableCell className="max-w-[280px]">
               <Link
                 to={`/videos/${v.id}`}
