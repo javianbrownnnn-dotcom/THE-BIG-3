@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Bot, Clock, ListChecks, Plus } from "lucide-react";
+import { ArrowRight, Bot, Clock, ListChecks, Plus, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { STARTER_PLAYBOOK } from "./starterPlaybook";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { EmptyState } from "@/components/layout/EmptyState";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +27,29 @@ export function SopsPage() {
   const { data: sops, isLoading } = useSops();
   const createSop = useCreateSop();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [installing, setInstalling] = useState(false);
   const [form, setForm] = useState({ title: "", category: "", purpose: "", steps: "" });
+
+  const existingTitles = new Set((sops ?? []).map((s) => s.title.toLowerCase()));
+  const missingStarters = STARTER_PLAYBOOK.filter(
+    (s) => !existingTitles.has(s.title.toLowerCase()),
+  );
+
+  const installPlaybook = async () => {
+    setInstalling(true);
+    try {
+      for (const sop of missingStarters) {
+        await createSop.mutateAsync(sop);
+      }
+      toast.success(
+        `Starter Playbook installed — ${missingStarters.length} SOPs added. Make them yours: the loop rewrites them as your data comes in.`,
+      );
+    } catch (err) {
+      toast.error(`Install failed: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setInstalling(false);
+    }
+  };
 
   const submit = async () => {
     if (!form.title || !form.purpose) {
@@ -54,11 +77,38 @@ export function SopsPage() {
         title="SOPs"
         description="The heart of the platform: how you work, versioned forever, improved by data."
         actions={
-          <Button size="sm" onClick={() => setDialogOpen(true)}>
-            <Plus /> New SOP
-          </Button>
+          <>
+            {missingStarters.length > 0 && (
+              <Button variant="outline" size="sm" onClick={installPlaybook} disabled={installing}>
+                <Sparkles />
+                {installing
+                  ? "Installing…"
+                  : `Install Starter Playbook (${missingStarters.length})`}
+              </Button>
+            )}
+            <Button size="sm" onClick={() => setDialogOpen(true)}>
+              <Plus /> New SOP
+            </Button>
+          </>
         }
       />
+
+      {missingStarters.length > 0 && (
+        <Card className="mb-4 border-primary/30 bg-primary/5">
+          <CardContent className="flex flex-wrap items-center gap-3 p-4 text-sm">
+            <Sparkles className="h-4 w-4 shrink-0 text-primary" />
+            <span className="min-w-0 flex-1">
+              <span className="font-medium">New to YouTube systems?</span> The Starter Playbook
+              installs {missingStarters.length} proven procedures — a weekly rhythm, topic
+              validation, packaging, hooks, retention — written for a team starting from
+              marketing experience. Your data rewrites them over time.
+            </span>
+            <Button size="sm" onClick={installPlaybook} disabled={installing}>
+              {installing ? "Installing…" : "Install"}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {(sops ?? []).length === 0 ? (
         <EmptyState

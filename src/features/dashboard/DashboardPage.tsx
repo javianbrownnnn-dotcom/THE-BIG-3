@@ -34,6 +34,7 @@ import {
   pctDelta,
   windowStats,
 } from "./stats";
+import { WeeklyRhythm } from "./WeeklyRhythm";
 
 export function DashboardPage() {
   const { data: videos, isLoading } = useVideos();
@@ -104,6 +105,7 @@ export function DashboardPage() {
           value={percent(current.avgCtr)}
           delta={pctDelta(current.avgCtr, prior.avgCtr)}
           spark={last30Spark(videos, (v) => v.metrics?.ctr)}
+          hint="Rough guide for long-form: 2–10% is the normal band, 4–6% is typical, 8%+ is excellent. Your own baseline matters more than any benchmark — beat last month first."
         />
         <MetricCard
           label="Avg view duration"
@@ -115,6 +117,7 @@ export function DashboardPage() {
           value={percent(current.avgPercentViewed)}
           delta={pctDelta(current.avgPercentViewed, prior.avgPercentViewed)}
           spark={last30Spark(videos, (v) => v.metrics?.avgPercentViewed)}
+          hint="For 10min+ long-form: 40–50% average viewed is solid, 55%+ is excellent. Shorter videos naturally score higher — compare like with like."
         />
         <MetricCard
           label="Watch time"
@@ -126,6 +129,11 @@ export function DashboardPage() {
           value={compactNumber(current.subscribersGained)}
           delta={pctDelta(current.subscribersGained, prior.subscribersGained)}
         />
+      </div>
+
+      {/* The loop, as a checklist */}
+      <div className="mt-4">
+        <WeeklyRhythm />
       </div>
 
       {/* Trend */}

@@ -51,7 +51,7 @@ export function TrendChart({
         </div>
       )}
       <ResponsiveContainer width="100%" height={height}>
-        <LineChart data={data} margin={{ top: 6, right: 8, bottom: 0, left: -12 }}>
+        <LineChart data={data} margin={{ top: 6, right: 8, bottom: 0, left: -4 }}>
           <CartesianGrid stroke={theme.grid} strokeWidth={1} vertical={false} />
           <XAxis
             dataKey="label"
@@ -64,7 +64,7 @@ export function TrendChart({
             tick={{ fill: theme.tick, fontSize: 11 }}
             axisLine={false}
             tickLine={false}
-            width={48}
+            width={56}
             domain={yDomain ?? ["auto", "auto"]}
             tickFormatter={(v) => (formatter ? formatter(v) : String(v))}
           />

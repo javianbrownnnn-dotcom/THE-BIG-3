@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Download, Plus, Star, Video as VideoIcon } from "lucide-react";
+import { Download, FileUp, Plus, Star, Video as VideoIcon } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { EmptyState } from "@/components/layout/EmptyState";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import type { Video } from "@/types";
 import { VideoTable } from "./VideoTable";
 import { VideoFormDialog } from "./VideoFormDialog";
+import { ImportCsvDialog } from "./ImportCsvDialog";
 
 const ALL = "__all__";
 
@@ -53,6 +54,7 @@ export function VideosPage() {
   const [hook, setHook] = useState(ALL);
   const [favOnly, setFavOnly] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const { favorites } = useFavorites();
 
   const hooks = useMemo(
@@ -80,9 +82,14 @@ export function VideosPage() {
         title="Videos"
         description="Every published video, its packaging decisions, and its full metric history."
         actions={
-          <Button size="sm" onClick={() => setDialogOpen(true)}>
-            <Plus /> Log video
-          </Button>
+          <>
+            <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+              <FileUp /> Import CSV
+            </Button>
+            <Button size="sm" onClick={() => setDialogOpen(true)}>
+              <Plus /> Log video
+            </Button>
+          </>
         }
       />
 
@@ -162,6 +169,7 @@ export function VideosPage() {
       )}
 
       <VideoFormDialog open={dialogOpen} onOpenChange={setDialogOpen} />
+      <ImportCsvDialog open={importOpen} onOpenChange={setImportOpen} />
     </div>
   );
 }
