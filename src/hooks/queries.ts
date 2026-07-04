@@ -8,6 +8,7 @@ import {
 } from "@tanstack/react-query";
 import { data } from "@/lib/data";
 import type {
+  ChannelInput,
   CompetitorVideoInput,
   IdeaInput,
   RecommendationStatus,
@@ -88,6 +89,14 @@ export const useActivity = () =>
 // ---------------------------------------------------------------------------
 // Mutations
 // ---------------------------------------------------------------------------
+
+export function useCreateChannel() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: ChannelInput) => data.createChannel(input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.channels }),
+  });
+}
 
 export function useCreateVideo() {
   const qc = useQueryClient();

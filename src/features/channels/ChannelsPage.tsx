@@ -1,18 +1,52 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Tv } from "lucide-react";
+import { ArrowRight, Plus, Tv } from "lucide-react";
+import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { EmptyState } from "@/components/layout/EmptyState";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useChannels, useVideos } from "@/hooks/queries";
+import { useChannels, useCreateChannel, useVideos } from "@/hooks/queries";
 import { percent } from "@/lib/format";
 import { THIRTY_DAYS, windowStats } from "@/features/dashboard/stats";
 
 export function ChannelsPage() {
   const { data: channels, isLoading } = useChannels();
   const { data: videos } = useVideos();
+  const createChannel = useCreateChannel();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [form, setForm] = useState({ name: "", youtube: "", niche: "", uploadCadence: "" });
+
+  const submit = async () => {
+    if (!form.name.trim()) {
+      toast.error("The channel needs a name");
+      return;
+    }
+    await createChannel.mutateAsync({
+      name: form.name.trim(),
+      niche: form.niche.trim() || undefined,
+      uploadCadence: form.uploadCadence.trim() || undefined,
+      youtubeChannelId: form.youtube.trim() || undefined,
+    });
+    toast.success(
+      `${form.name} added — every dashboard, chart, and the AI now include it. Open it and hit "Sync YouTube" to pull its videos.`,
+    );
+    setForm({ name: "", youtube: "", niche: "", uploadCadence: "" });
+    setDialogOpen(false);
+  };
 
   if (isLoading) {
     return (
@@ -28,14 +62,24 @@ export function ChannelsPage() {
     <div className="animate-fade-in">
       <PageHeader
         title="Channels"
-        description="One brand per channel. Each carries its own goals, KPIs, and performance history."
+        description="One brand per channel. Each carries its own goals, KPIs, and performance history — add one and everything adapts to it."
+        actions={
+          <Button size="sm" onClick={() => setDialogOpen(true)}>
+            <Plus /> Add channel
+          </Button>
+        }
       />
 
       {(channels ?? []).length === 0 ? (
         <EmptyState
           icon={Tv}
           title="No channels yet"
-          description="Connect Supabase and create your first channel to start tracking performance."
+          description="Add your first channel — then sync it from YouTube and every dashboard lights up."
+          action={
+            <Button size="sm" onClick={() => setDialogOpen(true)}>
+              <Plus /> Add channel
+            </Button>
+          }
         />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -100,6 +144,63 @@ export function ChannelsPage() {
           })}
         </div>
       )}
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add a channel</DialogTitle>
+            <DialogDescription>
+              Every chart, filter, and AI analysis picks it up automatically. Link its YouTube
+              channel now or later.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label>Name</Label>
+              <Input
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="Sales Psychology"
+                autoFocus
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>YouTube channel (optional)</Label>
+              <Input
+                value={form.youtube}
+                onChange={(e) => setForm({ ...form, youtube: e.target.value })}
+                placeholder="@handle or channel URL"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Niche</Label>
+                <Input
+                  value={form.niche}
+                  onChange={(e) => setForm({ ...form, niche: e.target.value })}
+                  placeholder="Sales psychology"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Upload cadence</Label>
+                <Input
+                  value={form.uploadCadence}
+                  onChange={(e) => setForm({ ...form, uploadCadence: e.target.value })}
+                  placeholder="1 long-form / week"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={submit} disabled={createChannel.isPending}>
+              {createChannel.isPending ? "Adding…" : "Add channel"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

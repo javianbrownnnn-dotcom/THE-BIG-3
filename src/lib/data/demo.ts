@@ -10,6 +10,7 @@ import type {
   AiRecommendation,
   AppNotification,
   Channel,
+  ChannelInput,
   ChatMessage,
   CoachReply,
   CompetitorChannel,
@@ -776,7 +777,7 @@ function persist() {
     localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({
-        videos, competitorVideos, ideas, sops, insights,
+        channels, videos, competitorVideos, ideas, sops, insights,
         recommendations, reports, notifications, activity,
       }),
     );
@@ -796,6 +797,7 @@ function replaceInPlace<T>(target: T[], source: T[] | undefined) {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return;
     const s = JSON.parse(raw);
+    replaceInPlace(channels, s.channels);
     replaceInPlace(videos, s.videos);
     replaceInPlace(competitorVideos, s.competitorVideos);
     replaceInPlace(ideas, s.ideas);
@@ -881,6 +883,29 @@ export class DemoProvider implements DataProvider {
   async listChannels() { await delay(); return clone(channels); }
   async getChannel(id: string) {
     return clone(channels.find((c) => c.id === id) ?? null);
+  }
+
+  async createChannel(input: ChannelInput) {
+    const row: Channel = {
+      id: runtimeId("ch"),
+      organizationId: org.id,
+      ownerId: currentUser.id,
+      ownerName: currentUser.displayName,
+      goals: [],
+      createdAt: new Date().toISOString(),
+      ...input,
+    };
+    channels.push(row);
+    persist();
+    return clone(row);
+  }
+
+  async updateChannel(id: string, patch: Partial<ChannelInput>) {
+    const ch = channels.find((c) => c.id === id);
+    if (!ch) throw new Error("channel not found");
+    Object.assign(ch, patch);
+    persist();
+    return clone(ch);
   }
 
   async listVideos(filter?: { channelId?: string }) {

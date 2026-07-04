@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 // ISO week and resets automatically when a new week starts.
 
 const STEPS: Array<{ label: string; to: string; detail: string }> = [
-  { label: "Import fresh metrics", to: "/videos", detail: "YouTube Studio CSV → Import" },
+  { label: "Sync fresh metrics", to: "/channels", detail: "Channel → Sync YouTube" },
   { label: "Run the learning loop", to: "/coach", detail: "AI Coach → Run learning loop" },
   { label: "Review recommendations", to: "/coach", detail: "Accept, test, or reject each" },
   { label: "Review competitor outliers", to: "/competitors", detail: "Write why each one worked" },

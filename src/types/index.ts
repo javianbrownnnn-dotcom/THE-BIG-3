@@ -270,10 +270,20 @@ export interface CoachReply {
 // Input types
 // ---------------------------------------------------------------------------
 
+export interface ChannelInput {
+  name: string;
+  brand?: string;
+  niche?: string;
+  uploadCadence?: string;
+  description?: string;
+  youtubeChannelId?: string;
+}
+
 export interface VideoInput {
   channelId: string;
   title: string;
   url?: string;
+  thumbnailUrl?: string;
   publishedAt?: string;
   topic?: string;
   hookType?: string;

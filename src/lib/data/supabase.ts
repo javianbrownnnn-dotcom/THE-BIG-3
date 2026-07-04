@@ -10,6 +10,7 @@ import type {
   AiRecommendation,
   AppNotification,
   Channel,
+  ChannelInput,
   ChatMessage,
   CoachReply,
   CompetitorChannel,
@@ -178,6 +179,51 @@ export class SupabaseProvider implements DataProvider {
     return all.find((c) => c.id === id) ?? null;
   }
 
+  async createChannel(input: ChannelInput): Promise<Channel> {
+    const orgId = await this.requireOrgId();
+    const { data: auth } = await this.db.auth.getUser();
+    const { data, error } = await this.db.from("channels").insert({
+      organization_id: orgId,
+      owner_id: auth.user?.id,
+      name: input.name,
+      brand: input.brand,
+      niche: input.niche,
+      upload_cadence: input.uploadCadence,
+      description: input.description,
+      youtube_channel_id: input.youtubeChannelId,
+      created_by: auth.user?.id,
+    }).select("*").single();
+    if (error) throw error;
+    return {
+      id: data.id,
+      organizationId: data.organization_id,
+      name: data.name,
+      ownerId: data.owner_id ?? undefined,
+      brand: data.brand ?? undefined,
+      niche: data.niche ?? undefined,
+      uploadCadence: data.upload_cadence ?? undefined,
+      description: data.description ?? undefined,
+      youtubeChannelId: data.youtube_channel_id ?? undefined,
+      goals: [],
+      createdAt: data.created_at,
+    };
+  }
+
+  async updateChannel(id: string, patch: Partial<ChannelInput>): Promise<Channel> {
+    const update: Record<string, unknown> = {};
+    if (patch.name !== undefined) update.name = patch.name;
+    if (patch.brand !== undefined) update.brand = patch.brand;
+    if (patch.niche !== undefined) update.niche = patch.niche;
+    if (patch.uploadCadence !== undefined) update.upload_cadence = patch.uploadCadence;
+    if (patch.description !== undefined) update.description = patch.description;
+    if (patch.youtubeChannelId !== undefined) update.youtube_channel_id = patch.youtubeChannelId;
+    const { error } = await this.db.from("channels").update(update).eq("id", id);
+    if (error) throw error;
+    const channel = await this.getChannel(id);
+    if (!channel) throw new Error("channel not found");
+    return channel;
+  }
+
   async listVideos(filter?: { channelId?: string }): Promise<Video[]> {
     const orgId = await this.requireOrgId();
     let query = this.db
@@ -216,6 +262,7 @@ export class SupabaseProvider implements DataProvider {
       channel_id: input.channelId,
       title: input.title,
       url: input.url,
+      thumbnail_url: input.thumbnailUrl,
       published_at: input.publishedAt,
       topic: input.topic,
       hook_type: input.hookType,

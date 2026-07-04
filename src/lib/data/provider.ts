@@ -4,6 +4,7 @@ import type {
   AiRecommendation,
   AppNotification,
   Channel,
+  ChannelInput,
   ChatMessage,
   CoachReply,
   CompetitorChannel,
@@ -43,6 +44,8 @@ export interface DataProvider {
 
   listChannels(): Promise<Channel[]>;
   getChannel(id: string): Promise<Channel | null>;
+  createChannel(input: ChannelInput): Promise<Channel>;
+  updateChannel(id: string, patch: Partial<ChannelInput>): Promise<Channel>;
 
   listVideos(filter?: { channelId?: string }): Promise<Video[]>;
   getVideo(id: string): Promise<VideoWithHistory | null>;
