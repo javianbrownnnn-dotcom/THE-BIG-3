@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   CalendarDays,
   Clapperboard,
+  Clock,
   Columns3,
   ExternalLink,
   Plus,
@@ -39,8 +40,10 @@ import {
   useCreateProduction,
   useMembers,
   useProductions,
+  useUpdateProduction,
 } from "@/hooks/queries";
-import { humanize, shortDate } from "@/lib/format";
+import { humanize, relativeTime, shortDate } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { PRODUCTION_STAGES, type Production, type ProductionStage } from "@/types";
 import { SPEED_STACK, STARTER_STACK } from "./speedStack";
 
@@ -95,19 +98,32 @@ function ProductionCard({ production }: { production: Production }) {
 }
 
 function CalendarView({ productions }: { productions: Production[] }) {
-  // Agenda-style calendar: upcoming items grouped by week, mobile-friendly.
+  const updateProduction = useUpdateProduction();
+
+  // The schedule: anything with a due date or a set publish time.
   const dated = productions
     .filter((p) => p.dueDate || p.scheduledAt)
-    .map((p) => ({ p, when: new Date(p.scheduledAt ?? p.dueDate!) }))
+    .map((p) => ({ p, when: new Date(p.scheduledAt ?? p.dueDate!), scheduled: !!p.scheduledAt }))
     .sort((a, b) => a.when.getTime() - b.when.getTime());
 
   if (!dated.length) {
     return (
       <p className="py-10 text-center text-sm text-muted-foreground">
-        Nothing scheduled yet — set due dates or schedule times in each video doc.
+        Nothing scheduled yet — set a due date or a publish time in any video doc and it shows up here.
       </p>
     );
   }
+
+  const now = Date.now();
+  // A scheduled item whose time has passed but isn't published yet is "ready".
+  const isReady = (p: Production, when: Date) =>
+    !!p.scheduledAt && when.getTime() <= now && p.stage !== "published";
+  const isOverdueDue = (p: Production, when: Date) =>
+    !p.scheduledAt && when.getTime() < now && p.stage !== "published";
+
+  const scheduledCount = dated.filter((d) => d.scheduled && d.p.stage !== "published").length;
+  const readyCount = dated.filter((d) => isReady(d.p, d.when)).length;
+  const nextUp = dated.find((d) => d.when.getTime() >= now && d.p.stage !== "published");
 
   const weekOf = (d: Date) => {
     const monday = new Date(d);
@@ -122,39 +138,108 @@ function CalendarView({ productions }: { productions: Production[] }) {
 
   return (
     <div className="space-y-5">
+      {/* Publish queue summary */}
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Card>
+          <CardContent className="flex items-center gap-3 p-4">
+            <CalendarDays className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <div className="min-w-0">
+              <div className="truncate text-sm font-semibold leading-none">
+                {nextUp ? nextUp.p.title : "—"}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                next up{nextUp ? ` · ${relativeTime(nextUp.when.toISOString())}` : ""}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="flex items-center gap-3 p-4">
+            <Clock className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <div>
+              <div className="text-lg font-semibold leading-none tabular-nums">{scheduledCount}</div>
+              <div className="text-xs text-muted-foreground">scheduled to publish</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className={readyCount ? "border-warning/50 bg-warning/5" : ""}>
+          <CardContent className="flex items-center gap-3 p-4">
+            <Rocket className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <div>
+              <div className="text-lg font-semibold leading-none tabular-nums">{readyCount}</div>
+              <div className="text-xs text-muted-foreground">ready to publish now</div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {[...groups.entries()].map(([week, items]) => (
         <div key={week}>
           <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Week of {shortDate(week)}
           </h3>
           <div className="space-y-2">
-            {items.map(({ p, when }) => (
-              <Link
-                key={p.id}
-                to={`/production/${p.id}`}
-                className="flex items-center gap-3 rounded-md border p-3 transition-colors hover:bg-accent/50"
-              >
-                <div className="w-14 shrink-0 text-center">
-                  <div className="text-lg font-semibold leading-none tabular-nums">
-                    {when.getDate()}
+            {items.map(({ p, when, scheduled }) => {
+              const ready = isReady(p, when);
+              const overdue = isOverdueDue(p, when);
+              return (
+                <div
+                  key={p.id}
+                  className={cn(
+                    "flex items-center gap-3 rounded-md border p-3",
+                    ready && "border-warning/50 bg-warning/5",
+                    overdue && "border-destructive/40",
+                  )}
+                >
+                  <div className="w-12 shrink-0 text-center">
+                    <div className="text-lg font-semibold leading-none tabular-nums">
+                      {when.getDate()}
+                    </div>
+                    <div className="text-[10px] uppercase text-muted-foreground">
+                      {when.toLocaleDateString("en", { weekday: "short" })}
+                    </div>
                   </div>
-                  <div className="text-[10px] uppercase text-muted-foreground">
-                    {when.toLocaleDateString("en", { weekday: "short" })}
+                  <div className="min-w-0 flex-1">
+                    <Link
+                      to={`/production/${p.id}`}
+                      className="truncate text-sm font-medium underline-offset-2 hover:underline"
+                    >
+                      {p.title}
+                    </Link>
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <span>{STAGE_LABELS[p.stage]}</span>
+                      <span>·</span>
+                      {/* Inline reschedule of the publish time */}
+                      <input
+                        type="datetime-local"
+                        aria-label="Reschedule publish time"
+                        value={p.scheduledAt ? p.scheduledAt.slice(0, 16) : ""}
+                        onChange={(e) =>
+                          updateProduction.mutate({
+                            id: p.id,
+                            patch: {
+                              scheduledAt: e.target.value
+                                ? new Date(e.target.value).toISOString()
+                                : undefined,
+                            },
+                          })
+                        }
+                        className="rounded border border-input bg-transparent px-1.5 py-0.5 text-xs"
+                      />
+                    </div>
                   </div>
+                  {ready ? (
+                    <Badge variant="warning">ready</Badge>
+                  ) : overdue ? (
+                    <Badge variant="destructive">overdue</Badge>
+                  ) : (
+                    <Badge variant="secondary">
+                      {scheduled ? relativeTime(when.toISOString()) : "due " + relativeTime(when.toISOString())}
+                    </Badge>
+                  )}
                 </div>
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium">{p.title}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {STAGE_LABELS[p.stage]}
-                    {p.scheduledAt &&
-                      ` · publishes ${when.toLocaleTimeString("en", { hour: "numeric", minute: "2-digit" })}`}
-                  </div>
-                </div>
-                <Badge variant={p.stage === "scheduled" ? "warning" : "secondary"}>
-                  {STAGE_LABELS[p.stage]}
-                </Badge>
-              </Link>
-            ))}
+              );
+            })}
           </div>
         </div>
       ))}
