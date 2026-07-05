@@ -1,6 +1,12 @@
 # Builds the app and publishes it to GitHub Pages so there's always a live
-# URL — no manual deploy steps. Runs in demo mode (no Supabase env), which is
-# fully functional with seeded data.
+# URL — no manual deploy steps.
+#
+# Runs in DEMO mode by default (fully functional with seeded data). To go live
+# as a shared team workspace, add two repository secrets (Settings → Secrets
+# and variables → Actions): VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY. When
+# present, the build connects to your Supabase project automatically; when
+# absent, it stays in demo mode. The anon key is public-safe by design —
+# Row Level Security protects the data.
 
 name: Deploy to GitHub Pages
 
@@ -31,6 +37,8 @@ jobs:
       - run: npm run build
         env:
           VITE_BASE: /THE-BIG-3/
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
       - name: SPA fallback
         run: cp dist/index.html dist/404.html
       - uses: actions/configure-pages@v5
