@@ -4,11 +4,15 @@ import {
   AlertTriangle,
   ArrowLeft,
   CheckCircle2,
+  ImageIcon,
+  Palette,
   Plus,
   Sparkles,
   Star,
   Trash2,
+  Upload,
   Wand2,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -40,6 +44,8 @@ import {
 import { useRecordRecent } from "@/hooks/useRecents";
 import { compactNumber, humanize, percent } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { compressImage } from "@/lib/image";
+import { getThumbnail, visibleAssetLinks, withThumbnail } from "./thumbnail";
 import {
   PRODUCTION_STAGES,
   type Production,
@@ -99,6 +105,7 @@ export function ProductionDetailPage() {
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const saveTimer = useRef<number>();
   const loadedId = useRef<string>();
+  const thumbFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (production && production.id !== loadedId.current) {
@@ -172,6 +179,35 @@ export function ProductionDetailPage() {
   const stageSop = sopForStage(form.stage, sops ?? []);
   const stageChecks = form.checklists[form.stage] ?? [];
   const channel = channels?.find((c) => c.id === form.channelId);
+
+  const thumb = getThumbnail(form);
+  const setThumbnail = (url: string | undefined) =>
+    patch({ assetLinks: withThumbnail(visibleAssetLinks(form), url) });
+
+  const onThumbFile = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Pick an image file for the thumbnail.");
+      return;
+    }
+    try {
+      setThumbnail(await compressImage(file));
+      toast.success("Thumbnail attached");
+    } catch {
+      toast.error("Couldn't process that image.");
+    }
+  };
+
+  const designInCanva = async () => {
+    try {
+      if (form.thumbnailConcept?.trim()) {
+        await navigator.clipboard.writeText(form.thumbnailConcept);
+        toast.success("Concept copied — paste it into Canva");
+      }
+    } catch {
+      /* clipboard may be blocked; opening Canva is the main action */
+    }
+    window.open("https://www.canva.com/create/youtube-thumbnails/", "_blank", "noopener");
+  };
 
   return (
     <div className="animate-fade-in">
@@ -441,6 +477,60 @@ export function ProductionDetailPage() {
               </div>
 
               <div className="space-y-1.5">
+                <Label>Thumbnail image</Label>
+                <div className="flex flex-wrap items-center gap-2">
+                  {thumb ? (
+                    <div className="relative">
+                      <img
+                        src={thumb}
+                        alt="Thumbnail"
+                        className="h-20 w-36 rounded-md border object-cover"
+                      />
+                      <button
+                        onClick={() => setThumbnail(undefined)}
+                        aria-label="Remove thumbnail"
+                        className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full border bg-card shadow-sm hover:bg-accent"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => thumbFileRef.current?.click()}
+                      className="flex h-20 w-36 flex-col items-center justify-center gap-1 rounded-md border border-dashed text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+                    >
+                      <ImageIcon className="h-4 w-4" />
+                      Upload image
+                    </button>
+                  )}
+                  <div className="flex flex-col gap-2">
+                    <Button variant="outline" size="sm" onClick={() => thumbFileRef.current?.click()}>
+                      <Upload /> {thumb ? "Replace" : "Upload"}
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={designInCanva}>
+                      <Palette /> Design in Canva
+                    </Button>
+                  </div>
+                  <input
+                    ref={thumbFileRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) onThumbFile(f);
+                      e.target.value = "";
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Upload the finished thumbnail (auto-shrunk to keep it light), or design it in
+                  Canva — the concept above is copied for you. Heavy raw files go in Assets as
+                  Drive links.
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
                 <Label>YouTube description</Label>
                 <Textarea
                   rows={5}
@@ -493,25 +583,28 @@ export function ProductionDetailPage() {
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label>Asset links (label | url, one per line)</Label>
+                <Label>Asset links — Drive, etc. (label | url, one per line)</Label>
                 <Textarea
                   rows={2}
-                  value={form.assetLinks.map((a) => `${a.label} | ${a.url}`).join("\n")}
+                  value={visibleAssetLinks(form).map((a) => `${a.label} | ${a.url}`).join("\n")}
                   onChange={(e) =>
                     patch({
-                      assetLinks: e.target.value
-                        .split("\n")
-                        .map((line) => {
-                          const [label, ...rest] = line.split("|");
-                          const url = rest.join("|").trim();
-                          return label?.trim() && url
-                            ? { label: label.trim(), url }
-                            : null;
-                        })
-                        .filter((x): x is { label: string; url: string } => !!x),
+                      assetLinks: withThumbnail(
+                        e.target.value
+                          .split("\n")
+                          .map((line) => {
+                            const [label, ...rest] = line.split("|");
+                            const url = rest.join("|").trim();
+                            return label?.trim() && url
+                              ? { label: label.trim(), url }
+                              : null;
+                          })
+                          .filter((x): x is { label: string; url: string } => !!x),
+                        thumb,
+                      ),
                     })
                   }
-                  placeholder={"VO master | https://…\nEdit v1 | https://…"}
+                  placeholder={"VO master | https://drive…\nRaw footage | https://drive…"}
                 />
               </div>
               <div className="space-y-1.5">

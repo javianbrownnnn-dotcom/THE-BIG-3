@@ -17,6 +17,7 @@ import {
 import { useChannels, useProductions, useVideos } from "@/hooks/queries";
 import { compactNumber, humanize, percent, shortDate } from "@/lib/format";
 import { metricByGroup } from "@/features/dashboard/stats";
+import { getThumbnail } from "@/features/production/thumbnail";
 import type { Production, Video } from "@/types";
 
 const ALL = "__all__";
@@ -201,15 +202,24 @@ export function VaultPage() {
                 <Card key={v.id}>
                   <CardContent className="p-4">
                     <div className="flex flex-wrap items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <Link
-                          to={prod ? `/production/${prod.id}` : `/videos/${v.id}`}
-                          className="font-medium underline-offset-2 hover:underline"
-                        >
-                          {v.title}
-                        </Link>
-                        <div className="mt-0.5 text-xs text-muted-foreground">
-                          {channelName(v.channelId)} · {shortDate(v.publishedAt)}
+                      <div className="flex min-w-0 gap-3">
+                        {(prod && getThumbnail(prod)) || v.thumbnailUrl ? (
+                          <img
+                            src={(prod && getThumbnail(prod)) || v.thumbnailUrl}
+                            alt=""
+                            className="hidden h-14 w-24 shrink-0 rounded-md border object-cover sm:block"
+                          />
+                        ) : null}
+                        <div className="min-w-0">
+                          <Link
+                            to={prod ? `/production/${prod.id}` : `/videos/${v.id}`}
+                            className="font-medium underline-offset-2 hover:underline"
+                          >
+                            {v.title}
+                          </Link>
+                          <div className="mt-0.5 text-xs text-muted-foreground">
+                            {channelName(v.channelId)} · {shortDate(v.publishedAt)}
+                          </div>
                         </div>
                       </div>
                       {out !== "no_goal" && (

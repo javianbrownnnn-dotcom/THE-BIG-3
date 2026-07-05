@@ -46,6 +46,7 @@ import { humanize, relativeTime, shortDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { PRODUCTION_STAGES, type Production, type ProductionStage } from "@/types";
 import { SPEED_STACK, STARTER_STACK } from "./speedStack";
+import { getThumbnail } from "./thumbnail";
 
 const STAGE_LABELS: Record<ProductionStage, string> = {
   scripting: "Scripting",
@@ -67,7 +68,14 @@ function ProductionCard({ production }: { production: Production }) {
 
   return (
     <Link to={`/production/${production.id}`} className="block">
-      <Card className="transition-colors hover:border-primary/40">
+      <Card className="overflow-hidden transition-colors hover:border-primary/40">
+        {getThumbnail(production) && (
+          <img
+            src={getThumbnail(production)}
+            alt=""
+            className="h-24 w-full border-b object-cover"
+          />
+        )}
         <CardContent className="space-y-2 p-3.5">
           <div className="text-sm font-medium leading-snug">{production.title}</div>
           <div className="flex flex-wrap items-center gap-1.5">
