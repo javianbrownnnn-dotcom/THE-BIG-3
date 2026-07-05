@@ -144,6 +144,13 @@ export function useUpdateIdea() {
   });
 }
 
+export function useGenerateIdeas() {
+  return useMutation({
+    mutationFn: (args: { channelId?: string; count?: number }) =>
+      data.generateIdeas(args.channelId, args.count),
+  });
+}
+
 export function useCreateCompetitorVideo() {
   const qc = useQueryClient();
   return useMutation({

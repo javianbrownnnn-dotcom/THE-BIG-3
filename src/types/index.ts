@@ -377,6 +377,14 @@ export interface VideoMetricsInput {
   subscribersGained?: number;
 }
 
+export interface GeneratedIdea {
+  title: string;
+  description: string;
+  rationale: string;
+  suggestedHook?: string;
+  tags: string[];
+}
+
 export interface IdeaInput {
   title: string;
   description?: string;

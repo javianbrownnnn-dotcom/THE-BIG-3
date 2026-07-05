@@ -16,6 +16,7 @@ import type {
   CompetitorChannel,
   CompetitorVideo,
   CompetitorVideoInput,
+  GeneratedIdea,
   Idea,
   IdeaInput,
   Member,
@@ -1092,6 +1093,71 @@ export class DemoProvider implements DataProvider {
     Object.assign(idea, patch);
     persist();
     return clone(idea);
+  }
+
+  // Demo mirror of the ai-ideas edge function: derives ideas from the seeded
+  // competitor outliers (proven mechanisms) applied to the channel, avoiding
+  // topics already covered. Live mode calls OpenAI instead.
+  async generateIdeas(channelId?: string, count = 6): Promise<GeneratedIdea[]> {
+    await delay(900);
+    const covered = new Set(
+      videos
+        .filter((v) => !channelId || v.channelId === channelId)
+        .map((v) => (v.topic ?? v.title).toLowerCase()),
+    );
+    const targetChannels = channelId
+      ? channels.filter((c) => c.id === channelId)
+      : channels;
+    const bestHook =
+      groupStat(videos, (v) => v.hookType, (v) => v.metrics?.ctr)[0]?.key ??
+      "story_cold_open";
+
+    // A small pool of distinct angles per channel so the demo reads varied.
+    const ANGLES: Record<string, string[]> = {
+      ch_biz: [
+        "The company that quietly owns an industry",
+        "The empire built on a product everyone hates",
+        "How a 'boring' business became untouchable",
+        "The bankruptcy that made its founder richer",
+      ],
+      ch_rel: [
+        "The belief they tried to erase from history",
+        "The god a whole empire was afraid of",
+        "The forbidden text that outlived its censors",
+        "The ritual we still perform without knowing why",
+      ],
+      ch_sales: [
+        "The persuasion tactic that feels illegal",
+        "Why the best closers never actually pitch",
+        "The one word that doubles a 'yes'",
+        "What 1,000 cold calls taught me about 'no'",
+      ],
+    };
+
+    const out: GeneratedIdea[] = [];
+    const outliers = [...competitorVideos].filter((c) => c.isOutlier);
+    let oi = 0;
+    for (const ch of targetChannels) {
+      const nicheWord = (ch.niche ?? "").split(/[ ,]/)[0] || "the niche";
+      const angles = (ANGLES[ch.id] ?? [`A fresh ${nicheWord} angle`]).filter(
+        (a) => !covered.has(a.toLowerCase()),
+      );
+      const perChannel = Math.max(2, Math.ceil(count / targetChannels.length));
+      for (let k = 0; k < perChannel && k < angles.length; k++) {
+        const seed = outliers[oi++ % Math.max(outliers.length, 1)];
+        const mechanism = seed?.whyItWorked ?? "a proven curiosity mechanism";
+        out.push({
+          title: angles[k],
+          description: `An angle for ${ch.name} built on a mechanism that's working right now in your niche.`,
+          rationale: `Modeled on a competitor outlier${seed ? ` ("${seed.title}")` : ""}: ${mechanism} Open with a ${bestHook.replace(/_/g, " ")} — your highest-CTR hook type.`,
+          suggestedHook: bestHook,
+          tags: [nicheWord.toLowerCase(), "competitor_validated"],
+        });
+        if (out.length >= count) break;
+      }
+      if (out.length >= count) break;
+    }
+    return clone(out.slice(0, count));
   }
 
   async listProductions() {

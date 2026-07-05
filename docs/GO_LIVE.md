@@ -55,17 +55,29 @@ The moment those two values are set, the app switches out of demo mode on its
 own: the first person to sign up creates the organization and becomes the
 owner, then invites the others.
 
-## Step 5 (optional) — Turn on the automations
+## Step 5 (optional) — Turn on the AI + automations
 
-Add these as **repository secrets** (GitHub → Settings → Secrets → Actions) to
-let the nightly jobs run:
+The app works fully without these — AI features fall back to smart templates
+until the keys exist, then light up automatically. Add API keys as **Edge
+Function secrets** in Supabase (Dashboard → Edge Functions → Secrets, or
+`supabase secrets set`):
 
-- `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` — for the learning loop
-- `ANTHROPIC_API_KEY` — full-quality AI Coach + report writing
+- `ANTHROPIC_API_KEY` — Claude, for writing (AI Coach, hook/script drafting, reports)
+- `OPENAI_API_KEY` — GPT, for idea generation ("Generate ideas")
 - `YOUTUBE_API_KEY` — scheduled per-channel sync
 
-Deploy the edge functions once: `supabase functions deploy ai-coach
-learning-loop generate-report youtube-sync`.
+Deploy the edge functions once (Supabase CLI):
+`supabase functions deploy ai-coach ai-ideas learning-loop generate-report youtube-sync`
+
+For the **nightly learning loop** (GitHub Action), also add repo secrets
+(GitHub → Settings → Secrets → Actions): `SUPABASE_URL` and
+`SUPABASE_SERVICE_ROLE_KEY`.
+
+### Roughly what the AI costs
+Both bill pay-as-you-go on your own accounts. For a 3-person team's volume,
+idea generation and script drafting typically run **cents per use** — a few
+dollars a month unless you're generating constantly. Set spend limits in each
+provider's dashboard.
 
 ## A note on cost
 

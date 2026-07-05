@@ -12,6 +12,7 @@ import type {
   Channel,
   ChannelInput,
   ChatMessage,
+  GeneratedIdea,
   CoachReply,
   CompetitorChannel,
   CompetitorVideo,
@@ -439,6 +440,15 @@ export class SupabaseProvider implements DataProvider {
       priority: data.priority, status: data.status, tags: input.tags,
       createdAt: data.created_at,
     };
+  }
+
+  async generateIdeas(channelId?: string, count = 6): Promise<GeneratedIdea[]> {
+    const orgId = await this.requireOrgId();
+    const { data, error } = await this.db.functions.invoke("ai-ideas", {
+      body: { organizationId: orgId, channelId, count },
+    });
+    if (error) throw error;
+    return (data?.ideas ?? []) as GeneratedIdea[];
   }
 
   async updateIdea(id: string, patch: Partial<IdeaInput>): Promise<Idea> {

@@ -6,6 +6,7 @@ import type {
   Channel,
   ChannelInput,
   ChatMessage,
+  GeneratedIdea,
   CoachReply,
   CompetitorChannel,
   CompetitorVideo,
@@ -64,6 +65,12 @@ export interface DataProvider {
   listIdeas(): Promise<Idea[]>;
   createIdea(input: IdeaInput): Promise<Idea>;
   updateIdea(id: string, patch: Partial<IdeaInput>): Promise<Idea>;
+  /**
+   * Generate fresh video ideas grounded in the org's data and competitor
+   * landscape. Live mode routes to OpenAI (ai-ideas edge function); demo mode
+   * derives them from seeded competitor outliers + content gaps.
+   */
+  generateIdeas(channelId?: string, count?: number): Promise<GeneratedIdea[]>;
 
   // Production workspace: the shared video documents + pipeline.
   listProductions(): Promise<Production[]>;

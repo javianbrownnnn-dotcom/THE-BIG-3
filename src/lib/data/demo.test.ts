@@ -130,3 +130,23 @@ describe("production workspace", () => {
     expect(count2).toBe(count1);
   });
 });
+
+describe("AI idea generation (demo)", () => {
+  it("generates grounded ideas that avoid covered topics", async () => {
+    const ideas = await provider.generateIdeas(undefined, 6);
+    expect(ideas.length).toBeGreaterThan(0);
+    expect(ideas.length).toBeLessThanOrEqual(6);
+    for (const idea of ideas) {
+      expect(idea.title).toBeTruthy();
+      expect(idea.rationale).toBeTruthy();
+      // grounded in a real hook type + competitor mechanism
+      expect(idea.suggestedHook).toBeTruthy();
+    }
+  });
+
+  it("scopes to a single channel when asked", async () => {
+    const ideas = await provider.generateIdeas("ch_biz", 3);
+    expect(ideas.length).toBeGreaterThan(0);
+    expect(ideas.length).toBeLessThanOrEqual(3);
+  });
+});

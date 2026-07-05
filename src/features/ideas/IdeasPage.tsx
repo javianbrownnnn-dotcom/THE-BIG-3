@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Lightbulb, Plus } from "lucide-react";
+import { Lightbulb, Plus, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { EmptyState } from "@/components/layout/EmptyState";
@@ -27,6 +27,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { useChannels, useCreateIdea, useIdeas, useUpdateIdea } from "@/hooks/queries";
 import type { Idea, IdeaPriority, IdeaStatus } from "@/types";
+import { GenerateIdeasDialog } from "./GenerateIdeasDialog";
 
 const STATUSES: IdeaStatus[] = ["inbox", "researching", "approved", "in_production", "published", "archived"];
 const PRIORITIES: IdeaPriority[] = ["low", "medium", "high", "urgent"];
@@ -98,6 +99,7 @@ export function IdeasPage() {
   const { data: channels } = useChannels();
   const createIdea = useCreateIdea();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [generateOpen, setGenerateOpen] = useState(false);
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -141,9 +143,14 @@ export function IdeasPage() {
         title="Ideas"
         description="Capture fast, validate with data, produce the winners."
         actions={
-          <Button size="sm" onClick={() => setDialogOpen(true)}>
-            <Plus /> New idea
-          </Button>
+          <>
+            <Button variant="outline" size="sm" onClick={() => setGenerateOpen(true)}>
+              <Sparkles /> Generate ideas
+            </Button>
+            <Button size="sm" onClick={() => setDialogOpen(true)}>
+              <Plus /> New idea
+            </Button>
+          </>
         }
       />
 
@@ -151,11 +158,16 @@ export function IdeasPage() {
         <EmptyState
           icon={Lightbulb}
           title="No ideas yet"
-          description="Capture anything — a title, a competitor video, a half-thought. Validation comes later."
+          description="Capture anything — a title, a competitor video, a half-thought. Or let AI generate a batch from what's working in your niche."
           action={
-            <Button size="sm" onClick={() => setDialogOpen(true)}>
-              <Plus /> New idea
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => setGenerateOpen(true)}>
+                <Sparkles /> Generate ideas
+              </Button>
+              <Button size="sm" onClick={() => setDialogOpen(true)}>
+                <Plus /> New idea
+              </Button>
+            </div>
           }
         />
       ) : (
@@ -263,6 +275,8 @@ export function IdeasPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <GenerateIdeasDialog open={generateOpen} onOpenChange={setGenerateOpen} />
     </div>
   );
 }
