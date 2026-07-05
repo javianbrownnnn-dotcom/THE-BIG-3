@@ -1,6 +1,13 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { CalendarDays, Clapperboard, Columns3, Plus } from "lucide-react";
+import {
+  CalendarDays,
+  Clapperboard,
+  Columns3,
+  ExternalLink,
+  Plus,
+  Rocket,
+} from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { EmptyState } from "@/components/layout/EmptyState";
@@ -35,6 +42,7 @@ import {
 } from "@/hooks/queries";
 import { humanize, shortDate } from "@/lib/format";
 import { PRODUCTION_STAGES, type Production, type ProductionStage } from "@/types";
+import { SPEED_STACK, STARTER_STACK } from "./speedStack";
 
 const STAGE_LABELS: Record<ProductionStage, string> = {
   scripting: "Scripting",
@@ -154,6 +162,69 @@ function CalendarView({ productions }: { productions: Production[] }) {
   );
 }
 
+const STAGE_LABEL: Record<ProductionStage, string> = STAGE_LABELS;
+
+function SpeedStackView() {
+  return (
+    <div className="space-y-5">
+      <Card className="border-primary/30 bg-primary/5">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <Rocket className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <div className="text-sm">
+              <span className="font-medium">The 30-video sprint stack (~$50–75/mo).</span>{" "}
+              Tools accelerate a system — they don't replace one. Each tool below plugs into a
+              specific pipeline stage; log which you used in the video doc so the learning loop
+              can tell you what's actually working.
+              <ul className="mt-2 space-y-1 text-muted-foreground">
+                {STARTER_STACK.map((line) => (
+                  <li key={line} className="flex gap-2">
+                    <span className="text-primary">•</span>
+                    {line}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {SPEED_STACK.map((category) => (
+        <Card key={category.id}>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <CardTitle>{category.title}</CardTitle>
+              <Badge variant="secondary">{STAGE_LABEL[category.stage]}</Badge>
+            </div>
+            <p className="pt-1 text-sm text-muted-foreground">{category.intro}</p>
+          </CardHeader>
+          <CardContent className="grid gap-2 sm:grid-cols-2">
+            {category.tools.map((tool) => (
+              <a
+                key={tool.name}
+                href={tool.url}
+                target="_blank"
+                rel="noreferrer"
+                className="group rounded-md border p-3 transition-colors hover:border-primary/40 hover:bg-accent/40"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-1.5 text-sm font-medium">
+                    {tool.name}
+                    <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                  </span>
+                  {tool.free && <Badge variant="success">free tier</Badge>}
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">{tool.why}</p>
+                <p className="mt-1.5 text-xs font-medium tabular-nums">{tool.price}</p>
+              </a>
+            ))}
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
 export function ProductionPage() {
   const { data: productions, isLoading } = useProductions();
   const { data: channels } = useChannels();
@@ -222,6 +293,9 @@ export function ProductionPage() {
             <TabsTrigger value="calendar" className="gap-1.5">
               <CalendarDays className="h-3.5 w-3.5" /> Calendar
             </TabsTrigger>
+            <TabsTrigger value="speed" className="gap-1.5">
+              <Rocket className="h-3.5 w-3.5" /> Speed stack
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="board">
@@ -255,6 +329,10 @@ export function ProductionPage() {
                 <CalendarView productions={productions ?? []} />
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="speed">
+            <SpeedStackView />
           </TabsContent>
         </Tabs>
       )}

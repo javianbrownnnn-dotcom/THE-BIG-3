@@ -71,8 +71,9 @@ manual deploy steps.
 
 | Area | What it does |
 |---|---|
-| **Dashboard** | 30-day KPIs with deltas and sparklines, CTR trend by channel, open recommendations, competitor outliers, ideas queue, SOP review alerts, activity |
-| **Channels** | One brand per channel: owner, niche, cadence, goals, per-video performance history |
+| **Dashboard** | 30-day KPIs with deltas and sparklines, CTR trend by channel, packaging breakdowns, weekly rhythm checklist, open recommendations, competitor outliers, ideas queue, SOP review alerts, activity |
+| **Production** | Shared team workspace: video docs (hook, sectioned script, description, goal, title candidates, thumbnail, assets) on a pipeline board + calendar, per-stage SOP checklists, AI drafting/critique, owner-only publish, and the third-party Speed Stack |
+| **Channels** | One brand per channel: owner, niche, cadence, goals, per-video history; add channels and sync uploads directly from the YouTube API |
 | **Videos** | Packaging decisions (hook, structure, topic, format) + full metric snapshot history per video |
 | **Competitors** | Tracked channels and videos with views/day, velocity, and automatic statistical outlier flags |
 | **Ideas** | Fast capture → research → approve → production board with priorities, tags, and links to evidence |
@@ -89,6 +90,8 @@ Supabase (Postgres, Auth, RLS, Edge Functions) · Claude API
 
 ## Documentation
 
+- [`docs/GO_LIVE.md`](docs/GO_LIVE.md) — **turn on the shared team workspace** (phone-friendly, ~10 min, no code)
+- [`docs/SPEED_STACK.md`](docs/SPEED_STACK.md) — third-party tools for producing videos fast, mapped to the pipeline
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — system design, folder structure, data flow
 - [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md) — schema, versioning, and RLS model
 - [`docs/AI_PIPELINE.md`](docs/AI_PIPELINE.md) — the learning loop, coach, and reports in detail

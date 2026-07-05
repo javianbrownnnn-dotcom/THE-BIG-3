@@ -1,4 +1,4 @@
-import { Keyboard, Plug, RotateCcw, Users, Webhook } from "lucide-react";
+import { CheckCircle2, Circle, Keyboard, Plug, RotateCcw, Users, Webhook } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -45,6 +45,49 @@ export function SettingsPage() {
       />
 
       <div className="grid gap-4 lg:grid-cols-2">
+        {/* Go-live: turn demo into a real shared team workspace */}
+        <Card className={data.isDemo ? "border-primary/30 bg-primary/5 lg:col-span-2" : "lg:col-span-2"}>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-muted-foreground" /> Team workspace
+              {data.isDemo ? (
+                <Badge variant="warning">Demo mode</Badge>
+              ) : (
+                <Badge variant="success">Live · shared</Badge>
+              )}
+            </CardTitle>
+            <CardDescription>
+              {data.isDemo
+                ? "You're in demo mode — data lives only in this browser. Connect a free Supabase project to make it a real shared workspace where the whole team signs in and sees the same data."
+                : "Connected to a shared backend. Everyone signed in sees the same data; only owner/admin can publish."}
+            </CardDescription>
+          </CardHeader>
+          {data.isDemo && (
+            <CardContent className="space-y-2.5">
+              {[
+                "Create a free project at supabase.com (~3 min)",
+                "Copy the Project URL + anon key from Settings → API",
+                "Run the 3 files in supabase/migrations/ in the SQL Editor",
+                "Send me the two values (or set VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY) — the app flips to live automatically",
+              ].map((step, i) => (
+                <div key={i} className="flex items-start gap-2 text-sm">
+                  <Circle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/40" />
+                  <span>{step}</span>
+                </div>
+              ))}
+              <p className="pt-1 text-xs text-muted-foreground">
+                Full walkthrough (phone-friendly, no code): <code>docs/GO_LIVE.md</code>. The
+                first person to sign up becomes the owner and invites the rest.
+              </p>
+            </CardContent>
+          )}
+          {!data.isDemo && (
+            <CardContent className="flex items-center gap-2 text-sm text-muted-foreground">
+              <CheckCircle2 className="h-4 w-4 text-success" /> Shared workspace active.
+            </CardContent>
+          )}
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
