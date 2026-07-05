@@ -30,3 +30,19 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     </QueryClientProvider>
   </React.StrictMode>,
 );
+
+// Register the service worker for install + offline shell. Skipped in the
+// single-file artifact build (no sw.js is served there) and in dev.
+if (
+  "serviceWorker" in navigator &&
+  import.meta.env.PROD &&
+  !import.meta.env.VITE_HASH_ROUTER
+) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register(`${import.meta.env.BASE_URL}sw.js`)
+      .catch(() => {
+        /* install/offline is a progressive enhancement — ignore failures */
+      });
+  });
+}
