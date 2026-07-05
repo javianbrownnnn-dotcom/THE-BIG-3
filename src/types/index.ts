@@ -267,6 +267,80 @@ export interface CoachReply {
 }
 
 // ---------------------------------------------------------------------------
+// Production workspace
+// ---------------------------------------------------------------------------
+
+export type ProductionStage =
+  | "scripting"
+  | "editing"
+  | "packaging"
+  | "scheduled"
+  | "published";
+
+export const PRODUCTION_STAGES: ProductionStage[] = [
+  "scripting",
+  "editing",
+  "packaging",
+  "scheduled",
+  "published",
+];
+
+export interface TitleCandidate {
+  text: string;
+  starred: boolean;
+}
+
+export interface AssetLink {
+  label: string;
+  url: string;
+}
+
+export interface Production {
+  id: string;
+  organizationId: string;
+  channelId: string;
+  title: string;
+  stage: ProductionStage;
+  assigneeId?: string;
+  dueDate?: string;
+  scheduledAt?: string;
+
+  topic?: string;
+  goal?: string;
+  goalMetric?: string;
+  goalTarget?: number;
+
+  hookText?: string;
+  scriptHook?: string;
+  scriptBody?: string;
+  scriptOutro?: string;
+  description?: string;
+  titleCandidates: TitleCandidate[];
+  thumbnailConcept?: string;
+  referenceLinks: string[];
+  voStatus?: string;
+  assetLinks: AssetLink[];
+  checklists: Partial<Record<ProductionStage, boolean[]>>;
+  notes?: string;
+
+  linkedVideoId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProductionInput {
+  channelId: string;
+  title: string;
+  topic?: string;
+  assigneeId?: string;
+  dueDate?: string;
+}
+
+export type ProductionPatch = Partial<
+  Omit<Production, "id" | "organizationId" | "createdAt" | "updatedAt" | "linkedVideoId">
+>;
+
+// ---------------------------------------------------------------------------
 // Input types
 // ---------------------------------------------------------------------------
 

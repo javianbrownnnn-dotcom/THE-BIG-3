@@ -20,6 +20,9 @@ import type {
   IdeaInput,
   Member,
   Organization,
+  Production,
+  ProductionInput,
+  ProductionPatch,
   Profile,
   RecommendationStatus,
   Report,
@@ -766,6 +769,106 @@ const activity: ActivityItem[] = [
 ];
 
 // ---------------------------------------------------------------------------
+// Productions — the shared video docs moving through the pipeline.
+// ---------------------------------------------------------------------------
+const productions: Production[] = [
+  {
+    id: "prod_guitar",
+    organizationId: org.id,
+    channelId: "ch_biz",
+    title: "The company that owns every guitar brand",
+    stage: "scripting",
+    assigneeId: "user_javian",
+    dueDate: daysAgo(-6).slice(0, 10),
+    topic: "Music industry consolidation",
+    goal: "CTR ≥ 6% in the first week",
+    goalMetric: "ctr",
+    goalTarget: 6,
+    hookText:
+      "Walk into any guitar store in the world. Fender on the left, Gibson on the right, a wall of brands in between. Now here's the strange part — most of those logos answer to the same three companies. And one of them nearly went bankrupt selling... exercise bikes.",
+    scriptHook: "",
+    scriptBody:
+      "ACT 1 — The illusion of choice: the brand wall vs the ownership map.\nACT 2 — How consolidation happened: the 90s buyouts, the Fender near-death story.\nACT 3 — The exercise bike detour and what it reveals about the business of 'authenticity'.",
+    scriptOutro: "",
+    description:
+      "The guitar industry looks like a hundred competing brands. It's three companies wearing a hundred masks.",
+    titleCandidates: [
+      { text: "The Company That Owns Every Guitar Brand", starred: true },
+      { text: "Guitar Brands Are A Lie", starred: false },
+      { text: "Three Companies Own Your Guitar", starred: false },
+    ],
+    thumbnailConcept: "Single guitar headstock, logos peeling off like stickers. Copy: 'one owner?'",
+    referenceLinks: ["https://youtube.com/watch?v=comp_TheCom"],
+    voStatus: "not_started",
+    assetLinks: [],
+    checklists: { scripting: [true, true, false, false, false, false] },
+    notes: "Validated by the Luxottica outlier — same 'the company that owns X' mechanism.",
+    createdAt: daysAgo(2),
+    updatedAt: daysAgo(0),
+  },
+  {
+    id: "prod_scrolls",
+    organizationId: org.id,
+    channelId: "ch_rel",
+    title: "What the Dead Sea Scrolls actually say",
+    stage: "editing",
+    assigneeId: "user_robert",
+    dueDate: daysAgo(-10).slice(0, 10),
+    topic: "Dead Sea Scrolls",
+    goal: "Beat channel avg retention (48%)",
+    goalMetric: "avg_percent_viewed",
+    goalTarget: 48,
+    hookText:
+      "In 1947, a shepherd threw a rock into a cave and heard something shatter. Inside the broken jar: a library that had been waiting two thousand years for someone to read it.",
+    scriptBody: "Full script locked — see doc history. VO generated with channel voice.",
+    description: "What the scrolls contain, what they don't, and why it took 40 years to publish them.",
+    titleCandidates: [
+      { text: "What the Dead Sea Scrolls Actually Say", starred: true },
+      { text: "The Library That Waited 2,000 Years", starred: false },
+    ],
+    thumbnailConcept: "Torn scroll fragment with one legible glowing line.",
+    referenceLinks: [],
+    voStatus: "generated",
+    assetLinks: [{ label: "VO master", url: "https://drive.example/vo-scrolls" }],
+    checklists: { scripting: [true, true, true, true, true, true], editing: [true, false, false, false, false, false] },
+    notes: "",
+    createdAt: daysAgo(6),
+    updatedAt: daysAgo(1),
+  },
+  {
+    id: "prod_ceos",
+    organizationId: org.id,
+    channelId: "ch_sales",
+    title: "I cold-called 100 CEOs with one script",
+    stage: "packaging",
+    assigneeId: "user_amara",
+    dueDate: daysAgo(-3).slice(0, 10),
+    scheduledAt: undefined,
+    topic: "Cold calling experiment",
+    goal: "50k views in 30 days",
+    goalMetric: "views",
+    goalTarget: 50000,
+    hookText:
+      "CEO number 34 hung up on me in four seconds. CEO number 35 gave me eleven minutes and a job offer. Same script. I need to tell you what changed.",
+    scriptBody: "Experiment structure: the script, the data, the three patterns, the rewrite.",
+    description: "I cold-called 100 CEOs with one script and logged every response.",
+    titleCandidates: [
+      { text: "I Cold-Called 100 CEOs With One Script", starred: true },
+      { text: "100 Cold Calls to CEOs. Here's the Data.", starred: false },
+      { text: "What 100 CEOs Taught Me About Cold Calls", starred: false },
+    ],
+    thumbnailConcept: "Call log sheet with tallies, one row circled in red.",
+    referenceLinks: [],
+    voStatus: "recorded",
+    assetLinks: [{ label: "Edit v2", url: "https://drive.example/ceos-edit" }],
+    checklists: { packaging: [true, true, false, false, false, false] },
+    notes: "Original-data format — expect strong comments; pin the spreadsheet.",
+    createdAt: daysAgo(9),
+    updatedAt: daysAgo(0),
+  },
+];
+
+// ---------------------------------------------------------------------------
 // Persistence — demo edits survive reloads (localStorage), so the demo is a
 // usable tool, not just a showcase. Seeded arrays are replaced in place so
 // every reference stays valid.
@@ -778,7 +881,7 @@ function persist() {
       STORAGE_KEY,
       JSON.stringify({
         channels, videos, competitorVideos, ideas, sops, insights,
-        recommendations, reports, notifications, activity,
+        recommendations, reports, notifications, activity, productions,
       }),
     );
   } catch {
@@ -807,6 +910,7 @@ function replaceInPlace<T>(target: T[], source: T[] | undefined) {
     replaceInPlace(reports, s.reports);
     replaceInPlace(notifications, s.notifications);
     replaceInPlace(activity, s.activity);
+    replaceInPlace(productions, s.productions);
   } catch {
     // Corrupt state — fall back to the fresh seed.
     localStorage.removeItem(STORAGE_KEY);
@@ -988,6 +1092,87 @@ export class DemoProvider implements DataProvider {
     Object.assign(idea, patch);
     persist();
     return clone(idea);
+  }
+
+  async listProductions() {
+    await delay();
+    return clone(productions);
+  }
+
+  async getProduction(id: string) {
+    return clone(productions.find((p) => p.id === id) ?? null);
+  }
+
+  async createProduction(input: ProductionInput) {
+    const now = new Date().toISOString();
+    const row: Production = {
+      id: runtimeId("prod"),
+      organizationId: org.id,
+      stage: "scripting",
+      titleCandidates: [],
+      referenceLinks: [],
+      assetLinks: [],
+      checklists: {},
+      voStatus: "not_started",
+      createdAt: now,
+      updatedAt: now,
+      ...input,
+    };
+    productions.unshift(row);
+    persist();
+    return clone(row);
+  }
+
+  async updateProduction(id: string, patch: ProductionPatch) {
+    const prod = productions.find((p) => p.id === id);
+    if (!prod) throw new Error("production not found");
+    if (
+      patch.stage &&
+      (patch.stage === "scheduled" || patch.stage === "published") &&
+      patch.stage !== prod.stage
+    ) {
+      const me = members.find((m) => m.id === currentUser.id);
+      if (me && me.role !== "owner" && me.role !== "admin") {
+        throw new Error(`Only an owner or admin can move a video to ${patch.stage}`);
+      }
+    }
+    Object.assign(prod, patch, { updatedAt: new Date().toISOString() });
+    persist();
+    return clone(prod);
+  }
+
+  async publishProduction(id: string) {
+    const prod = productions.find((p) => p.id === id);
+    if (!prod) throw new Error("production not found");
+    const me = members.find((m) => m.id === currentUser.id);
+    if (me && me.role !== "owner" && me.role !== "admin") {
+      throw new Error("Only an owner or admin can publish");
+    }
+    if (!prod.linkedVideoId) {
+      const starred =
+        prod.titleCandidates.find((t) => t.starred)?.text ?? prod.title;
+      const video = await this.createVideo({
+        channelId: prod.channelId,
+        title: starred,
+        topic: prod.topic,
+        publishedAt: new Date().toISOString(),
+        format: "long_form",
+        manualNotes: prod.goal ? `Goal: ${prod.goal}` : undefined,
+      });
+      prod.linkedVideoId = video.id;
+    }
+    prod.stage = "published";
+    prod.updatedAt = new Date().toISOString();
+    activity.unshift({
+      id: runtimeId("act"),
+      actorName: currentUser.displayName,
+      action: "published",
+      entityType: "video",
+      entityLabel: prod.title,
+      createdAt: prod.updatedAt,
+    });
+    persist();
+    return clone(prod);
   }
 
   async listSops() {

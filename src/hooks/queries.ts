@@ -11,6 +11,8 @@ import type {
   ChannelInput,
   CompetitorVideoInput,
   IdeaInput,
+  ProductionInput,
+  ProductionPatch,
   RecommendationStatus,
   ReportType,
   SopInput,
@@ -31,6 +33,8 @@ export const keys = {
   competitorVideos: (onlyOutliers?: boolean) =>
     ["competitor-videos", !!onlyOutliers] as const,
   ideas: ["ideas"] as const,
+  productions: ["productions"] as const,
+  production: (id: string) => ["productions", id] as const,
   sops: ["sops"] as const,
   sop: (id: string) => ["sops", id] as const,
   insights: ["insights"] as const,
@@ -67,6 +71,10 @@ export const useCompetitorVideos = (onlyOutliers?: boolean) =>
   });
 
 export const useIdeas = () => useQuery({ queryKey: keys.ideas, queryFn: () => data.listIdeas() });
+export const useProductions = () =>
+  useQuery({ queryKey: keys.productions, queryFn: () => data.listProductions() });
+export const useProduction = (id: string) =>
+  useQuery({ queryKey: keys.production(id), queryFn: () => data.getProduction(id) });
 export const useSops = () => useQuery({ queryKey: keys.sops, queryFn: () => data.listSops() });
 export const useSop = (id: string) =>
   useQuery({ queryKey: keys.sop(id), queryFn: () => data.getSop(id) });
@@ -141,6 +149,39 @@ export function useCreateCompetitorVideo() {
   return useMutation({
     mutationFn: (input: CompetitorVideoInput) => data.createCompetitorVideo(input),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["competitor-videos"] }),
+  });
+}
+
+export function useCreateProduction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: ProductionInput) => data.createProduction(input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.productions }),
+  });
+}
+
+export function useUpdateProduction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (args: { id: string; patch: ProductionPatch }) =>
+      data.updateProduction(args.id, args.patch),
+    onSuccess: (result) => {
+      qc.setQueryData(keys.production(result.id), result);
+      qc.invalidateQueries({ queryKey: keys.productions });
+    },
+  });
+}
+
+export function usePublishProduction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => data.publishProduction(id),
+    onSuccess: (result) => {
+      qc.setQueryData(keys.production(result.id), result);
+      qc.invalidateQueries({ queryKey: keys.productions });
+      qc.invalidateQueries({ queryKey: ["videos"] });
+      qc.invalidateQueries({ queryKey: keys.activity });
+    },
   });
 }
 

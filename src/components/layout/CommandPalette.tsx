@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import {
   Bot,
+  Clapperboard,
   Clock,
   FileText,
   Lightbulb,
@@ -25,6 +26,7 @@ import { getRecents } from "@/hooks/useRecents";
 
 const PAGES = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/production", label: "Production", icon: Clapperboard },
   { to: "/channels", label: "Channels", icon: Tv },
   { to: "/videos", label: "Videos", icon: Video },
   { to: "/competitors", label: "Competitors", icon: Swords },

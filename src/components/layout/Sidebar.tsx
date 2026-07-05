@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
 import {
   Bot,
+  Clapperboard,
   FileText,
   Lightbulb,
   LayoutDashboard,
@@ -15,6 +16,7 @@ import { useOrg } from "@/hooks/queries";
 
 export const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
+  { to: "/production", label: "Production", icon: Clapperboard },
   { to: "/channels", label: "Channels", icon: Tv },
   { to: "/videos", label: "Videos", icon: Video },
   { to: "/competitors", label: "Competitors", icon: Swords },

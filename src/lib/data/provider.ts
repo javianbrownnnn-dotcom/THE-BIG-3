@@ -14,6 +14,9 @@ import type {
   IdeaInput,
   Member,
   Organization,
+  Production,
+  ProductionInput,
+  ProductionPatch,
   Profile,
   RecommendationStatus,
   Report,
@@ -61,6 +64,18 @@ export interface DataProvider {
   listIdeas(): Promise<Idea[]>;
   createIdea(input: IdeaInput): Promise<Idea>;
   updateIdea(id: string, patch: Partial<IdeaInput>): Promise<Idea>;
+
+  // Production workspace: the shared video documents + pipeline.
+  listProductions(): Promise<Production[]>;
+  getProduction(id: string): Promise<Production | null>;
+  createProduction(input: ProductionInput): Promise<Production>;
+  updateProduction(id: string, patch: ProductionPatch): Promise<Production>;
+  /**
+   * Move to published: creates the linked `videos` row (where real metrics
+   * accumulate) and stamps stage/publishedAt. Owner/admin only — enforced
+   * in the database for the real backend, checked in-app for demo.
+   */
+  publishProduction(id: string): Promise<Production>;
 
   listSops(): Promise<Sop[]>;
   getSop(id: string): Promise<SopWithHistory | null>;

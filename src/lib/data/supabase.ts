@@ -20,6 +20,9 @@ import type {
   IdeaInput,
   Member,
   Organization,
+  Production,
+  ProductionInput,
+  ProductionPatch,
   Profile,
   RecommendationStatus,
   Report,
@@ -452,6 +455,120 @@ export class SupabaseProvider implements DataProvider {
     const idea = all.find((i) => i.id === id);
     if (!idea) throw new Error("idea not found");
     return idea;
+  }
+
+  private mapProduction(row: any): Production {
+    return {
+      id: row.id,
+      organizationId: row.organization_id,
+      channelId: row.channel_id,
+      title: row.title,
+      stage: row.stage,
+      assigneeId: row.assignee_id ?? undefined,
+      dueDate: row.due_date ?? undefined,
+      scheduledAt: row.scheduled_at ?? undefined,
+      topic: row.topic ?? undefined,
+      goal: row.goal ?? undefined,
+      goalMetric: row.goal_metric ?? undefined,
+      goalTarget: row.goal_target ?? undefined,
+      hookText: row.hook_text ?? undefined,
+      scriptHook: row.script_hook ?? undefined,
+      scriptBody: row.script_body ?? undefined,
+      scriptOutro: row.script_outro ?? undefined,
+      description: row.description ?? undefined,
+      titleCandidates: Array.isArray(row.title_candidates) ? row.title_candidates : [],
+      thumbnailConcept: row.thumbnail_concept ?? undefined,
+      referenceLinks: Array.isArray(row.reference_links) ? row.reference_links : [],
+      voStatus: row.vo_status ?? undefined,
+      assetLinks: Array.isArray(row.asset_links) ? row.asset_links : [],
+      checklists: row.checklists ?? {},
+      notes: row.notes ?? undefined,
+      linkedVideoId: row.linked_video_id ?? undefined,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    };
+  }
+
+  private productionPatchToRow(patch: ProductionPatch): Record<string, unknown> {
+    const map: Array<[keyof ProductionPatch, string]> = [
+      ["channelId", "channel_id"], ["title", "title"], ["stage", "stage"],
+      ["assigneeId", "assignee_id"], ["dueDate", "due_date"],
+      ["scheduledAt", "scheduled_at"], ["topic", "topic"], ["goal", "goal"],
+      ["goalMetric", "goal_metric"], ["goalTarget", "goal_target"],
+      ["hookText", "hook_text"], ["scriptHook", "script_hook"],
+      ["scriptBody", "script_body"], ["scriptOutro", "script_outro"],
+      ["description", "description"], ["titleCandidates", "title_candidates"],
+      ["thumbnailConcept", "thumbnail_concept"], ["referenceLinks", "reference_links"],
+      ["voStatus", "vo_status"], ["assetLinks", "asset_links"],
+      ["checklists", "checklists"], ["notes", "notes"],
+    ];
+    const row: Record<string, unknown> = {};
+    for (const [from, to] of map) {
+      if (patch[from] !== undefined) row[to] = patch[from];
+    }
+    return row;
+  }
+
+  async listProductions(): Promise<Production[]> {
+    const orgId = await this.requireOrgId();
+    const { data, error } = await this.db
+      .from("productions").select("*").eq("organization_id", orgId)
+      .order("updated_at", { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map((row: any) => this.mapProduction(row));
+  }
+
+  async getProduction(id: string): Promise<Production | null> {
+    const { data } = await this.db.from("productions").select("*").eq("id", id).single();
+    return data ? this.mapProduction(data) : null;
+  }
+
+  async createProduction(input: ProductionInput): Promise<Production> {
+    const orgId = await this.requireOrgId();
+    const { data: auth } = await this.db.auth.getUser();
+    const { data, error } = await this.db.from("productions").insert({
+      organization_id: orgId,
+      channel_id: input.channelId,
+      title: input.title,
+      topic: input.topic,
+      assignee_id: input.assigneeId ?? auth.user?.id,
+      due_date: input.dueDate,
+      created_by: auth.user?.id,
+    }).select("*").single();
+    if (error) throw error;
+    return this.mapProduction(data);
+  }
+
+  async updateProduction(id: string, patch: ProductionPatch): Promise<Production> {
+    const { data, error } = await this.db
+      .from("productions")
+      .update(this.productionPatchToRow(patch))
+      .eq("id", id)
+      .select("*")
+      .single();
+    if (error) throw error;
+    return this.mapProduction(data);
+  }
+
+  async publishProduction(id: string): Promise<Production> {
+    const prod = await this.getProduction(id);
+    if (!prod) throw new Error("production not found");
+    let linkedVideoId = prod.linkedVideoId;
+    if (!linkedVideoId) {
+      const starred = prod.titleCandidates.find((t) => t.starred)?.text ?? prod.title;
+      const video = await this.createVideo({
+        channelId: prod.channelId,
+        title: starred,
+        topic: prod.topic,
+        publishedAt: new Date().toISOString(),
+        format: "long_form",
+        manualNotes: prod.goal ? `Goal: ${prod.goal}` : undefined,
+      });
+      linkedVideoId = video.id;
+      await this.db.from("productions").update({ linked_video_id: linkedVideoId }).eq("id", id);
+    }
+    // The publish-gate trigger enforces owner/admin server-side.
+    return this.updateProduction(id, { stage: "published" });
   }
 
   private mapSop(row: any): Sop {

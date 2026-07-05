@@ -89,3 +89,44 @@ describe("demo coach", () => {
     expect(reply.answer).toMatch(/n=\d+/);
   });
 });
+
+describe("production workspace", () => {
+  it("creates a doc, autosaves patches, and enforces the append model on publish", async () => {
+    const created = await provider.createProduction({
+      channelId: "ch_biz",
+      title: "Test production",
+      topic: "Testing",
+    });
+    expect(created.stage).toBe("scripting");
+
+    const updated = await provider.updateProduction(created.id, {
+      hookText: "A hook",
+      titleCandidates: [{ text: "Final Title", starred: true }],
+      goalMetric: "ctr",
+      goalTarget: 6,
+    });
+    expect(updated.hookText).toBe("A hook");
+
+    const videosBefore = (await provider.listVideos()).length;
+    const published = await provider.publishProduction(created.id);
+    expect(published.stage).toBe("published");
+    expect(published.linkedVideoId).toBeTruthy();
+
+    const videos = await provider.listVideos();
+    expect(videos.length).toBe(videosBefore + 1);
+    // The starred title candidate becomes the published video's title.
+    expect(videos.some((v) => v.title === "Final Title")).toBe(true);
+  });
+
+  it("publishing twice never creates a duplicate video", async () => {
+    const created = await provider.createProduction({
+      channelId: "ch_biz",
+      title: "Idempotent publish",
+    });
+    await provider.publishProduction(created.id);
+    const count1 = (await provider.listVideos()).length;
+    await provider.publishProduction(created.id);
+    const count2 = (await provider.listVideos()).length;
+    expect(count2).toBe(count1);
+  });
+});

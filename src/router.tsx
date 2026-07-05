@@ -3,6 +3,8 @@ import { AppShell } from "@/components/layout/AppShell";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { ChannelsPage } from "@/features/channels/ChannelsPage";
 import { ChannelDetailPage } from "@/features/channels/ChannelDetailPage";
+import { ProductionPage } from "@/features/production/ProductionPage";
+import { ProductionDetailPage } from "@/features/production/ProductionDetailPage";
 import { VideosPage } from "@/features/videos/VideosPage";
 import { VideoDetailPage } from "@/features/videos/VideoDetailPage";
 import { CompetitorsPage } from "@/features/competitors/CompetitorsPage";
@@ -26,6 +28,8 @@ export const router = createRouter(
       { path: "/", element: <DashboardPage /> },
       { path: "/channels", element: <ChannelsPage /> },
       { path: "/channels/:id", element: <ChannelDetailPage /> },
+      { path: "/production", element: <ProductionPage /> },
+      { path: "/production/:id", element: <ProductionDetailPage /> },
       { path: "/videos", element: <VideosPage /> },
       { path: "/videos/:id", element: <VideoDetailPage /> },
       { path: "/competitors", element: <CompetitorsPage /> },
