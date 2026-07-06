@@ -872,3 +872,12 @@ begin
   return inv.organization_id;
 end $$;
 grant execute on function redeem_invite(text) to authenticated;
+
+-- ============================================================================
+-- ---- 0007_recommendation_proposed_change.sql ------------------------------
+-- Close the learning loop: a recommendation carries the concrete SOP edit it
+-- drafted; approving writes it as a new sop_versions row.
+-- ============================================================================
+
+alter table ai_recommendations
+  add column if not exists proposed_change jsonb;

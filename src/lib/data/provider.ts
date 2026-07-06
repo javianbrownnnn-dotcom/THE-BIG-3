@@ -131,6 +131,12 @@ export interface DataProvider {
     id: string,
     status: RecommendationStatus,
   ): Promise<void>;
+  /**
+   * Approve a recommendation's proposed SOP change: writes it as a new SOP
+   * version (append-only) and marks the recommendation accepted. This is the
+   * step that actually closes the learning loop.
+   */
+  approveRecommendation(id: string): Promise<SopWithHistory>;
 
   listReports(): Promise<Report[]>;
   getReport(id: string): Promise<Report | null>;

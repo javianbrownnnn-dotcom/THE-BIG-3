@@ -646,6 +646,23 @@ const recommendations: AiRecommendation[] = [
     title: "Sales Psychology: stop statistic-led hooks",
     rationale: "The current CTR dip coincides with three statistic-led hooks in a row — the weakest hook type org-wide (0.78x). Re-apply the SOP default on the next upload.",
     status: "proposed", createdAt: daysAgo(3),
+    proposedChange: {
+      sopId: "sop_hooks",
+      sopTitle: "Hook Writing",
+      category: "hooks",
+      purpose: "Write the first 30 seconds so a browsing viewer commits to the video.",
+      whenToUse: "Every video, before scripting the body.",
+      steps: [
+        "Draft 5 hook options before writing anything else.",
+        "Default to a story cold open: drop the viewer inside a single scene, mid-action.",
+        "State the stakes within the first two sentences.",
+        "Never open with a statistic — numbers before context underperform (0.78x baseline CTR, n=9).",
+        "If a number matters, earn it: give it a scene first, then the figure.",
+        "Read the hook aloud; if it takes over 20 seconds, cut it in half.",
+      ],
+      examples: "\"The vault door was already open when the auditors arrived...\"",
+      changeSummary: "Hardened the no-statistic-opener rule after three statistic-led hooks drove the current CTR dip, and added a 'earn the number' fallback so data still has a place.",
+    },
   },
   {
     id: uid("rec"), organizationId: org.id,
@@ -1410,6 +1427,51 @@ export class DemoProvider implements DataProvider {
       rec.status = status;
       persist();
     }
+  }
+
+  async approveRecommendation(id: string): Promise<SopWithHistory> {
+    const rec = recommendations.find((r) => r.id === id);
+    if (!rec) throw new Error("Recommendation not found");
+    const pc = rec.proposedChange;
+    if (!pc) throw new Error("This recommendation has no proposed SOP change to apply");
+
+    let sop = pc.sopId ? sops.find((s) => s.id === pc.sopId) : undefined;
+    if (sop) {
+      // Append a new version — prior versions are never touched (append-only).
+      const version: SopVersion = {
+        id: runtimeId("sopv"), sopId: sop.id,
+        versionNumber: (sop.versions[0]?.versionNumber ?? 0) + 1,
+        purpose: pc.purpose, whenToUse: pc.whenToUse, steps: pc.steps,
+        examples: pc.examples, changeSummary: pc.changeSummary,
+        source: "ai", createdAt: new Date().toISOString(),
+      };
+      sop.versions.unshift(version);
+      sop.currentVersion = version;
+      sop.nextReviewAt = new Date(NOW + sop.reviewFrequencyDays * DAY).toISOString();
+      rec.proposedSopVersionId = version.id;
+    } else {
+      // No target SOP — the approved change becomes a brand-new SOP.
+      const newId = runtimeId("sop");
+      const version: SopVersion = {
+        id: runtimeId("sopv"), sopId: newId, versionNumber: 1,
+        purpose: pc.purpose, whenToUse: pc.whenToUse, steps: pc.steps,
+        examples: pc.examples, changeSummary: pc.changeSummary,
+        source: "ai", createdAt: new Date().toISOString(),
+      };
+      sop = {
+        id: newId, organizationId: org.id, title: pc.sopTitle,
+        category: pc.category, status: "active", reviewFrequencyDays: 30,
+        nextReviewAt: new Date(NOW + 30 * DAY).toISOString(),
+        currentVersion: version, linkedVideoIds: [], linkedCompetitorVideoIds: [],
+        createdAt: new Date().toISOString(), versions: [version],
+      };
+      sops.unshift(sop);
+      rec.sopId = newId;
+      rec.proposedSopVersionId = version.id;
+    }
+    rec.status = "accepted";
+    persist();
+    return clone(sop);
   }
 
   async listReports() { await delay(); return clone(reports); }

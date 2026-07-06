@@ -294,6 +294,18 @@ export function useSetRecommendationStatus() {
   });
 }
 
+/** Approve a recommendation → applies its SOP change as a new version. */
+export function useApproveRecommendation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => data.approveRecommendation(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: keys.recommendations });
+      qc.invalidateQueries({ queryKey: keys.sops });
+    },
+  });
+}
+
 export function useGenerateReport() {
   const qc = useQueryClient();
   return useMutation({

@@ -234,6 +234,22 @@ export interface MeasuredImpact {
   tStat?: number;
 }
 
+/**
+ * The concrete SOP edit a recommendation proposes — a mutable draft that only
+ * becomes an immutable sop_versions row when a human approves it. If sopId is
+ * set it updates that SOP; otherwise approving creates a new SOP.
+ */
+export interface ProposedSopChange {
+  sopId?: string;
+  sopTitle: string;
+  category?: string;
+  purpose: string;
+  whenToUse?: string;
+  steps: string[];
+  examples?: string;
+  changeSummary: string;
+}
+
 export interface AiRecommendation {
   id: string;
   organizationId: string;
@@ -243,6 +259,7 @@ export interface AiRecommendation {
   title: string;
   rationale: string;
   status: RecommendationStatus;
+  proposedChange?: ProposedSopChange;
   measuredImpact?: MeasuredImpact;
   outcomeNotes?: string;
   createdAt: string;

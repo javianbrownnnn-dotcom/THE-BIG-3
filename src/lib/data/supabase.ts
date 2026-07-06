@@ -30,6 +30,7 @@ import type {
   ProductionInput,
   ProductionPatch,
   Profile,
+  ProposedSopChange,
   RecommendationStatus,
   Report,
   ReportType,
@@ -58,6 +59,21 @@ function mapMetrics(row: any): VideoMetrics {
     subscribersGained: row.subscribers_gained ?? undefined,
     revenue: row.revenue ?? undefined,
     rpm: row.rpm ?? undefined,
+  };
+}
+
+function mapProposedChange(raw: any): ProposedSopChange | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  if (!raw.purpose || !Array.isArray(raw.steps)) return undefined;
+  return {
+    sopId: raw.sop_id ?? undefined,
+    sopTitle: raw.sop_title ?? "New SOP",
+    category: raw.category ?? undefined,
+    purpose: raw.purpose,
+    whenToUse: raw.when_to_use ?? undefined,
+    steps: raw.steps,
+    examples: raw.examples ?? undefined,
+    changeSummary: raw.change_summary ?? "Proposed by the learning loop.",
   };
 }
 
@@ -849,6 +865,7 @@ export class SupabaseProvider implements DataProvider {
       sopId: row.sop_id ?? undefined,
       proposedSopVersionId: row.proposed_sop_version_id ?? undefined,
       title: row.title, rationale: row.rationale, status: row.status,
+      proposedChange: mapProposedChange(row.proposed_change),
       measuredImpact: row.measured_impact ?? undefined,
       outcomeNotes: row.outcome_notes ?? undefined,
       createdAt: row.created_at,
@@ -863,6 +880,41 @@ export class SupabaseProvider implements DataProvider {
       decided_at: new Date().toISOString(),
     }).eq("id", id);
     if (error) throw error;
+  }
+
+  async approveRecommendation(id: string): Promise<SopWithHistory> {
+    const { data: row, error } = await this.db
+      .from("ai_recommendations").select("*").eq("id", id).single();
+    if (error) throw error;
+    const pc = mapProposedChange(row.proposed_change);
+    if (!pc) throw new Error("This recommendation has no proposed SOP change to apply");
+
+    // Write the drafted change as a new SOP version (append-only), or a new SOP.
+    let sop: SopWithHistory;
+    if (pc.sopId) {
+      sop = await this.addSopVersion(pc.sopId, {
+        purpose: pc.purpose, whenToUse: pc.whenToUse, steps: pc.steps,
+        examples: pc.examples, changeSummary: pc.changeSummary,
+      });
+    } else {
+      const created = await this.createSop({
+        title: pc.sopTitle, category: pc.category,
+        purpose: pc.purpose, whenToUse: pc.whenToUse,
+        steps: pc.steps, examples: pc.examples,
+      });
+      sop = await this.getSop(created.id) as SopWithHistory;
+    }
+
+    const { data: auth } = await this.db.auth.getUser();
+    const { error: upErr } = await this.db.from("ai_recommendations").update({
+      status: "accepted",
+      sop_id: sop.id,
+      proposed_sop_version_id: sop.currentVersion?.id,
+      decided_by: auth.user?.id,
+      decided_at: new Date().toISOString(),
+    }).eq("id", id);
+    if (upErr) throw upErr;
+    return sop;
   }
 
   private mapReport(row: any): Report {

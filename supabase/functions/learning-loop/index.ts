@@ -255,27 +255,42 @@ Deno.serve(async (req) => {
       }
 
       for (const rec of analysis.recommendations ?? []) {
-        let proposedVersionId: string | null = null;
-        if (rec.proposedVersion && rec.sopId) {
-          const { data: latest } = await db.from("sop_versions")
-            .select("version_number").eq("sop_id", rec.sopId)
-            .order("version_number", { ascending: false }).limit(1).single();
-          const { data: version } = await db.from("sop_versions").insert({
-            sop_id: rec.sopId,
-            version_number: (latest?.version_number ?? 0) + 1,
-            purpose: rec.proposedVersion.purpose,
-            when_to_use: rec.proposedVersion.whenToUse,
-            steps: rec.proposedVersion.steps,
-            examples: rec.proposedVersion.examples,
-            change_summary: rec.proposedVersion.changeSummary,
-            source: "ai",
-          }).select("id").single();
-          proposedVersionId = version?.id ?? null;
+        // Store the drafted SOP edit as a *pending* change on the recommendation.
+        // It is NOT written to sop_versions here — a human approves it in-app
+        // (approveRecommendation), which is what actually creates the new,
+        // immutable version. This keeps humans in the loop for every SOP change.
+        let proposedChange: Record<string, unknown> | null = null;
+        if (rec.proposedVersion) {
+          let sopTitle = rec.title;
+          if (rec.sopId) {
+            const { data: sopRow } = await db.from("sops")
+              .select("title, category").eq("id", rec.sopId).single();
+            if (sopRow?.title) sopTitle = sopRow.title;
+            proposedChange = {
+              sop_id: rec.sopId,
+              sop_title: sopTitle,
+              category: sopRow?.category ?? null,
+              purpose: rec.proposedVersion.purpose,
+              when_to_use: rec.proposedVersion.whenToUse,
+              steps: rec.proposedVersion.steps,
+              examples: rec.proposedVersion.examples,
+              change_summary: rec.proposedVersion.changeSummary,
+            };
+          } else {
+            proposedChange = {
+              sop_title: sopTitle,
+              purpose: rec.proposedVersion.purpose,
+              when_to_use: rec.proposedVersion.whenToUse,
+              steps: rec.proposedVersion.steps,
+              examples: rec.proposedVersion.examples,
+              change_summary: rec.proposedVersion.changeSummary,
+            };
+          }
         }
         await db.from("ai_recommendations").insert({
           organization_id: org.id,
           sop_id: rec.sopId ?? null,
-          proposed_sop_version_id: proposedVersionId,
+          proposed_change: proposedChange,
           title: rec.title,
           rationale: rec.rationale,
         });
