@@ -1,0 +1,11 @@
+# Supabase project config. Only the bits the CLI needs to deploy Edge Functions
+# from CI live here — the project is targeted with --project-ref at deploy time.
+
+project_id = "the-big-3"
+
+# The YouTube OAuth callback is hit by Google with no user JWT, so the platform
+# JWT check must be off for it (the function does its own validation). Every
+# other function is called with a Supabase JWT (user session or service role),
+# so they keep the default verify_jwt = true.
+[functions.youtube-oauth]
+verify_jwt = false
