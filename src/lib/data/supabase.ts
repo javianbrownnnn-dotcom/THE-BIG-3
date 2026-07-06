@@ -15,6 +15,9 @@ import type {
   DraftResult,
   GeneratedIdea,
   CoachReply,
+  Comment,
+  CommentEntityType,
+  CommentInput,
   CompetitorChannel,
   CompetitorChannelInput,
   CompetitorScanResult,
@@ -996,6 +999,70 @@ export class SupabaseProvider implements DataProvider {
   async markNotificationRead(id: string): Promise<void> {
     await this.db.from("notifications")
       .update({ read_at: new Date().toISOString() }).eq("id", id);
+  }
+
+  async listComments(entityType: CommentEntityType, entityId: string): Promise<Comment[]> {
+    const { data, error } = await this.db
+      .from("comments")
+      .select("*, profiles:author_id(id, display_name, avatar_url)")
+      .eq("entity_type", entityType).eq("entity_id", entityId)
+      .order("created_at", { ascending: true });
+    if (error) throw error;
+    return (data ?? []).map((row: any) => ({
+      id: row.id,
+      entityType: row.entity_type,
+      entityId: row.entity_id,
+      author: {
+        id: row.profiles?.id ?? row.author_id,
+        displayName: row.profiles?.display_name ?? "Teammate",
+        avatarUrl: row.profiles?.avatar_url ?? undefined,
+      },
+      body: row.body,
+      mentions: row.mentions ?? [],
+      createdAt: row.created_at,
+    }));
+  }
+
+  async addComment(input: CommentInput): Promise<Comment> {
+    const orgId = await this.requireOrgId();
+    const { data: auth } = await this.db.auth.getUser();
+    const mentions = input.mentions ?? [];
+    const { data, error } = await this.db.from("comments").insert({
+      organization_id: orgId,
+      entity_type: input.entityType,
+      entity_id: input.entityId,
+      author_id: auth.user?.id,
+      body: input.body,
+      mentions,
+    }).select("*, profiles:author_id(id, display_name, avatar_url)").single();
+    if (error) throw error;
+
+    // Notify each mentioned teammate (skip self).
+    const authorName = data.profiles?.display_name ?? "A teammate";
+    const rows = mentions
+      .filter((uid) => uid !== auth.user?.id)
+      .map((uid) => ({
+        organization_id: orgId, user_id: uid, type: "system" as const,
+        title: `${authorName} mentioned you`,
+        body: input.body.slice(0, 140),
+        entity_type: input.entityType, entity_id: input.entityId,
+      }));
+    if (rows.length) await this.db.from("notifications").insert(rows);
+
+    return {
+      id: data.id, entityType: data.entity_type, entityId: data.entity_id,
+      author: {
+        id: data.profiles?.id ?? data.author_id,
+        displayName: authorName,
+        avatarUrl: data.profiles?.avatar_url ?? undefined,
+      },
+      body: data.body, mentions: data.mentions ?? [], createdAt: data.created_at,
+    };
+  }
+
+  async deleteComment(id: string): Promise<void> {
+    const { error } = await this.db.from("comments").delete().eq("id", id);
+    if (error) throw error;
   }
 
   async listActivity(): Promise<ActivityItem[]> {

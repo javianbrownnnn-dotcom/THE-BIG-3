@@ -11,6 +11,8 @@ import { getStoredApiKey } from "@/lib/youtube";
 import { scanCompetitorFromYouTube } from "@/features/competitors/liveScan";
 import type {
   ChannelInput,
+  CommentEntityType,
+  CommentInput,
   CompetitorChannel,
   CompetitorChannelInput,
   CompetitorVideoInput,
@@ -55,6 +57,32 @@ export const keys = {
 export const useMe = () => useQuery({ queryKey: keys.me, queryFn: () => data.getCurrentUser() });
 export const useOrg = () => useQuery({ queryKey: keys.org, queryFn: () => data.getOrganization() });
 export const useMembers = () => useQuery({ queryKey: keys.members, queryFn: () => data.listMembers() });
+
+export const useComments = (entityType: CommentEntityType, entityId: string) =>
+  useQuery({
+    queryKey: ["comments", entityType, entityId],
+    queryFn: () => data.listComments(entityType, entityId),
+    enabled: !!entityId,
+  });
+
+export function useAddComment(entityType: CommentEntityType, entityId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CommentInput) => data.addComment(input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["comments", entityType, entityId] });
+      qc.invalidateQueries({ queryKey: keys.notifications });
+    },
+  });
+}
+
+export function useDeleteComment(entityType: CommentEntityType, entityId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => data.deleteComment(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["comments", entityType, entityId] }),
+  });
+}
 export const useInvites = () => useQuery({ queryKey: keys.invites, queryFn: () => data.listInvites() });
 
 export function useCreateInvite() {

@@ -20,6 +20,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CommentsThread } from "@/components/CommentsThread";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -716,6 +717,12 @@ export function ProductionDetailPage() {
               <p className="pt-1 text-xs text-muted-foreground">
                 Checks run against your own SOPs. They update as you type.
               </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <CommentsThread entityType="production" entityId={form.id} />
             </CardContent>
           </Card>
         </div>

@@ -182,6 +182,25 @@ export interface Idea {
   createdAt: string;
 }
 
+export type CommentEntityType = "production" | "sop" | "idea";
+
+export interface Comment {
+  id: string;
+  entityType: CommentEntityType;
+  entityId: string;
+  author: Profile;
+  body: string;
+  mentions: string[]; // mentioned member ids
+  createdAt: string;
+}
+
+export interface CommentInput {
+  entityType: CommentEntityType;
+  entityId: string;
+  body: string;
+  mentions?: string[];
+}
+
 /**
  * AI teardown of a competitor outlier: why it worked, transferable mechanisms,
  * and a ready-to-produce idea adapted for one of your channels.
@@ -296,6 +315,7 @@ export interface Report {
 export interface AppNotification {
   id: string;
   organizationId: string;
+  userId?: string; // null/undefined = whole org
   type: NotificationType;
   title: string;
   body?: string;

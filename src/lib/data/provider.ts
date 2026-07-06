@@ -9,6 +9,9 @@ import type {
   DraftResult,
   GeneratedIdea,
   CoachReply,
+  Comment,
+  CommentEntityType,
+  CommentInput,
   CompetitorChannel,
   CompetitorChannelInput,
   CompetitorScanResult,
@@ -160,6 +163,11 @@ export interface DataProvider {
 
   listNotifications(): Promise<AppNotification[]>;
   markNotificationRead(id: string): Promise<void>;
+
+  /** Threaded comments on a doc; @mentions notify the tagged teammates. */
+  listComments(entityType: CommentEntityType, entityId: string): Promise<Comment[]>;
+  addComment(input: CommentInput): Promise<Comment>;
+  deleteComment(id: string): Promise<void>;
 
   listActivity(): Promise<ActivityItem[]>;
 

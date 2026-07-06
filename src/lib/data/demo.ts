@@ -15,6 +15,9 @@ import type {
   CoachReply,
   CompetitorChannel,
   CompetitorChannelInput,
+  Comment,
+  CommentEntityType,
+  CommentInput,
   CompetitorScanResult,
   CompetitorTeardown,
   CompetitorVideo,
@@ -909,6 +912,21 @@ const productions: Production[] = [
   },
 ];
 
+// Seed a short discussion on the first production doc so the collaboration
+// surface isn't empty in the demo.
+const comments: Comment[] = [
+  {
+    id: uid("cmt"), entityType: "production", entityId: "prod_guitar",
+    author: members[1], body: "Hook feels slow — can we open on the pawn-shop scene? @Javian",
+    mentions: [members[0].id], createdAt: daysAgo(2),
+  },
+  {
+    id: uid("cmt"), entityType: "production", entityId: "prod_guitar",
+    author: members[0], body: "Agreed. Rewrote the cold open, take a look @Amara.",
+    mentions: [members[2].id], createdAt: daysAgo(1),
+  },
+];
+
 // ---------------------------------------------------------------------------
 // Persistence — demo edits survive reloads (localStorage), so the demo is a
 // usable tool, not just a showcase. Seeded arrays are replaced in place so
@@ -922,7 +940,7 @@ function persist() {
       STORAGE_KEY,
       JSON.stringify({
         channels, videos, competitorChannels, competitorVideos, ideas, sops, insights,
-        recommendations, reports, notifications, activity, productions, invites,
+        recommendations, reports, notifications, activity, productions, invites, comments,
       }),
     );
   } catch {
@@ -954,6 +972,7 @@ function replaceInPlace<T>(target: T[], source: T[] | undefined) {
     replaceInPlace(activity, s.activity);
     replaceInPlace(productions, s.productions);
     replaceInPlace(invites, s.invites);
+    replaceInPlace(comments, s.comments);
   } catch {
     // Corrupt state — fall back to the fresh seed.
     localStorage.removeItem(STORAGE_KEY);
@@ -1558,6 +1577,48 @@ export class DemoProvider implements DataProvider {
       n.readAt = new Date().toISOString();
       persist();
     }
+  }
+
+  async listComments(entityType: CommentEntityType, entityId: string) {
+    await delay();
+    return clone(
+      comments
+        .filter((c) => c.entityType === entityType && c.entityId === entityId)
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
+    );
+  }
+
+  async addComment(input: CommentInput) {
+    const comment: Comment = {
+      id: runtimeId("cmt"),
+      entityType: input.entityType,
+      entityId: input.entityId,
+      author: clone(currentUser),
+      body: input.body,
+      mentions: input.mentions ?? [],
+      createdAt: new Date().toISOString(),
+    };
+    comments.push(comment);
+    // Fan out a notification to each mentioned teammate.
+    for (const userId of comment.mentions) {
+      if (userId === currentUser.id) continue;
+      notifications.unshift({
+        id: runtimeId("ntf"), organizationId: org.id, userId,
+        type: "system",
+        title: `${currentUser.displayName} mentioned you`,
+        body: comment.body.slice(0, 140),
+        entityType: input.entityType, entityId: input.entityId,
+        createdAt: comment.createdAt,
+      });
+    }
+    persist();
+    return clone(comment);
+  }
+
+  async deleteComment(id: string) {
+    const i = comments.findIndex((c) => c.id === id);
+    if (i >= 0) comments.splice(i, 1);
+    persist();
   }
 
   async listActivity() { return clone(activity); }
