@@ -48,6 +48,21 @@ export interface Member extends Profile {
   role: OrgRole;
 }
 
+export interface Invite {
+  id: string;
+  code: string;
+  email?: string;
+  role: OrgRole;
+  expiresAt: string;
+  acceptedAt?: string;
+  createdAt: string;
+}
+
+export interface InviteInput {
+  role: OrgRole;
+  email?: string;
+}
+
 export interface Organization {
   id: string;
   name: string;
