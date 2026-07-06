@@ -20,10 +20,13 @@ Vault with a placeholder URL — so the whole flow is testable with zero setup.
 ## 1 — Create a Google OAuth client (~10 min, once)
 
 1. Go to <https://console.cloud.google.com/> → create/select a project.
-2. **APIs & Services → Library → YouTube Data API v3 → Enable.**
+2. **APIs & Services → Library → enable both:**
+   - **YouTube Data API v3** (upload)
+   - **YouTube Analytics API** (retention curves, traffic sources, reach)
 3. **APIs & Services → OAuth consent screen:**
    - User type **External**. Fill in app name, your email.
-   - **Scopes:** add `.../auth/youtube.upload`.
+   - **Scopes:** add `.../auth/youtube.upload`,
+     `.../auth/youtube.readonly`, and `.../auth/yt-analytics.readonly`.
    - **Test users:** add each teammate's Google address (while the app is in
      "Testing", only listed users can connect — that's fine for a 3-person team,
      no Google verification review required).
@@ -43,11 +46,15 @@ Add these Edge Function secrets (Dashboard → Edge Functions → Secrets, or
 - `GOOGLE_CLIENT_SECRET`
 - `OAUTH_REDIRECT_URL` — the exact redirect URI you registered above
 
-Then deploy both functions:
+Then deploy the functions (or just run the **Deploy Edge Functions** GitHub
+Action, which ships all of them):
 
 ```bash
-supabase functions deploy youtube-oauth youtube-upload
+supabase functions deploy youtube-oauth youtube-upload youtube-analytics
 ```
+
+`youtube-analytics` powers the retention curves and traffic sources on each
+video page and uses the same stored refresh token.
 
 `youtube-upload` also relies on the standard `SUPABASE_URL`,
 `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` secrets, which Supabase
