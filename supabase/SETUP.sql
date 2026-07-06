@@ -872,3 +872,40 @@ begin
   return inv.organization_id;
 end $$;
 grant execute on function redeem_invite(text) to authenticated;
+
+-- ============================================================================
+-- ---- 0007_recommendation_proposed_change.sql ------------------------------
+-- Close the learning loop: a recommendation carries the concrete SOP edit it
+-- drafted; approving writes it as a new sop_versions row.
+-- ============================================================================
+
+alter table ai_recommendations
+  add column if not exists proposed_change jsonb;
+
+-- ============================================================================
+-- ---- 0008_comments.sql ----------------------------------------------------
+-- Team collaboration: threaded comments + @mentions on docs.
+-- ============================================================================
+
+create table if not exists comments (
+  id               uuid primary key default gen_random_uuid(),
+  organization_id  uuid not null references organizations (id) on delete cascade,
+  entity_type      text not null,
+  entity_id        uuid not null,
+  author_id        uuid not null references profiles (id) on delete cascade,
+  body             text not null,
+  mentions         uuid[] not null default '{}',
+  created_at       timestamptz not null default now()
+);
+create index if not exists comments_entity_idx on comments (entity_type, entity_id, created_at);
+
+alter table comments enable row level security;
+drop policy if exists "members read comments" on comments;
+create policy "members read comments" on comments for select to authenticated
+  using (is_org_member(organization_id));
+drop policy if exists "members write comments" on comments;
+create policy "members write comments" on comments for insert to authenticated
+  with check (is_org_member(organization_id) and author_id = auth.uid());
+drop policy if exists "delete own or admin comments" on comments;
+create policy "delete own or admin comments" on comments for delete to authenticated
+  using (author_id = auth.uid() or has_org_role(organization_id, 'admin'));

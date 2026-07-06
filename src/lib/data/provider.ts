@@ -9,9 +9,13 @@ import type {
   DraftResult,
   GeneratedIdea,
   CoachReply,
+  Comment,
+  CommentEntityType,
+  CommentInput,
   CompetitorChannel,
   CompetitorChannelInput,
   CompetitorScanResult,
+  CompetitorTeardown,
   Invite,
   InviteInput,
   CompetitorVideo,
@@ -84,6 +88,16 @@ export interface DataProvider {
    * scanCompetitorFromYouTube (features/competitors/liveScan.ts).
    */
   scanCompetitorChannel(channelId: string): Promise<CompetitorScanResult>;
+  /**
+   * AI teardown of a competitor outlier: why it worked + a ready-to-produce
+   * idea adapted for one of your channels. Persists the analysis onto the
+   * competitor video so it sticks. Live mode routes to the competitor-teardown
+   * edge function (Claude); demo mode synthesizes from the tracked signals.
+   */
+  generateTeardown(
+    competitorVideoId: string,
+    targetChannelId?: string,
+  ): Promise<CompetitorTeardown>;
 
   listIdeas(): Promise<Idea[]>;
   createIdea(input: IdeaInput): Promise<Idea>;
@@ -131,6 +145,12 @@ export interface DataProvider {
     id: string,
     status: RecommendationStatus,
   ): Promise<void>;
+  /**
+   * Approve a recommendation's proposed SOP change: writes it as a new SOP
+   * version (append-only) and marks the recommendation accepted. This is the
+   * step that actually closes the learning loop.
+   */
+  approveRecommendation(id: string): Promise<SopWithHistory>;
 
   listReports(): Promise<Report[]>;
   getReport(id: string): Promise<Report | null>;
@@ -143,6 +163,11 @@ export interface DataProvider {
 
   listNotifications(): Promise<AppNotification[]>;
   markNotificationRead(id: string): Promise<void>;
+
+  /** Threaded comments on a doc; @mentions notify the tagged teammates. */
+  listComments(entityType: CommentEntityType, entityId: string): Promise<Comment[]>;
+  addComment(input: CommentInput): Promise<Comment>;
+  deleteComment(id: string): Promise<void>;
 
   listActivity(): Promise<ActivityItem[]>;
 

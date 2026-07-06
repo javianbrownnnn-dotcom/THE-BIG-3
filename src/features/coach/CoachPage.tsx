@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { Bot, Check, FlaskConical, Lightbulb, RefreshCw, Send, ThumbsDown, X } from "lucide-react";
+import {
+  Bot, Check, FileEdit, FlaskConical, Lightbulb, RefreshCw, Send, ThumbsDown, X,
+} from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Markdown } from "@/components/Markdown";
@@ -9,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  useApproveRecommendation,
   useInsights,
   useRecommendations,
   useRunLearningLoop,
@@ -17,7 +20,31 @@ import {
 import { data } from "@/lib/data";
 import { relativeTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import type { AiRecommendation, ChatMessage, RecommendationStatus } from "@/types";
+import type {
+  AiRecommendation, ChatMessage, ProposedSopChange, RecommendationStatus,
+} from "@/types";
+
+function ProposedChangePreview({ change }: { change: ProposedSopChange }) {
+  return (
+    <div className="space-y-2 rounded-md border border-primary/30 bg-primary/5 p-3">
+      <div className="flex items-center gap-1.5 text-xs font-medium text-primary">
+        <FileEdit className="h-3.5 w-3.5" />
+        Proposed SOP change · {change.sopId ? change.sopTitle : `New SOP: ${change.sopTitle}`}
+      </div>
+      <p className="text-sm">{change.changeSummary}</p>
+      <details className="text-sm">
+        <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground">
+          Preview the new version ({change.steps.length} steps)
+        </summary>
+        <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
+          {change.steps.map((s, i) => (
+            <li key={i}>{s}</li>
+          ))}
+        </ol>
+      </details>
+    </div>
+  );
+}
 
 const SUGGESTIONS = [
   "What caused CTR to drop?",
@@ -36,12 +63,23 @@ const statusVariant = (s: RecommendationStatus) =>
 
 function RecommendationCard({ rec }: { rec: AiRecommendation }) {
   const setStatus = useSetRecommendationStatus();
+  const approve = useApproveRecommendation();
   const act = (status: RecommendationStatus, label: string) => {
     setStatus.mutate(
       { id: rec.id, status },
       { onSuccess: () => toast.success(label) },
     );
   };
+  const applyChange = () => {
+    approve.mutate(rec.id, {
+      onSuccess: (sop) =>
+        toast.success(`Applied — "${sop.title}" is now v${sop.currentVersion?.versionNumber}`, {
+          description: "The new version is saved to your SOPs; prior versions are kept.",
+        }),
+      onError: (err) => toast.error(err instanceof Error ? err.message : String(err)),
+    });
+  };
+  const hasChange = !!rec.proposedChange;
 
   return (
     <Card>
@@ -51,6 +89,7 @@ function RecommendationCard({ rec }: { rec: AiRecommendation }) {
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="text-sm text-muted-foreground">{rec.rationale}</p>
+        {rec.proposedChange && <ProposedChangePreview change={rec.proposedChange} />}
         {rec.measuredImpact && (
           <div className="rounded-md border bg-muted/40 p-3 text-sm">
             <span className="font-medium">Measured outcome: </span>
@@ -64,9 +103,9 @@ function RecommendationCard({ rec }: { rec: AiRecommendation }) {
           <p className="text-xs text-muted-foreground">{rec.outcomeNotes}</p>
         )}
         {rec.status === "proposed" && (
-          <div className="flex gap-2">
-            <Button size="sm" onClick={() => act("accepted", "Recommendation accepted")}>
-              <Check /> Accept
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" onClick={hasChange ? applyChange : () => act("accepted", "Recommendation accepted")} disabled={approve.isPending}>
+              <Check /> {hasChange ? "Approve & apply" : "Accept"}
             </Button>
             <Button
               size="sm"

@@ -15,7 +15,11 @@ import type {
   CoachReply,
   CompetitorChannel,
   CompetitorChannelInput,
+  Comment,
+  CommentEntityType,
+  CommentInput,
   CompetitorScanResult,
+  CompetitorTeardown,
   CompetitorVideo,
   CompetitorVideoInput,
   DraftResult,
@@ -82,6 +86,12 @@ const members: Member[] = [
 ];
 const currentUser: Profile = members[0];
 const invites: Invite[] = [];
+
+// "story_cold_open" → "Story cold open"
+function hz(token: string): string {
+  const s = token.replace(/_/g, " ").trim();
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
 
 // Short, unambiguous invite code (no 0/O/1/I).
 function randomCode(len = 8): string {
@@ -646,6 +656,23 @@ const recommendations: AiRecommendation[] = [
     title: "Sales Psychology: stop statistic-led hooks",
     rationale: "The current CTR dip coincides with three statistic-led hooks in a row — the weakest hook type org-wide (0.78x). Re-apply the SOP default on the next upload.",
     status: "proposed", createdAt: daysAgo(3),
+    proposedChange: {
+      sopId: "sop_hooks",
+      sopTitle: "Hook Writing",
+      category: "hooks",
+      purpose: "Write the first 30 seconds so a browsing viewer commits to the video.",
+      whenToUse: "Every video, before scripting the body.",
+      steps: [
+        "Draft 5 hook options before writing anything else.",
+        "Default to a story cold open: drop the viewer inside a single scene, mid-action.",
+        "State the stakes within the first two sentences.",
+        "Never open with a statistic — numbers before context underperform (0.78x baseline CTR, n=9).",
+        "If a number matters, earn it: give it a scene first, then the figure.",
+        "Read the hook aloud; if it takes over 20 seconds, cut it in half.",
+      ],
+      examples: "\"The vault door was already open when the auditors arrived...\"",
+      changeSummary: "Hardened the no-statistic-opener rule after three statistic-led hooks drove the current CTR dip, and added a 'earn the number' fallback so data still has a place.",
+    },
   },
   {
     id: uid("rec"), organizationId: org.id,
@@ -885,6 +912,21 @@ const productions: Production[] = [
   },
 ];
 
+// Seed a short discussion on the first production doc so the collaboration
+// surface isn't empty in the demo.
+const comments: Comment[] = [
+  {
+    id: uid("cmt"), entityType: "production", entityId: "prod_guitar",
+    author: members[1], body: "Hook feels slow — can we open on the pawn-shop scene? @Javian",
+    mentions: [members[0].id], createdAt: daysAgo(2),
+  },
+  {
+    id: uid("cmt"), entityType: "production", entityId: "prod_guitar",
+    author: members[0], body: "Agreed. Rewrote the cold open, take a look @Amara.",
+    mentions: [members[2].id], createdAt: daysAgo(1),
+  },
+];
+
 // ---------------------------------------------------------------------------
 // Persistence — demo edits survive reloads (localStorage), so the demo is a
 // usable tool, not just a showcase. Seeded arrays are replaced in place so
@@ -898,7 +940,7 @@ function persist() {
       STORAGE_KEY,
       JSON.stringify({
         channels, videos, competitorChannels, competitorVideos, ideas, sops, insights,
-        recommendations, reports, notifications, activity, productions, invites,
+        recommendations, reports, notifications, activity, productions, invites, comments,
       }),
     );
   } catch {
@@ -930,6 +972,7 @@ function replaceInPlace<T>(target: T[], source: T[] | undefined) {
     replaceInPlace(activity, s.activity);
     replaceInPlace(productions, s.productions);
     replaceInPlace(invites, s.invites);
+    replaceInPlace(comments, s.comments);
   } catch {
     // Corrupt state — fall back to the fresh seed.
     localStorage.removeItem(STORAGE_KEY);
@@ -1168,6 +1211,51 @@ export class DemoProvider implements DataProvider {
       outliers: fresh.filter((f) => f.isOutlier).length,
       simulated: true,
     };
+  }
+
+  async generateTeardown(
+    competitorVideoId: string,
+    targetChannelId?: string,
+  ): Promise<CompetitorTeardown> {
+    await delay(1100); // simulate the model thinking
+    const v = competitorVideos.find((cv) => cv.id === competitorVideoId);
+    if (!v) throw new Error("Competitor video not found");
+    const channel =
+      channels.find((c) => c.id === targetChannelId) ?? channels[0];
+
+    const hook = hz(v.hook ?? "story cold open");
+    const structure = hz(v.storyStructure ?? "rise and fall");
+    const topic = v.topic ?? v.title;
+    const teardown: CompetitorTeardown = {
+      whyItWorked:
+        `"${v.title}" broke out (${v.viewsPerDay ? Math.round(v.viewsPerDay).toLocaleString() + "/day, " : ""}` +
+        `z=${v.outlierScore ?? "high"}) on a ${hook.toLowerCase()} paired with a ${structure.toLowerCase()} ` +
+        `structure. The packaging promises a concrete payoff up front and the first 30 seconds drop the ` +
+        `viewer inside a single scene rather than explaining context.`,
+      observations:
+        `The demand signal is the mechanism, not the topic: the ${hook.toLowerCase()} + a title that implies ` +
+        `hidden stakes is what travels. Its retention almost certainly holds because the ${structure.toLowerCase()} ` +
+        `keeps a question open. That transfers to ${channel.name}'s niche without copying the subject.`,
+      transferableMoves: [
+        `Open cold on a single vivid moment — no "in this video".`,
+        `Package the promise as a payoff or a stake, echoing the ${hook.toLowerCase()}.`,
+        `Hold one question open across the video using a ${structure.toLowerCase()} spine.`,
+      ],
+      idea: {
+        title: `${channel.name}: our take on "${topic}" — ${hook} angle`,
+        description:
+          `Adapt the mechanism behind "${v.title}" for ${channel.name}. Find a ${channel.niche ?? "niche"} ` +
+          `story where a ${hook.toLowerCase()} fits honestly, then structure it as a ${structure.toLowerCase()}. ` +
+          `Lead with the single most concrete scene; make the title imply stakes without overclaiming.`,
+        tags: [v.hook, v.storyStructure, "competitor_teardown"].filter(Boolean) as string[],
+      },
+    };
+
+    // Persist the analysis onto the video so it sticks in the table.
+    v.whyItWorked = teardown.whyItWorked;
+    v.aiObservations = teardown.observations;
+    persist();
+    return clone(teardown);
   }
 
   async listIdeas() { await delay(); return clone(ideas); }
@@ -1412,6 +1500,51 @@ export class DemoProvider implements DataProvider {
     }
   }
 
+  async approveRecommendation(id: string): Promise<SopWithHistory> {
+    const rec = recommendations.find((r) => r.id === id);
+    if (!rec) throw new Error("Recommendation not found");
+    const pc = rec.proposedChange;
+    if (!pc) throw new Error("This recommendation has no proposed SOP change to apply");
+
+    let sop = pc.sopId ? sops.find((s) => s.id === pc.sopId) : undefined;
+    if (sop) {
+      // Append a new version — prior versions are never touched (append-only).
+      const version: SopVersion = {
+        id: runtimeId("sopv"), sopId: sop.id,
+        versionNumber: (sop.versions[0]?.versionNumber ?? 0) + 1,
+        purpose: pc.purpose, whenToUse: pc.whenToUse, steps: pc.steps,
+        examples: pc.examples, changeSummary: pc.changeSummary,
+        source: "ai", createdAt: new Date().toISOString(),
+      };
+      sop.versions.unshift(version);
+      sop.currentVersion = version;
+      sop.nextReviewAt = new Date(NOW + sop.reviewFrequencyDays * DAY).toISOString();
+      rec.proposedSopVersionId = version.id;
+    } else {
+      // No target SOP — the approved change becomes a brand-new SOP.
+      const newId = runtimeId("sop");
+      const version: SopVersion = {
+        id: runtimeId("sopv"), sopId: newId, versionNumber: 1,
+        purpose: pc.purpose, whenToUse: pc.whenToUse, steps: pc.steps,
+        examples: pc.examples, changeSummary: pc.changeSummary,
+        source: "ai", createdAt: new Date().toISOString(),
+      };
+      sop = {
+        id: newId, organizationId: org.id, title: pc.sopTitle,
+        category: pc.category, status: "active", reviewFrequencyDays: 30,
+        nextReviewAt: new Date(NOW + 30 * DAY).toISOString(),
+        currentVersion: version, linkedVideoIds: [], linkedCompetitorVideoIds: [],
+        createdAt: new Date().toISOString(), versions: [version],
+      };
+      sops.unshift(sop);
+      rec.sopId = newId;
+      rec.proposedSopVersionId = version.id;
+    }
+    rec.status = "accepted";
+    persist();
+    return clone(sop);
+  }
+
   async listReports() { await delay(); return clone(reports); }
   async getReport(id: string) {
     return clone(reports.find((r) => r.id === id) ?? null);
@@ -1444,6 +1577,48 @@ export class DemoProvider implements DataProvider {
       n.readAt = new Date().toISOString();
       persist();
     }
+  }
+
+  async listComments(entityType: CommentEntityType, entityId: string) {
+    await delay();
+    return clone(
+      comments
+        .filter((c) => c.entityType === entityType && c.entityId === entityId)
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
+    );
+  }
+
+  async addComment(input: CommentInput) {
+    const comment: Comment = {
+      id: runtimeId("cmt"),
+      entityType: input.entityType,
+      entityId: input.entityId,
+      author: clone(currentUser),
+      body: input.body,
+      mentions: input.mentions ?? [],
+      createdAt: new Date().toISOString(),
+    };
+    comments.push(comment);
+    // Fan out a notification to each mentioned teammate.
+    for (const userId of comment.mentions) {
+      if (userId === currentUser.id) continue;
+      notifications.unshift({
+        id: runtimeId("ntf"), organizationId: org.id, userId,
+        type: "system",
+        title: `${currentUser.displayName} mentioned you`,
+        body: comment.body.slice(0, 140),
+        entityType: input.entityType, entityId: input.entityId,
+        createdAt: comment.createdAt,
+      });
+    }
+    persist();
+    return clone(comment);
+  }
+
+  async deleteComment(id: string) {
+    const i = comments.findIndex((c) => c.id === id);
+    if (i >= 0) comments.splice(i, 1);
+    persist();
   }
 
   async listActivity() { return clone(activity); }

@@ -182,6 +182,40 @@ export interface Idea {
   createdAt: string;
 }
 
+export type CommentEntityType = "production" | "sop" | "idea";
+
+export interface Comment {
+  id: string;
+  entityType: CommentEntityType;
+  entityId: string;
+  author: Profile;
+  body: string;
+  mentions: string[]; // mentioned member ids
+  createdAt: string;
+}
+
+export interface CommentInput {
+  entityType: CommentEntityType;
+  entityId: string;
+  body: string;
+  mentions?: string[];
+}
+
+/**
+ * AI teardown of a competitor outlier: why it worked, transferable mechanisms,
+ * and a ready-to-produce idea adapted for one of your channels.
+ */
+export interface CompetitorTeardown {
+  whyItWorked: string;
+  observations: string;
+  transferableMoves: string[];
+  idea: {
+    title: string;
+    description: string;
+    tags: string[];
+  };
+}
+
 export interface SopVersion {
   id: string;
   sopId: string;
@@ -234,6 +268,22 @@ export interface MeasuredImpact {
   tStat?: number;
 }
 
+/**
+ * The concrete SOP edit a recommendation proposes — a mutable draft that only
+ * becomes an immutable sop_versions row when a human approves it. If sopId is
+ * set it updates that SOP; otherwise approving creates a new SOP.
+ */
+export interface ProposedSopChange {
+  sopId?: string;
+  sopTitle: string;
+  category?: string;
+  purpose: string;
+  whenToUse?: string;
+  steps: string[];
+  examples?: string;
+  changeSummary: string;
+}
+
 export interface AiRecommendation {
   id: string;
   organizationId: string;
@@ -243,6 +293,7 @@ export interface AiRecommendation {
   title: string;
   rationale: string;
   status: RecommendationStatus;
+  proposedChange?: ProposedSopChange;
   measuredImpact?: MeasuredImpact;
   outcomeNotes?: string;
   createdAt: string;
@@ -264,6 +315,7 @@ export interface Report {
 export interface AppNotification {
   id: string;
   organizationId: string;
+  userId?: string; // null/undefined = whole org
   type: NotificationType;
   title: string;
   body?: string;

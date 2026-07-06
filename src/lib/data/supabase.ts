@@ -15,9 +15,13 @@ import type {
   DraftResult,
   GeneratedIdea,
   CoachReply,
+  Comment,
+  CommentEntityType,
+  CommentInput,
   CompetitorChannel,
   CompetitorChannelInput,
   CompetitorScanResult,
+  CompetitorTeardown,
   CompetitorVideo,
   CompetitorVideoInput,
   Idea,
@@ -30,6 +34,7 @@ import type {
   ProductionInput,
   ProductionPatch,
   Profile,
+  ProposedSopChange,
   RecommendationStatus,
   Report,
   ReportType,
@@ -58,6 +63,21 @@ function mapMetrics(row: any): VideoMetrics {
     subscribersGained: row.subscribers_gained ?? undefined,
     revenue: row.revenue ?? undefined,
     rpm: row.rpm ?? undefined,
+  };
+}
+
+function mapProposedChange(raw: any): ProposedSopChange | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  if (!raw.purpose || !Array.isArray(raw.steps)) return undefined;
+  return {
+    sopId: raw.sop_id ?? undefined,
+    sopTitle: raw.sop_title ?? "New SOP",
+    category: raw.category ?? undefined,
+    purpose: raw.purpose,
+    whenToUse: raw.when_to_use ?? undefined,
+    steps: raw.steps,
+    examples: raw.examples ?? undefined,
+    changeSummary: raw.change_summary ?? "Proposed by the learning loop.",
   };
 }
 
@@ -508,6 +528,24 @@ export class SupabaseProvider implements DataProvider {
     return data as CompetitorScanResult;
   }
 
+  async generateTeardown(
+    competitorVideoId: string,
+    targetChannelId?: string,
+  ): Promise<CompetitorTeardown> {
+    const organizationId = await this.requireOrgId();
+    const { data, error } = await this.db.functions.invoke("competitor-teardown", {
+      body: { organizationId, competitorVideoId, targetChannelId },
+    });
+    if (error) throw new Error(error.message ?? "Teardown failed");
+    const teardown = data as CompetitorTeardown;
+    // Persist the analysis onto the video so it sticks in the table.
+    await this.db.from("competitor_videos").update({
+      why_it_worked: teardown.whyItWorked,
+      ai_observations: teardown.observations,
+    }).eq("id", competitorVideoId);
+    return teardown;
+  }
+
   async listIdeas(): Promise<Idea[]> {
     const orgId = await this.requireOrgId();
     const { data, error } = await this.db
@@ -849,6 +887,7 @@ export class SupabaseProvider implements DataProvider {
       sopId: row.sop_id ?? undefined,
       proposedSopVersionId: row.proposed_sop_version_id ?? undefined,
       title: row.title, rationale: row.rationale, status: row.status,
+      proposedChange: mapProposedChange(row.proposed_change),
       measuredImpact: row.measured_impact ?? undefined,
       outcomeNotes: row.outcome_notes ?? undefined,
       createdAt: row.created_at,
@@ -863,6 +902,41 @@ export class SupabaseProvider implements DataProvider {
       decided_at: new Date().toISOString(),
     }).eq("id", id);
     if (error) throw error;
+  }
+
+  async approveRecommendation(id: string): Promise<SopWithHistory> {
+    const { data: row, error } = await this.db
+      .from("ai_recommendations").select("*").eq("id", id).single();
+    if (error) throw error;
+    const pc = mapProposedChange(row.proposed_change);
+    if (!pc) throw new Error("This recommendation has no proposed SOP change to apply");
+
+    // Write the drafted change as a new SOP version (append-only), or a new SOP.
+    let sop: SopWithHistory;
+    if (pc.sopId) {
+      sop = await this.addSopVersion(pc.sopId, {
+        purpose: pc.purpose, whenToUse: pc.whenToUse, steps: pc.steps,
+        examples: pc.examples, changeSummary: pc.changeSummary,
+      });
+    } else {
+      const created = await this.createSop({
+        title: pc.sopTitle, category: pc.category,
+        purpose: pc.purpose, whenToUse: pc.whenToUse,
+        steps: pc.steps, examples: pc.examples,
+      });
+      sop = await this.getSop(created.id) as SopWithHistory;
+    }
+
+    const { data: auth } = await this.db.auth.getUser();
+    const { error: upErr } = await this.db.from("ai_recommendations").update({
+      status: "accepted",
+      sop_id: sop.id,
+      proposed_sop_version_id: sop.currentVersion?.id,
+      decided_by: auth.user?.id,
+      decided_at: new Date().toISOString(),
+    }).eq("id", id);
+    if (upErr) throw upErr;
+    return sop;
   }
 
   private mapReport(row: any): Report {
@@ -925,6 +999,70 @@ export class SupabaseProvider implements DataProvider {
   async markNotificationRead(id: string): Promise<void> {
     await this.db.from("notifications")
       .update({ read_at: new Date().toISOString() }).eq("id", id);
+  }
+
+  async listComments(entityType: CommentEntityType, entityId: string): Promise<Comment[]> {
+    const { data, error } = await this.db
+      .from("comments")
+      .select("*, profiles:author_id(id, display_name, avatar_url)")
+      .eq("entity_type", entityType).eq("entity_id", entityId)
+      .order("created_at", { ascending: true });
+    if (error) throw error;
+    return (data ?? []).map((row: any) => ({
+      id: row.id,
+      entityType: row.entity_type,
+      entityId: row.entity_id,
+      author: {
+        id: row.profiles?.id ?? row.author_id,
+        displayName: row.profiles?.display_name ?? "Teammate",
+        avatarUrl: row.profiles?.avatar_url ?? undefined,
+      },
+      body: row.body,
+      mentions: row.mentions ?? [],
+      createdAt: row.created_at,
+    }));
+  }
+
+  async addComment(input: CommentInput): Promise<Comment> {
+    const orgId = await this.requireOrgId();
+    const { data: auth } = await this.db.auth.getUser();
+    const mentions = input.mentions ?? [];
+    const { data, error } = await this.db.from("comments").insert({
+      organization_id: orgId,
+      entity_type: input.entityType,
+      entity_id: input.entityId,
+      author_id: auth.user?.id,
+      body: input.body,
+      mentions,
+    }).select("*, profiles:author_id(id, display_name, avatar_url)").single();
+    if (error) throw error;
+
+    // Notify each mentioned teammate (skip self).
+    const authorName = data.profiles?.display_name ?? "A teammate";
+    const rows = mentions
+      .filter((uid) => uid !== auth.user?.id)
+      .map((uid) => ({
+        organization_id: orgId, user_id: uid, type: "system" as const,
+        title: `${authorName} mentioned you`,
+        body: input.body.slice(0, 140),
+        entity_type: input.entityType, entity_id: input.entityId,
+      }));
+    if (rows.length) await this.db.from("notifications").insert(rows);
+
+    return {
+      id: data.id, entityType: data.entity_type, entityId: data.entity_id,
+      author: {
+        id: data.profiles?.id ?? data.author_id,
+        displayName: authorName,
+        avatarUrl: data.profiles?.avatar_url ?? undefined,
+      },
+      body: data.body, mentions: data.mentions ?? [], createdAt: data.created_at,
+    };
+  }
+
+  async deleteComment(id: string): Promise<void> {
+    const { error } = await this.db.from("comments").delete().eq("id", id);
+    if (error) throw error;
   }
 
   async listActivity(): Promise<ActivityItem[]> {

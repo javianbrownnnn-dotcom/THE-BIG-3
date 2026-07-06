@@ -11,6 +11,8 @@ import { getStoredApiKey } from "@/lib/youtube";
 import { scanCompetitorFromYouTube } from "@/features/competitors/liveScan";
 import type {
   ChannelInput,
+  CommentEntityType,
+  CommentInput,
   CompetitorChannel,
   CompetitorChannelInput,
   CompetitorVideoInput,
@@ -55,6 +57,32 @@ export const keys = {
 export const useMe = () => useQuery({ queryKey: keys.me, queryFn: () => data.getCurrentUser() });
 export const useOrg = () => useQuery({ queryKey: keys.org, queryFn: () => data.getOrganization() });
 export const useMembers = () => useQuery({ queryKey: keys.members, queryFn: () => data.listMembers() });
+
+export const useComments = (entityType: CommentEntityType, entityId: string) =>
+  useQuery({
+    queryKey: ["comments", entityType, entityId],
+    queryFn: () => data.listComments(entityType, entityId),
+    enabled: !!entityId,
+  });
+
+export function useAddComment(entityType: CommentEntityType, entityId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CommentInput) => data.addComment(input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["comments", entityType, entityId] });
+      qc.invalidateQueries({ queryKey: keys.notifications });
+    },
+  });
+}
+
+export function useDeleteComment(entityType: CommentEntityType, entityId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => data.deleteComment(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["comments", entityType, entityId] }),
+  });
+}
 export const useInvites = () => useQuery({ queryKey: keys.invites, queryFn: () => data.listInvites() });
 
 export function useCreateInvite() {
@@ -156,6 +184,16 @@ export function useCreateIdea() {
   return useMutation({
     mutationFn: (input: IdeaInput) => data.createIdea(input),
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.ideas }),
+  });
+}
+
+/** AI teardown of a competitor outlier → why it worked + a producible idea. */
+export function useGenerateTeardown() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (args: { competitorVideoId: string; targetChannelId?: string }) =>
+      data.generateTeardown(args.competitorVideoId, args.targetChannelId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["competitorVideos"] }),
   });
 }
 
@@ -291,6 +329,18 @@ export function useSetRecommendationStatus() {
     mutationFn: (args: { id: string; status: RecommendationStatus }) =>
       data.setRecommendationStatus(args.id, args.status),
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.recommendations }),
+  });
+}
+
+/** Approve a recommendation → applies its SOP change as a new version. */
+export function useApproveRecommendation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => data.approveRecommendation(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: keys.recommendations });
+      qc.invalidateQueries({ queryKey: keys.sops });
+    },
   });
 }
 
