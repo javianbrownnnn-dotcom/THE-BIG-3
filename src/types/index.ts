@@ -119,6 +119,18 @@ export interface CompetitorChannel {
   name: string;
   niche?: string;
   notes?: string;
+  // Channel-level intelligence, filled in by a scan.
+  url?: string;
+  handle?: string;
+  youtubeChannelId?: string;
+  thumbnailUrl?: string;
+  subscriberCount?: number;
+  trackedVideoCount?: number;
+  outlierCount?: number;
+  medianViewsPerDay?: number;
+  /** Average days between uploads across the tracked sample. */
+  uploadCadenceDays?: number;
+  lastScannedAt?: string;
 }
 
 export interface CompetitorVideo {
@@ -407,13 +419,35 @@ export interface CompetitorVideoInput {
   competitorChannelId: string;
   title: string;
   url?: string;
+  thumbnailUrl?: string;
   publishedAt?: string;
   topic?: string;
   hook?: string;
   storyStructure?: string;
   whyItWorked?: string;
+  aiObservations?: string;
+  isOutlier?: boolean;
+  outlierScore?: number;
   views?: number;
   viewsPerDay?: number;
+}
+
+export interface CompetitorChannelInput {
+  name: string;
+  url?: string;
+  niche?: string;
+  notes?: string;
+}
+
+/** Summary returned after scanning a competitor channel's recent uploads. */
+export interface CompetitorScanResult {
+  channelId: string;
+  channelName: string;
+  created: number;
+  totalTracked: number;
+  outliers: number;
+  /** True when the scan was simulated (no YouTube API key wired up yet). */
+  simulated: boolean;
 }
 
 export interface SopInput {

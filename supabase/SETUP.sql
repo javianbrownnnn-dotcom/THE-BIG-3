@@ -806,3 +806,20 @@ alter table youtube_credentials enable row level security;
 create or replace view youtube_connection_status as
 select channel_id, youtube_channel_id, created_at
 from youtube_credentials;
+
+-- ============================================================================
+-- ---- 0005_competitor_channel_scan.sql -------------------------------------
+-- Channel-level competitor intelligence: a scan pulls a competitor channel's
+-- recent uploads in bulk and rolls them up into these headline stats.
+-- ============================================================================
+
+alter table competitor_channels
+  add column if not exists url                  text,
+  add column if not exists handle               text,
+  add column if not exists thumbnail_url        text,
+  add column if not exists subscriber_count     bigint,
+  add column if not exists tracked_video_count  integer,
+  add column if not exists outlier_count        integer,
+  add column if not exists median_views_per_day numeric,
+  add column if not exists upload_cadence_days  numeric,
+  add column if not exists last_scanned_at      timestamptz;

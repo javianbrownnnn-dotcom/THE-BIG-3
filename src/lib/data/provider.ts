@@ -10,6 +10,8 @@ import type {
   GeneratedIdea,
   CoachReply,
   CompetitorChannel,
+  CompetitorChannelInput,
+  CompetitorScanResult,
   CompetitorVideo,
   CompetitorVideoInput,
   Idea,
@@ -62,6 +64,20 @@ export interface DataProvider {
     onlyOutliers?: boolean;
   }): Promise<CompetitorVideo[]>;
   createCompetitorVideo(input: CompetitorVideoInput): Promise<CompetitorVideo>;
+  /** Track a whole channel in the niche (not just one video). */
+  createCompetitorChannel(input: CompetitorChannelInput): Promise<CompetitorChannel>;
+  updateCompetitorChannel(
+    id: string,
+    patch: Partial<CompetitorChannel>,
+  ): Promise<CompetitorChannel>;
+  /**
+   * Scan a competitor channel's recent uploads in bulk and flag outliers.
+   * Demo mode simulates a believable batch; live mode routes to the
+   * competitor-scan edge function (server-side YouTube API). The client can
+   * also run a real scan itself with a stored API key via
+   * scanCompetitorFromYouTube (features/competitors/liveScan.ts).
+   */
+  scanCompetitorChannel(channelId: string): Promise<CompetitorScanResult>;
 
   listIdeas(): Promise<Idea[]>;
   createIdea(input: IdeaInput): Promise<Idea>;

@@ -16,6 +16,8 @@ import type {
   GeneratedIdea,
   CoachReply,
   CompetitorChannel,
+  CompetitorChannelInput,
+  CompetitorScanResult,
   CompetitorVideo,
   CompetitorVideoInput,
   Idea,
@@ -54,6 +56,26 @@ function mapMetrics(row: any): VideoMetrics {
     subscribersGained: row.subscribers_gained ?? undefined,
     revenue: row.revenue ?? undefined,
     rpm: row.rpm ?? undefined,
+  };
+}
+
+function mapCompetitorChannel(row: any): CompetitorChannel {
+  return {
+    id: row.id,
+    organizationId: row.organization_id,
+    name: row.name,
+    niche: row.niche ?? undefined,
+    notes: row.notes ?? undefined,
+    url: row.url ?? undefined,
+    handle: row.handle ?? undefined,
+    youtubeChannelId: row.youtube_channel_id ?? undefined,
+    thumbnailUrl: row.thumbnail_url ?? undefined,
+    subscriberCount: row.subscriber_count ?? undefined,
+    trackedVideoCount: row.tracked_video_count ?? undefined,
+    outlierCount: row.outlier_count ?? undefined,
+    medianViewsPerDay: row.median_views_per_day ?? undefined,
+    uploadCadenceDays: row.upload_cadence_days ?? undefined,
+    lastScannedAt: row.last_scanned_at ?? undefined,
   };
 }
 
@@ -301,10 +323,7 @@ export class SupabaseProvider implements DataProvider {
     const { data, error } = await this.db
       .from("competitor_channels").select("*").eq("organization_id", orgId);
     if (error) throw error;
-    return (data ?? []).map((row: any) => ({
-      id: row.id, organizationId: row.organization_id, name: row.name,
-      niche: row.niche ?? undefined, notes: row.notes ?? undefined,
-    }));
+    return (data ?? []).map(mapCompetitorChannel);
   }
 
   async listCompetitorVideos(filter?: { onlyOutliers?: boolean }): Promise<CompetitorVideo[]> {
@@ -359,11 +378,15 @@ export class SupabaseProvider implements DataProvider {
       competitor_channel_id: input.competitorChannelId,
       title: input.title,
       url: input.url,
+      thumbnail_url: input.thumbnailUrl,
       published_at: input.publishedAt,
       topic: input.topic,
       hook: input.hook,
       story_structure: input.storyStructure,
       why_it_worked: input.whyItWorked,
+      ai_observations: input.aiObservations,
+      is_outlier: input.isOutlier ?? false,
+      outlier_score: input.outlierScore,
       created_by: auth.user?.id,
     }).select("*").single();
     if (error) throw error;
@@ -378,10 +401,58 @@ export class SupabaseProvider implements DataProvider {
       id: data.id,
       competitorChannelId: data.competitor_channel_id,
       title: data.title,
-      isOutlier: false,
+      isOutlier: data.is_outlier ?? false,
+      outlierScore: data.outlier_score ?? undefined,
       views: input.views,
       viewsPerDay: input.viewsPerDay,
     };
+  }
+
+  async createCompetitorChannel(input: CompetitorChannelInput): Promise<CompetitorChannel> {
+    const orgId = await this.requireOrgId();
+    const { data: auth } = await this.db.auth.getUser();
+    const { data, error } = await this.db.from("competitor_channels").insert({
+      organization_id: orgId,
+      name: input.name,
+      url: input.url,
+      niche: input.niche,
+      notes: input.notes,
+      created_by: auth.user?.id,
+    }).select("*").single();
+    if (error) throw error;
+    return mapCompetitorChannel(data);
+  }
+
+  async updateCompetitorChannel(
+    id: string,
+    patch: Partial<CompetitorChannel>,
+  ): Promise<CompetitorChannel> {
+    const dbPatch: Record<string, unknown> = {};
+    if (patch.name !== undefined) dbPatch.name = patch.name;
+    if (patch.niche !== undefined) dbPatch.niche = patch.niche;
+    if (patch.notes !== undefined) dbPatch.notes = patch.notes;
+    if (patch.url !== undefined) dbPatch.url = patch.url;
+    if (patch.handle !== undefined) dbPatch.handle = patch.handle;
+    if (patch.youtubeChannelId !== undefined) dbPatch.youtube_channel_id = patch.youtubeChannelId;
+    if (patch.thumbnailUrl !== undefined) dbPatch.thumbnail_url = patch.thumbnailUrl;
+    if (patch.subscriberCount !== undefined) dbPatch.subscriber_count = patch.subscriberCount;
+    if (patch.trackedVideoCount !== undefined) dbPatch.tracked_video_count = patch.trackedVideoCount;
+    if (patch.outlierCount !== undefined) dbPatch.outlier_count = patch.outlierCount;
+    if (patch.medianViewsPerDay !== undefined) dbPatch.median_views_per_day = patch.medianViewsPerDay;
+    if (patch.uploadCadenceDays !== undefined) dbPatch.upload_cadence_days = patch.uploadCadenceDays;
+    if (patch.lastScannedAt !== undefined) dbPatch.last_scanned_at = patch.lastScannedAt;
+    const { data, error } = await this.db
+      .from("competitor_channels").update(dbPatch).eq("id", id).select("*").single();
+    if (error) throw error;
+    return mapCompetitorChannel(data);
+  }
+
+  async scanCompetitorChannel(channelId: string): Promise<CompetitorScanResult> {
+    const { data, error } = await this.db.functions.invoke("competitor-scan", {
+      body: { channelId },
+    });
+    if (error) throw new Error(error.message ?? "Competitor scan failed");
+    return data as CompetitorScanResult;
   }
 
   async listIdeas(): Promise<Idea[]> {

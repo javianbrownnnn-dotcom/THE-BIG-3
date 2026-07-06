@@ -14,6 +14,8 @@ import type {
   ChatMessage,
   CoachReply,
   CompetitorChannel,
+  CompetitorChannelInput,
+  CompetitorScanResult,
   CompetitorVideo,
   CompetitorVideoInput,
   DraftResult,
@@ -41,6 +43,7 @@ import type {
 } from "@/types";
 import type { DataProvider } from "./provider";
 import { draftFromTemplates } from "@/features/production/draft";
+import { aggregateChannelStats, simulateChannelScan } from "@/features/competitors/scan";
 
 // ---------------------------------------------------------------------------
 // Seeded PRNG — data is identical on every load.
@@ -883,7 +886,7 @@ function persist() {
     localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({
-        channels, videos, competitorVideos, ideas, sops, insights,
+        channels, videos, competitorChannels, competitorVideos, ideas, sops, insights,
         recommendations, reports, notifications, activity, productions,
       }),
     );
@@ -905,6 +908,7 @@ function replaceInPlace<T>(target: T[], source: T[] | undefined) {
     const s = JSON.parse(raw);
     replaceInPlace(channels, s.channels);
     replaceInPlace(videos, s.videos);
+    replaceInPlace(competitorChannels, s.competitorChannels);
     replaceInPlace(competitorVideos, s.competitorVideos);
     replaceInPlace(ideas, s.ideas);
     replaceInPlace(sops, s.sops);
@@ -1066,15 +1070,70 @@ export class DemoProvider implements DataProvider {
   }
 
   async createCompetitorVideo(input: CompetitorVideoInput) {
+    const { isOutlier, outlierScore, ...rest } = input;
     const row: CompetitorVideo = {
       id: runtimeId("cv"),
-      isOutlier: false,
       competitorChannelName: competitorChannels.find((c) => c.id === input.competitorChannelId)?.name,
-      ...input,
+      isOutlier: isOutlier ?? false,
+      outlierScore,
+      ...rest,
     };
     competitorVideos.unshift(row);
     persist();
     return clone(row);
+  }
+
+  async createCompetitorChannel(input: CompetitorChannelInput) {
+    const row: CompetitorChannel = {
+      id: runtimeId("cc"),
+      organizationId: org.id,
+      name: input.name,
+      url: input.url,
+      niche: input.niche,
+      notes: input.notes,
+    };
+    competitorChannels.push(row);
+    persist();
+    return clone(row);
+  }
+
+  async updateCompetitorChannel(id: string, patch: Partial<CompetitorChannel>) {
+    const chan = competitorChannels.find((c) => c.id === id);
+    if (!chan) throw new Error("Competitor channel not found");
+    Object.assign(chan, patch);
+    persist();
+    return clone(chan);
+  }
+
+  async scanCompetitorChannel(channelId: string): Promise<CompetitorScanResult> {
+    await delay(1400);
+    const chan = competitorChannels.find((c) => c.id === channelId);
+    if (!chan) throw new Error("Competitor channel not found");
+    const existing = competitorVideos.filter((v) => v.competitorChannelId === channelId);
+    const seenTitles = new Set(existing.map((v) => v.title.toLowerCase()));
+    const fresh = simulateChannelScan(chan, seenTitles);
+    for (const row of fresh) {
+      competitorVideos.unshift({
+        id: runtimeId("cv"),
+        competitorChannelName: chan.name,
+        isOutlier: row.isOutlier ?? false,
+        ...row,
+      });
+    }
+    const all = competitorVideos.filter((v) => v.competitorChannelId === channelId);
+    Object.assign(chan, aggregateChannelStats(all), {
+      subscriberCount: chan.subscriberCount ?? Math.round(between(80_000, 2_400_000)),
+      lastScannedAt: new Date().toISOString(),
+    });
+    persist();
+    return {
+      channelId,
+      channelName: chan.name,
+      created: fresh.length,
+      totalTracked: all.length,
+      outliers: fresh.filter((f) => f.isOutlier).length,
+      simulated: true,
+    };
   }
 
   async listIdeas() { await delay(); return clone(ideas); }

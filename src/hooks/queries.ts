@@ -7,8 +7,12 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { data } from "@/lib/data";
+import { getStoredApiKey } from "@/lib/youtube";
+import { scanCompetitorFromYouTube } from "@/features/competitors/liveScan";
 import type {
   ChannelInput,
+  CompetitorChannel,
+  CompetitorChannelInput,
   CompetitorVideoInput,
   IdeaInput,
   Production,
@@ -157,6 +161,36 @@ export function useCreateCompetitorVideo() {
   return useMutation({
     mutationFn: (input: CompetitorVideoInput) => data.createCompetitorVideo(input),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["competitor-videos"] }),
+  });
+}
+
+export function useCreateCompetitorChannel() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CompetitorChannelInput) => data.createCompetitorChannel(input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.competitorChannels }),
+  });
+}
+
+/**
+ * Scan a whole competitor channel. With a stored YouTube API key we run a real
+ * client-side scan (public Data API); otherwise we fall back to the provider —
+ * demo simulates a believable batch, live mode routes to the edge function.
+ */
+export function useScanCompetitorChannel() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (channel: CompetitorChannel) => {
+      const apiKey = getStoredApiKey();
+      if (apiKey && (channel.url || channel.handle || channel.youtubeChannelId)) {
+        return scanCompetitorFromYouTube(channel, apiKey);
+      }
+      return data.scanCompetitorChannel(channel.id);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: keys.competitorChannels });
+      qc.invalidateQueries({ queryKey: ["competitor-videos"] });
+    },
   });
 }
 

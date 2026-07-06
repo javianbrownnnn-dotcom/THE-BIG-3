@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Flame, Plus, Swords } from "lucide-react";
+import { useMemo, useState, type ReactNode } from "react";
+import { Flame, Plus, Radar, Swords, Users } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { EmptyState } from "@/components/layout/EmptyState";
@@ -38,16 +38,27 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import {
   useCompetitorChannels,
   useCompetitorVideos,
+  useCreateCompetitorChannel,
   useCreateCompetitorVideo,
+  useScanCompetitorChannel,
 } from "@/hooks/queries";
-import { compactNumber, humanize, shortDate } from "@/lib/format";
+import { getStoredApiKey } from "@/lib/youtube";
+import { compactNumber, humanize, relativeTime, shortDate } from "@/lib/format";
+import type { CompetitorChannel } from "@/types";
 
 export function CompetitorsPage() {
   const [onlyOutliers, setOnlyOutliers] = useState(false);
+  const [channelFilter, setChannelFilter] = useState<string | null>(null);
   const { data: videos, isLoading } = useCompetitorVideos(onlyOutliers);
   const { data: compChannels } = useCompetitorChannels();
   const createVideo = useCreateCompetitorVideo();
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const createChannel = useCreateCompetitorChannel();
+  const scan = useScanCompetitorChannel();
+  const [scanningId, setScanningId] = useState<string | null>(null);
+
+  const [videoDialogOpen, setVideoDialogOpen] = useState(false);
+  const [channelDialogOpen, setChannelDialogOpen] = useState(false);
+  const [channelForm, setChannelForm] = useState({ name: "", url: "", niche: "" });
   const [form, setForm] = useState({
     competitorChannelId: "",
     title: "",
@@ -59,12 +70,50 @@ export function CompetitorsPage() {
     viewsPerDay: "",
   });
 
+  const filteredVideos = useMemo(
+    () => (videos ?? []).filter((v) => !channelFilter || v.competitorChannelId === channelFilter),
+    [videos, channelFilter],
+  );
   const outlierCount = useMemo(
-    () => (videos ?? []).filter((v) => v.isOutlier).length,
-    [videos],
+    () => filteredVideos.filter((v) => v.isOutlier).length,
+    [filteredVideos],
   );
 
-  const submit = async () => {
+  const addChannel = async () => {
+    if (!channelForm.name.trim()) {
+      toast.error("Give the channel a name");
+      return;
+    }
+    const created = await createChannel.mutateAsync({
+      name: channelForm.name.trim(),
+      url: channelForm.url.trim() || undefined,
+      niche: channelForm.niche.trim() || undefined,
+    });
+    setChannelDialogOpen(false);
+    setChannelForm({ name: "", url: "", niche: "" });
+    toast.success(`Tracking ${created.name}`, {
+      action: { label: "Scan now", onClick: () => runScan(created) },
+    });
+  };
+
+  const runScan = async (channel: CompetitorChannel) => {
+    setScanningId(channel.id);
+    try {
+      const res = await scan.mutateAsync(channel);
+      setChannelFilter(channel.id);
+      toast.success(
+        `Scanned ${res.channelName}: +${res.created} video${res.created === 1 ? "" : "s"}, ` +
+          `${res.outliers} outlier${res.outliers === 1 ? "" : "s"} flagged` +
+          (res.simulated ? " (simulated — add a YouTube API key in Channels to pull real data)" : ""),
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    } finally {
+      setScanningId(null);
+    }
+  };
+
+  const submitVideo = async () => {
     if (!form.competitorChannelId || !form.title) {
       toast.error("Channel and title are required");
       return;
@@ -80,24 +129,96 @@ export function CompetitorsPage() {
       viewsPerDay: form.viewsPerDay ? +form.viewsPerDay : undefined,
     });
     toast.success("Competitor video tracked");
-    setDialogOpen(false);
+    setVideoDialogOpen(false);
   };
 
   if (isLoading) return <Skeleton className="h-96" />;
+
+  const hasKey = !!getStoredApiKey();
 
   return (
     <div className="animate-fade-in">
       <PageHeader
         title="Competitors"
-        description="What's working in the niche right now. Outliers are flagged statistically (views/day z-score vs each channel's baseline)."
+        description="Track whole channels in your niche, not just single videos. A scan pulls a channel's recent uploads and flags outliers (views/day z-score vs its own baseline)."
         actions={
-          <Button size="sm" onClick={() => setDialogOpen(true)}>
-            <Plus /> Track video
-          </Button>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => setVideoDialogOpen(true)}>
+              <Plus /> Track video
+            </Button>
+            <Button size="sm" onClick={() => setChannelDialogOpen(true)}>
+              <Plus /> Add channel
+            </Button>
+          </div>
         }
       />
 
-      <div className="mb-4 flex items-center gap-3">
+      {!hasKey && (
+        <p className="mb-4 text-xs text-muted-foreground">
+          No YouTube API key connected — scans are simulated. Add a key on the Channels page to
+          pull real uploads and stats.
+        </p>
+      )}
+
+      {/* Channel cards — the niche at a glance. */}
+      <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {(compChannels ?? []).map((c) => {
+          const active = channelFilter === c.id;
+          return (
+            <Card
+              key={c.id}
+              role="button"
+              onClick={() => setChannelFilter(active ? null : c.id)}
+              className={`cursor-pointer transition-colors ${active ? "border-primary" : "hover:border-muted-foreground/40"}`}
+            >
+              <CardContent className="space-y-3 p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{c.name}</p>
+                    {c.niche && (
+                      <p className="truncate text-xs text-muted-foreground">{c.niche}</p>
+                    )}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    disabled={scanningId === c.id || scan.isPending}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      runScan(c);
+                    }}
+                  >
+                    <Radar className={scanningId === c.id ? "animate-pulse" : ""} />
+                    {scanningId === c.id ? "Scanning…" : "Scan"}
+                  </Button>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                  {c.subscriberCount != null && (
+                    <Stat icon={<Users className="h-3 w-3" />} label="subs" value={compactNumber(c.subscriberCount)} />
+                  )}
+                  <Stat label="videos tracked" value={String(c.trackedVideoCount ?? 0)} />
+                  <Stat
+                    icon={<Flame className="h-3 w-3 text-warning" />}
+                    label="outliers"
+                    value={String(c.outlierCount ?? 0)}
+                  />
+                  {c.medianViewsPerDay != null && c.medianViewsPerDay > 0 && (
+                    <Stat label="median views/day" value={compactNumber(c.medianViewsPerDay)} />
+                  )}
+                  {c.uploadCadenceDays != null && (
+                    <Stat label="uploads every" value={`${c.uploadCadenceDays}d`} />
+                  )}
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  {c.lastScannedAt ? `Scanned ${relativeTime(c.lastScannedAt)}` : "Not scanned yet"}
+                </p>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      <div className="mb-4 flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
           <Switch id="outliers" checked={onlyOutliers} onCheckedChange={setOnlyOutliers} />
           <Label htmlFor="outliers" className="cursor-pointer text-sm">
@@ -107,19 +228,27 @@ export function CompetitorsPage() {
         <Badge variant="warning" className="gap-1">
           <Flame className="h-3 w-3" /> {outlierCount} outlier{outlierCount === 1 ? "" : "s"}
         </Badge>
+        {channelFilter && (
+          <Badge variant="secondary" className="gap-1">
+            {compChannels?.find((c) => c.id === channelFilter)?.name}
+            <button className="ml-1" onClick={() => setChannelFilter(null)} aria-label="Clear filter">
+              ✕
+            </button>
+          </Badge>
+        )}
         <span className="ml-auto text-sm text-muted-foreground">
           Tracking {compChannels?.length ?? 0} channels
         </span>
       </div>
 
-      {(videos ?? []).length === 0 ? (
+      {filteredVideos.length === 0 ? (
         <EmptyState
           icon={Swords}
-          title="No competitor videos tracked"
-          description="Add videos from channels in your niches. The learning loop detects outliers automatically."
+          title="No competitor videos yet"
+          description="Add a channel in your niche and hit Scan to pull its recent uploads — outliers are flagged automatically."
           action={
-            <Button size="sm" onClick={() => setDialogOpen(true)}>
-              <Plus /> Track video
+            <Button size="sm" onClick={() => setChannelDialogOpen(true)}>
+              <Plus /> Add channel
             </Button>
           }
         />
@@ -136,12 +265,11 @@ export function CompetitorsPage() {
                   <TableHead>Structure</TableHead>
                   <TableHead className="text-right">Views</TableHead>
                   <TableHead className="text-right">Views/day</TableHead>
-                  <TableHead className="text-right">Velocity</TableHead>
                   <TableHead />
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(videos ?? []).map((v) => (
+                {filteredVideos.map((v) => (
                   <TableRow key={v.id}>
                     <TableCell className="max-w-[280px]">
                       <div className="flex items-center gap-2">
@@ -183,9 +311,6 @@ export function CompetitorsPage() {
                     <TableCell className="text-right font-medium tabular-nums">
                       {compactNumber(v.viewsPerDay)}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {v.velocity != null ? `${v.velocity > 0 ? "+" : ""}${v.velocity}` : "—"}
-                    </TableCell>
                     <TableCell>
                       {v.isOutlier && <Badge variant="warning">outlier</Badge>}
                     </TableCell>
@@ -197,7 +322,55 @@ export function CompetitorsPage() {
         </Card>
       )}
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      {/* Add channel dialog */}
+      <Dialog open={channelDialogOpen} onOpenChange={setChannelDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Track a channel</DialogTitle>
+            <DialogDescription>
+              Add a channel in your niche. Paste its URL or @handle to scan its real uploads;
+              without a key we simulate a plausible batch so you can try the flow.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label className="text-xs">Name</Label>
+              <Input
+                value={channelForm.name}
+                onChange={(e) => setChannelForm({ ...channelForm, name: e.target.value })}
+                placeholder="Magnates Media"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Channel URL or @handle</Label>
+              <Input
+                value={channelForm.url}
+                onChange={(e) => setChannelForm({ ...channelForm, url: e.target.value })}
+                placeholder="https://youtube.com/@MagnatesMedia"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Niche</Label>
+              <Input
+                value={channelForm.niche}
+                onChange={(e) => setChannelForm({ ...channelForm, niche: e.target.value })}
+                placeholder="Business documentaries"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setChannelDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={addChannel} disabled={createChannel.isPending}>
+              Add & scan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Track single video dialog */}
+      <Dialog open={videoDialogOpen} onOpenChange={setVideoDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Track competitor video</DialogTitle>
@@ -263,15 +436,27 @@ export function CompetitorsPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setDialogOpen(false)}>
+            <Button variant="ghost" onClick={() => setVideoDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={submit} disabled={createVideo.isPending}>
+            <Button onClick={submitVideo} disabled={createVideo.isPending}>
               Track
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function Stat({ icon, label, value }: { icon?: ReactNode; label: string; value: string }) {
+  return (
+    <div className="flex items-baseline gap-1">
+      <span className="font-semibold tabular-nums">{value}</span>
+      <span className="flex items-center gap-0.5 text-muted-foreground">
+        {icon}
+        {label}
+      </span>
     </div>
   );
 }
