@@ -21,6 +21,8 @@ import type {
   CompetitorVideo,
   CompetitorVideoInput,
   Idea,
+  Invite,
+  InviteInput,
   IdeaInput,
   Member,
   Organization,
@@ -57,6 +59,25 @@ function mapMetrics(row: any): VideoMetrics {
     revenue: row.revenue ?? undefined,
     rpm: row.rpm ?? undefined,
   };
+}
+
+function mapInvite(row: any): Invite {
+  return {
+    id: row.id,
+    code: row.code,
+    email: row.email ?? undefined,
+    role: row.role,
+    expiresAt: row.expires_at,
+    acceptedAt: row.accepted_at ?? undefined,
+    createdAt: row.created_at,
+  };
+}
+
+// Short, unambiguous invite code (no 0/O/1/I) — matches the demo provider.
+function randomInviteCode(len = 8): string {
+  const alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  const bytes = crypto.getRandomValues(new Uint8Array(len));
+  return Array.from(bytes, (b) => alphabet[b % alphabet.length]).join("");
 }
 
 function mapCompetitorChannel(row: any): CompetitorChannel {
@@ -172,6 +193,38 @@ export class SupabaseProvider implements DataProvider {
       avatarUrl: m.profiles.avatar_url ?? undefined,
       role: m.role,
     }));
+  }
+
+  async listInvites(): Promise<Invite[]> {
+    const orgId = await this.requireOrgId();
+    const { data, error } = await this.db
+      .from("org_invites")
+      .select("*")
+      .eq("organization_id", orgId)
+      .is("accepted_at", null)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map(mapInvite);
+  }
+
+  async createInvite(input: InviteInput): Promise<Invite> {
+    const orgId = await this.requireOrgId();
+    const { data: auth } = await this.db.auth.getUser();
+    const code = randomInviteCode();
+    const { data, error } = await this.db.from("org_invites").insert({
+      organization_id: orgId,
+      code,
+      email: input.email,
+      role: input.role,
+      created_by: auth.user?.id,
+    }).select("*").single();
+    if (error) throw error;
+    return mapInvite(data);
+  }
+
+  async revokeInvite(id: string): Promise<void> {
+    const { error } = await this.db.from("org_invites").delete().eq("id", id);
+    if (error) throw error;
   }
 
   async listChannels(): Promise<Channel[]> {

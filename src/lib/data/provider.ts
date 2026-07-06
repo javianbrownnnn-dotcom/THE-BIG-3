@@ -12,6 +12,8 @@ import type {
   CompetitorChannel,
   CompetitorChannelInput,
   CompetitorScanResult,
+  Invite,
+  InviteInput,
   CompetitorVideo,
   CompetitorVideoInput,
   Idea,
@@ -48,6 +50,10 @@ export interface DataProvider {
   getCurrentUser(): Promise<Profile>;
   getOrganization(): Promise<Organization>;
   listMembers(): Promise<Member[]>;
+  /** Team invites (live mode). Admins mint a code an invitee redeems to join. */
+  listInvites(): Promise<Invite[]>;
+  createInvite(input: InviteInput): Promise<Invite>;
+  revokeInvite(id: string): Promise<void>;
 
   listChannels(): Promise<Channel[]>;
   getChannel(id: string): Promise<Channel | null>;

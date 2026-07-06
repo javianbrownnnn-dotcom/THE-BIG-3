@@ -1,13 +1,13 @@
 import { CheckCircle2, Circle, Keyboard, Plug, RotateCcw, Users, Webhook } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { useMembers, useOrg } from "@/hooks/queries";
+import { useOrg } from "@/hooks/queries";
+import { TeamInvites } from "./TeamInvites";
 import { useTheme } from "@/hooks/useTheme";
 import { data } from "@/lib/data";
 
@@ -34,7 +34,6 @@ const SHORTCUTS: Array<[string, string]> = [
 
 export function SettingsPage() {
   const { data: org } = useOrg();
-  const { data: members } = useMembers();
   const { dark, toggle } = useTheme();
 
   return (
@@ -98,18 +97,8 @@ export function SettingsPage() {
               Security.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {(members ?? []).map((m) => (
-              <div key={m.id} className="flex items-center gap-3">
-                <Avatar>
-                  <AvatarFallback>{m.displayName.slice(0, 2).toUpperCase()}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <div className="text-sm font-medium">{m.displayName}</div>
-                </div>
-                <Badge variant={m.role === "owner" ? "default" : "secondary"}>{m.role}</Badge>
-              </div>
-            ))}
+          <CardContent>
+            <TeamInvites />
           </CardContent>
         </Card>
 

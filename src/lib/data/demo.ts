@@ -19,6 +19,8 @@ import type {
   CompetitorVideo,
   CompetitorVideoInput,
   DraftResult,
+  Invite,
+  InviteInput,
   GeneratedIdea,
   Idea,
   IdeaInput,
@@ -79,6 +81,15 @@ const members: Member[] = [
   { id: "user_amara", displayName: "Amara", role: "editor" },
 ];
 const currentUser: Profile = members[0];
+const invites: Invite[] = [];
+
+// Short, unambiguous invite code (no 0/O/1/I).
+function randomCode(len = 8): string {
+  const alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  let out = "";
+  for (let i = 0; i < len; i++) out += alphabet[Math.floor(Math.random() * alphabet.length)];
+  return out;
+}
 
 // ---------------------------------------------------------------------------
 // Channels
@@ -887,7 +898,7 @@ function persist() {
       STORAGE_KEY,
       JSON.stringify({
         channels, videos, competitorChannels, competitorVideos, ideas, sops, insights,
-        recommendations, reports, notifications, activity, productions,
+        recommendations, reports, notifications, activity, productions, invites,
       }),
     );
   } catch {
@@ -918,6 +929,7 @@ function replaceInPlace<T>(target: T[], source: T[] | undefined) {
     replaceInPlace(notifications, s.notifications);
     replaceInPlace(activity, s.activity);
     replaceInPlace(productions, s.productions);
+    replaceInPlace(invites, s.invites);
   } catch {
     // Corrupt state — fall back to the fresh seed.
     localStorage.removeItem(STORAGE_KEY);
@@ -990,6 +1002,28 @@ export class DemoProvider implements DataProvider {
   async getCurrentUser() { return clone(currentUser); }
   async getOrganization() { return clone(org); }
   async listMembers() { return clone(members); }
+
+  async listInvites() { return clone(invites.filter((i) => !i.acceptedAt)); }
+
+  async createInvite(input: InviteInput) {
+    const invite: Invite = {
+      id: runtimeId("inv"),
+      code: randomCode(),
+      email: input.email,
+      role: input.role,
+      expiresAt: new Date(Date.now() + 14 * 86_400_000).toISOString(),
+      createdAt: new Date().toISOString(),
+    };
+    invites.unshift(invite);
+    persist();
+    return clone(invite);
+  }
+
+  async revokeInvite(id: string) {
+    const i = invites.findIndex((x) => x.id === id);
+    if (i >= 0) invites.splice(i, 1);
+    persist();
+  }
 
   async listChannels() { await delay(); return clone(channels); }
   async getChannel(id: string) {

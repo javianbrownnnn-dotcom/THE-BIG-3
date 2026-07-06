@@ -14,6 +14,7 @@ import type {
   CompetitorChannel,
   CompetitorChannelInput,
   CompetitorVideoInput,
+  InviteInput,
   IdeaInput,
   Production,
   ProductionInput,
@@ -30,6 +31,7 @@ export const keys = {
   me: ["me"] as const,
   org: ["org"] as const,
   members: ["members"] as const,
+  invites: ["invites"] as const,
   channels: ["channels"] as const,
   channel: (id: string) => ["channels", id] as const,
   videos: (channelId?: string) => ["videos", channelId ?? "all"] as const,
@@ -53,6 +55,23 @@ export const keys = {
 export const useMe = () => useQuery({ queryKey: keys.me, queryFn: () => data.getCurrentUser() });
 export const useOrg = () => useQuery({ queryKey: keys.org, queryFn: () => data.getOrganization() });
 export const useMembers = () => useQuery({ queryKey: keys.members, queryFn: () => data.listMembers() });
+export const useInvites = () => useQuery({ queryKey: keys.invites, queryFn: () => data.listInvites() });
+
+export function useCreateInvite() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: InviteInput) => data.createInvite(input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.invites }),
+  });
+}
+
+export function useRevokeInvite() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => data.revokeInvite(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.invites }),
+  });
+}
 
 export const useChannels = () =>
   useQuery({ queryKey: keys.channels, queryFn: () => data.listChannels() });
