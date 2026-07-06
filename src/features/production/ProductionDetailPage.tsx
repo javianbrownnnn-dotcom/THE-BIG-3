@@ -13,6 +13,7 @@ import {
   Upload,
   Wand2,
   X,
+  Youtube,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -32,14 +33,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import {
   useChannels,
+  useDraftProduction,
   useMe,
   useMembers,
   useProduction,
   usePublishProduction,
+  usePublishToYouTube,
   useSops,
   useUpdateProduction,
   useVideo,
-  useVideos,
 } from "@/hooks/queries";
 import { useRecordRecent } from "@/hooks/useRecents";
 import { compactNumber, humanize, percent } from "@/lib/format";
@@ -52,7 +54,7 @@ import {
   type ProductionPatch,
   type ProductionStage,
 } from "@/types";
-import { critique, draftFromTemplates, estimatedRuntime, sopForStage, wordCount } from "./draft";
+import { critique, estimatedRuntime, sopForStage, wordCount } from "./draft";
 
 const STAGE_LABELS: Record<ProductionStage, string> = {
   scripting: "Scripting",
@@ -97,9 +99,10 @@ export function ProductionDetailPage() {
   const { data: members } = useMembers();
   const { data: me } = useMe();
   const { data: sops } = useSops();
-  const { data: videos } = useVideos();
   const updateProduction = useUpdateProduction();
   const publishProduction = usePublishProduction();
+  const publishToYouTube = usePublishToYouTube();
+  const draftProduction = useDraftProduction();
 
   const [form, setForm] = useState<Production | null>(null);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
@@ -161,17 +164,34 @@ export function ProductionDetailPage() {
     patch({ stage });
   };
 
-  const runDraft = () => {
-    const draft = draftFromTemplates(form, videos ?? []);
-    patch({
-      hookText: form.hookText?.trim() ? form.hookText : draft.hookText,
-      scriptBody: form.scriptBody?.trim() ? form.scriptBody : draft.scriptBody,
-      description: form.description?.trim() ? form.description : draft.description,
-      titleCandidates: form.titleCandidates.length ? form.titleCandidates : draft.titleCandidates,
-    });
-    toast.success(
-      "Draft laid in from your SOPs and data — it only filled empty fields. Now make it yours.",
-    );
+  const publishYouTube = async () => {
+    try {
+      const { videoUrl, simulated } = await publishToYouTube.mutateAsync(form.id);
+      setForm({ ...form, stage: "published" });
+      toast.success(
+        simulated
+          ? "Published (demo) — a tracked video was created and it's in the Vault. Connect YouTube to post for real."
+          : "Uploaded to YouTube and published — now tracked in the Vault.",
+      );
+      window.open(videoUrl, "_blank", "noopener");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const runDraft = async () => {
+    try {
+      const draft = await draftProduction.mutateAsync(form);
+      patch({
+        hookText: form.hookText?.trim() ? form.hookText : draft.hookText,
+        scriptBody: form.scriptBody?.trim() ? form.scriptBody : draft.scriptBody,
+        description: form.description?.trim() ? form.description : draft.description,
+        titleCandidates: form.titleCandidates.length ? form.titleCandidates : draft.titleCandidates,
+      });
+      toast.success("Draft laid in — it only filled empty fields. Now make it yours.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    }
   };
 
   const findings = critique(form);
@@ -228,6 +248,12 @@ export function ProductionDetailPage() {
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <GoalScore production={form} />
+            {canPost && form.stage !== "published" && (
+              <Button size="sm" onClick={publishYouTube} disabled={publishToYouTube.isPending}>
+                <Youtube className={publishToYouTube.isPending ? "animate-pulse" : ""} />
+                {publishToYouTube.isPending ? "Publishing…" : "Publish to YouTube"}
+              </Button>
+            )}
             <Select value={form.stage} onValueChange={(v) => setStage(v as ProductionStage)}>
               <SelectTrigger className="w-40">
                 <SelectValue />
@@ -352,8 +378,14 @@ export function ProductionDetailPage() {
                   {wordCount(form.hookText) + wordCount(form.scriptBody) + wordCount(form.scriptOutro)}{" "}
                   words ≈ {Math.floor(runtime / 60)}:{String(runtime % 60).padStart(2, "0")}
                 </span>
-                <Button size="sm" variant="outline" onClick={runDraft}>
-                  <Wand2 /> AI draft
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={runDraft}
+                  disabled={draftProduction.isPending}
+                >
+                  <Wand2 className={draftProduction.isPending ? "animate-pulse" : ""} />
+                  {draftProduction.isPending ? "Drafting…" : "AI draft"}
                 </Button>
               </div>
             </CardHeader>

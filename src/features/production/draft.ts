@@ -7,14 +7,9 @@
 // With the real backend, the same call routes through Claude via the
 // ai-coach edge function for full-quality drafts.
 
-import type { Production, ProductionStage, Sop, Video } from "@/types";
+import type { DraftResult, Production, ProductionStage, Sop, Video } from "@/types";
 
-export interface DraftResult {
-  hookText: string;
-  scriptBody: string;
-  description: string;
-  titleCandidates: Array<{ text: string; starred: boolean }>;
-}
+export type { DraftResult };
 
 function bestHookType(videos: Video[]): string {
   const groups = new Map<string, number[]>();

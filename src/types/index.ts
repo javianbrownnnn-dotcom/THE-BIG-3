@@ -377,6 +377,13 @@ export interface VideoMetricsInput {
   subscribersGained?: number;
 }
 
+export interface DraftResult {
+  hookText: string;
+  scriptBody: string;
+  description: string;
+  titleCandidates: TitleCandidate[];
+}
+
 export interface GeneratedIdea {
   title: string;
   description: string;

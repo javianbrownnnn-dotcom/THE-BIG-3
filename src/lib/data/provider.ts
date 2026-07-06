@@ -6,6 +6,7 @@ import type {
   Channel,
   ChannelInput,
   ChatMessage,
+  DraftResult,
   GeneratedIdea,
   CoachReply,
   CompetitorChannel,
@@ -83,6 +84,19 @@ export interface DataProvider {
    * in the database for the real backend, checked in-app for demo.
    */
   publishProduction(id: string): Promise<Production>;
+  /**
+   * Draft a first pass (hook, script outline, description, title candidates)
+   * for a production. Live mode routes to Claude (ai-write edge function);
+   * demo mode uses a template engine grounded in SOPs + best-performing hook.
+   */
+  draftProduction(production: Production): Promise<DraftResult>;
+  /**
+   * Publish a production to YouTube: uploads the video and marks it published,
+   * linking a tracked video record. Live mode calls the youtube-upload edge
+   * function (real resumable upload via the channel's connected Google account);
+   * demo mode simulates the upload so the full workflow is explorable.
+   */
+  publishToYouTube(productionId: string): Promise<{ videoUrl: string; simulated: boolean }>;
 
   listSops(): Promise<Sop[]>;
   getSop(id: string): Promise<SopWithHistory | null>;

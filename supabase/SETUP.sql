@@ -777,3 +777,32 @@ create policy "editors update productions" on productions for update to authenti
   using (has_org_role(organization_id, 'editor'));
 create policy "admins delete productions" on productions for delete to authenticated
   using (has_org_role(organization_id, 'admin'));
+
+-- ============================================================================
+-- ---- 0004_youtube_publishing.sql ------------------------------------------
+-- Per-channel OAuth refresh tokens for one-click YouTube auto-upload.
+-- Locked down: RLS on with NO policies, so only the service role (edge
+-- functions) can ever touch the tokens. Members see connection status via view.
+-- ============================================================================
+
+create table youtube_credentials (
+  channel_id         uuid primary key references channels (id) on delete cascade,
+  youtube_channel_id text,
+  refresh_token      text not null,
+  scope              text,
+  connected_by       uuid references profiles (id),
+  created_at         timestamptz not null default now(),
+  updated_at         timestamptz not null default now()
+);
+
+create trigger youtube_credentials_set_updated_at
+  before update on youtube_credentials
+  for each row execute function set_updated_at();
+
+alter table youtube_credentials enable row level security;
+-- No policies on purpose. Only the service role (edge functions) may access it.
+
+-- Members may see WHETHER a channel is connected, without the token, via this view.
+create or replace view youtube_connection_status as
+select channel_id, youtube_channel_id, created_at
+from youtube_credentials;

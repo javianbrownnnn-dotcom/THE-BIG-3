@@ -16,6 +16,7 @@ import type {
   CompetitorChannel,
   CompetitorVideo,
   CompetitorVideoInput,
+  DraftResult,
   GeneratedIdea,
   Idea,
   IdeaInput,
@@ -39,6 +40,7 @@ import type {
   VideoWithHistory,
 } from "@/types";
 import type { DataProvider } from "./provider";
+import { draftFromTemplates } from "@/features/production/draft";
 
 // ---------------------------------------------------------------------------
 // Seeded PRNG — data is identical on every load.
@@ -1205,6 +1207,23 @@ export class DemoProvider implements DataProvider {
     Object.assign(prod, patch, { updatedAt: new Date().toISOString() });
     persist();
     return clone(prod);
+  }
+
+  async draftProduction(production: Production): Promise<DraftResult> {
+    await delay(700);
+    return draftFromTemplates(production, videos);
+  }
+
+  async publishToYouTube(productionId: string) {
+    await delay(1600); // simulate the upload
+    await this.publishProduction(productionId); // owner check, creates linked video
+    const prod = productions.find((p) => p.id === productionId);
+    const video = videos.find((v) => v.id === prod?.linkedVideoId);
+    const fakeId = `demo${Math.random().toString(36).slice(2, 10)}`;
+    const url = `https://www.youtube.com/watch?v=${fakeId}`;
+    if (video) video.url = url;
+    persist();
+    return { videoUrl: url, simulated: true };
   }
 
   async publishProduction(id: string) {

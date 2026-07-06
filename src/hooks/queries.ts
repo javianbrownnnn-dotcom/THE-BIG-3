@@ -11,6 +11,7 @@ import type {
   ChannelInput,
   CompetitorVideoInput,
   IdeaInput,
+  Production,
   ProductionInput,
   ProductionPatch,
   RecommendationStatus,
@@ -175,6 +176,25 @@ export function useUpdateProduction() {
     onSuccess: (result) => {
       qc.setQueryData(keys.production(result.id), result);
       qc.invalidateQueries({ queryKey: keys.productions });
+    },
+  });
+}
+
+export function useDraftProduction() {
+  return useMutation({
+    mutationFn: (production: Production) => data.draftProduction(production),
+  });
+}
+
+export function usePublishToYouTube() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => data.publishToYouTube(id),
+    onSuccess: (_res, id) => {
+      qc.invalidateQueries({ queryKey: keys.production(id) });
+      qc.invalidateQueries({ queryKey: keys.productions });
+      qc.invalidateQueries({ queryKey: ["videos"] });
+      qc.invalidateQueries({ queryKey: keys.activity });
     },
   });
 }

@@ -12,6 +12,7 @@ import type {
   Channel,
   ChannelInput,
   ChatMessage,
+  DraftResult,
   GeneratedIdea,
   CoachReply,
   CompetitorChannel,
@@ -558,6 +559,24 @@ export class SupabaseProvider implements DataProvider {
       .single();
     if (error) throw error;
     return this.mapProduction(data);
+  }
+
+  async draftProduction(production: Production): Promise<DraftResult> {
+    const orgId = await this.requireOrgId();
+    const { data, error } = await this.db.functions.invoke("ai-write", {
+      body: { organizationId: orgId, productionId: production.id },
+    });
+    if (error) throw error;
+    return data as DraftResult;
+  }
+
+  async publishToYouTube(productionId: string): Promise<{ videoUrl: string; simulated: boolean }> {
+    const orgId = await this.requireOrgId();
+    const { data, error } = await this.db.functions.invoke("youtube-upload", {
+      body: { organizationId: orgId, productionId },
+    });
+    if (error) throw error;
+    return { videoUrl: data.videoUrl, simulated: false };
   }
 
   async publishProduction(id: string): Promise<Production> {

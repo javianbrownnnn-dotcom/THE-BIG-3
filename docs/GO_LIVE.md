@@ -40,6 +40,7 @@ contents of each file from `supabase/migrations/` in order and click **Run**:
 1. `0001_init.sql`
 2. `0002_auth_bootstrap.sql`
 3. `0003_productions.sql`
+4. `0004_youtube_publishing.sql`
 
 (Or, if you use the Supabase CLI: `supabase db push`.)
 
@@ -66,8 +67,14 @@ Function secrets** in Supabase (Dashboard → Edge Functions → Secrets, or
 - `OPENAI_API_KEY` — GPT, for idea generation ("Generate ideas")
 - `YOUTUBE_API_KEY` — scheduled per-channel sync
 
+For **one-click YouTube publishing** (auto-upload from a production doc), also add
+the Google OAuth secrets and follow `docs/YOUTUBE_UPLOAD.md`:
+
+- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` — your Google Cloud OAuth client
+- `OAUTH_REDIRECT_URL` — the deployed URL of the `youtube-oauth` function's callback
+
 Deploy the edge functions once (Supabase CLI):
-`supabase functions deploy ai-coach ai-ideas learning-loop generate-report youtube-sync`
+`supabase functions deploy ai-coach ai-ideas ai-write learning-loop generate-report youtube-sync youtube-oauth youtube-upload`
 
 For the **nightly learning loop** (GitHub Action), also add repo secrets
 (GitHub → Settings → Secrets → Actions): `SUPABASE_URL` and
