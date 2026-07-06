@@ -106,6 +106,30 @@ export interface VideoMetrics {
   rpm?: number; // future
 }
 
+/** One point on the audience-retention curve. */
+export interface RetentionPoint {
+  pct: number;      // elapsed video time, 0..100
+  audience: number; // % of viewers still watching, 0..100
+}
+
+export interface TrafficSource {
+  source: string; // "Browse", "Suggested", "Search", "External", …
+  views: number;
+}
+
+/** Deep audience analytics for a video (YouTube Analytics API). */
+export interface VideoAnalytics {
+  videoId: string;
+  retention: RetentionPoint[];
+  trafficSources: TrafficSource[];
+  impressions?: number;
+  ctr?: number;              // percent
+  views?: number;
+  avgPercentViewed?: number; // percent
+  /** "youtube" = pulled live via OAuth; "simulated" = demo/no connection. */
+  source: "youtube" | "simulated";
+}
+
 export interface Video {
   id: string;
   channelId: string;

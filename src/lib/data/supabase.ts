@@ -44,6 +44,7 @@ import type {
   SopVersionInput,
   SopWithHistory,
   Video,
+  VideoAnalytics,
   VideoInput,
   VideoMetrics,
   VideoMetricsInput,
@@ -389,6 +390,14 @@ export class SupabaseProvider implements DataProvider {
       subscribers_gained: metrics.subscribersGained,
     });
     if (error) throw error;
+  }
+
+  async getVideoAnalytics(videoId: string): Promise<VideoAnalytics> {
+    const { data, error } = await this.db.functions.invoke("youtube-analytics", {
+      body: { videoId },
+    });
+    if (error) throw new Error(error.message ?? "Could not load YouTube analytics");
+    return data as VideoAnalytics;
   }
 
   async listCompetitorChannels(): Promise<CompetitorChannel[]> {

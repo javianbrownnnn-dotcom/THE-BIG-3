@@ -36,6 +36,7 @@ import type {
   SopVersionInput,
   SopWithHistory,
   Video,
+  VideoAnalytics,
   VideoInput,
   VideoMetricsInput,
   VideoWithHistory,
@@ -68,6 +69,12 @@ export interface DataProvider {
   getVideo(id: string): Promise<VideoWithHistory | null>;
   createVideo(input: VideoInput, metrics?: VideoMetricsInput): Promise<Video>;
   addVideoSnapshot(videoId: string, metrics: VideoMetricsInput): Promise<void>;
+  /**
+   * Deep audience analytics for a video: retention curve, traffic sources,
+   * impressions/CTR. Live mode routes to the youtube-analytics edge function
+   * (channel-owner OAuth); demo mode returns a realistic simulated shape.
+   */
+  getVideoAnalytics(videoId: string): Promise<VideoAnalytics>;
 
   listCompetitorChannels(): Promise<CompetitorChannel[]>;
   listCompetitorVideos(filter?: {

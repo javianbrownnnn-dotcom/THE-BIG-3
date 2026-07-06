@@ -58,6 +58,15 @@ export const useMe = () => useQuery({ queryKey: keys.me, queryFn: () => data.get
 export const useOrg = () => useQuery({ queryKey: keys.org, queryFn: () => data.getOrganization() });
 export const useMembers = () => useQuery({ queryKey: keys.members, queryFn: () => data.listMembers() });
 
+export const useVideoAnalytics = (videoId: string | undefined) =>
+  useQuery({
+    queryKey: ["videoAnalytics", videoId],
+    queryFn: () => data.getVideoAnalytics(videoId!),
+    enabled: !!videoId,
+    retry: false, // a missing YouTube connection is a 409, not a transient error
+    staleTime: 5 * 60_000,
+  });
+
 export const useComments = (entityType: CommentEntityType, entityId: string) =>
   useQuery({
     queryKey: ["comments", entityType, entityId],
