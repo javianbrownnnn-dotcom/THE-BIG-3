@@ -10,7 +10,13 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders, jsonResponse } from "../_shared/claude.ts";
 
-const SCOPE = "https://www.googleapis.com/auth/youtube.upload";
+// upload (auto-publish) + readonly & analytics (deep audience data). One
+// consent grants all three; the same refresh token serves every function.
+const SCOPE = [
+  "https://www.googleapis.com/auth/youtube.upload",
+  "https://www.googleapis.com/auth/youtube.readonly",
+  "https://www.googleapis.com/auth/yt-analytics.readonly",
+].join(" ");
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });

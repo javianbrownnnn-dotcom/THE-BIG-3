@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { MetricCard } from "@/components/charts/MetricCard";
 import { TrendChart } from "@/components/charts/TrendChart";
+import { VideoAudience } from "./VideoAudience";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -137,6 +138,8 @@ export function VideoDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      <VideoAudience videoId={video.id} />
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <Card>

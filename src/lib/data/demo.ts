@@ -39,9 +39,12 @@ import type {
   Sop,
   SopInput,
   SopVersion,
+  RetentionPoint,
   SopVersionInput,
   SopWithHistory,
+  TrafficSource,
   Video,
+  VideoAnalytics,
   VideoInput,
   VideoMetrics,
   VideoMetricsInput,
@@ -1132,6 +1135,42 @@ export class DemoProvider implements DataProvider {
     v.snapshots.push(snap);
     v.metrics = snap;
     persist();
+  }
+
+  async getVideoAnalytics(videoId: string): Promise<VideoAnalytics> {
+    await delay(700);
+    const v = videos.find((x) => x.id === videoId);
+    if (!v) throw new Error("video not found");
+    const m = v.metrics;
+    // Seeded-but-deterministic-ish retention: sharp intro drop, then a gentle
+    // decay, shaped by how well the video actually retained overall.
+    const overall = (m?.avgPercentViewed ?? 42) / 100;
+    const retention: RetentionPoint[] = [];
+    for (let pct = 0; pct <= 100; pct += 5) {
+      const intro = pct < 10 ? 1 - pct * 0.035 : 0.7;          // ~30% intro drop
+      const decay = Math.exp(-(pct / 100) * (1.4 - overall));   // better videos flatten
+      const audience = Math.max(8, Math.min(100, 100 * intro * decay));
+      retention.push({ pct, audience: Math.round(audience) });
+    }
+    const totalViews = m?.views ?? 10000;
+    const mix: Array<[string, number]> = [
+      ["Browse features", 0.38], ["Suggested videos", 0.29], ["YouTube search", 0.16],
+      ["External", 0.09], ["Channel pages", 0.05], ["Other", 0.03],
+    ];
+    const trafficSources: TrafficSource[] = mix.map(([source, share]) => ({
+      source, views: Math.round(totalViews * share),
+    }));
+
+    return {
+      videoId,
+      retention,
+      trafficSources,
+      impressions: m?.impressions ?? Math.round(totalViews / ((m?.ctr ?? 6) / 100)),
+      ctr: m?.ctr ?? 6,
+      views: totalViews,
+      avgPercentViewed: m?.avgPercentViewed ?? 42,
+      source: "simulated",
+    };
   }
 
   async listCompetitorChannels() { return clone(competitorChannels); }
