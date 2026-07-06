@@ -43,6 +43,7 @@ import {
   useScanCompetitorChannel,
 } from "@/hooks/queries";
 import { getStoredApiKey } from "@/lib/youtube";
+import { CompetitorTeardownDialog } from "./CompetitorTeardownDialog";
 import { compactNumber, humanize, relativeTime, shortDate } from "@/lib/format";
 import type { CompetitorChannel } from "@/types";
 
@@ -312,7 +313,10 @@ export function CompetitorsPage() {
                       {compactNumber(v.viewsPerDay)}
                     </TableCell>
                     <TableCell>
-                      {v.isOutlier && <Badge variant="warning">outlier</Badge>}
+                      <div className="flex items-center justify-end gap-1.5">
+                        {v.isOutlier && <Badge variant="warning">outlier</Badge>}
+                        <CompetitorTeardownDialog video={v} />
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

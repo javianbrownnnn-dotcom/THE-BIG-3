@@ -159,6 +159,16 @@ export function useCreateIdea() {
   });
 }
 
+/** AI teardown of a competitor outlier → why it worked + a producible idea. */
+export function useGenerateTeardown() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (args: { competitorVideoId: string; targetChannelId?: string }) =>
+      data.generateTeardown(args.competitorVideoId, args.targetChannelId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["competitorVideos"] }),
+  });
+}
+
 export function useUpdateIdea() {
   const qc = useQueryClient();
   return useMutation({

@@ -182,6 +182,21 @@ export interface Idea {
   createdAt: string;
 }
 
+/**
+ * AI teardown of a competitor outlier: why it worked, transferable mechanisms,
+ * and a ready-to-produce idea adapted for one of your channels.
+ */
+export interface CompetitorTeardown {
+  whyItWorked: string;
+  observations: string;
+  transferableMoves: string[];
+  idea: {
+    title: string;
+    description: string;
+    tags: string[];
+  };
+}
+
 export interface SopVersion {
   id: string;
   sopId: string;

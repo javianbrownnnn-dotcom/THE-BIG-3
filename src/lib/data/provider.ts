@@ -12,6 +12,7 @@ import type {
   CompetitorChannel,
   CompetitorChannelInput,
   CompetitorScanResult,
+  CompetitorTeardown,
   Invite,
   InviteInput,
   CompetitorVideo,
@@ -84,6 +85,16 @@ export interface DataProvider {
    * scanCompetitorFromYouTube (features/competitors/liveScan.ts).
    */
   scanCompetitorChannel(channelId: string): Promise<CompetitorScanResult>;
+  /**
+   * AI teardown of a competitor outlier: why it worked + a ready-to-produce
+   * idea adapted for one of your channels. Persists the analysis onto the
+   * competitor video so it sticks. Live mode routes to the competitor-teardown
+   * edge function (Claude); demo mode synthesizes from the tracked signals.
+   */
+  generateTeardown(
+    competitorVideoId: string,
+    targetChannelId?: string,
+  ): Promise<CompetitorTeardown>;
 
   listIdeas(): Promise<Idea[]>;
   createIdea(input: IdeaInput): Promise<Idea>;

@@ -16,6 +16,7 @@ import type {
   CompetitorChannel,
   CompetitorChannelInput,
   CompetitorScanResult,
+  CompetitorTeardown,
   CompetitorVideo,
   CompetitorVideoInput,
   DraftResult,
@@ -82,6 +83,12 @@ const members: Member[] = [
 ];
 const currentUser: Profile = members[0];
 const invites: Invite[] = [];
+
+// "story_cold_open" → "Story cold open"
+function hz(token: string): string {
+  const s = token.replace(/_/g, " ").trim();
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
 
 // Short, unambiguous invite code (no 0/O/1/I).
 function randomCode(len = 8): string {
@@ -1185,6 +1192,51 @@ export class DemoProvider implements DataProvider {
       outliers: fresh.filter((f) => f.isOutlier).length,
       simulated: true,
     };
+  }
+
+  async generateTeardown(
+    competitorVideoId: string,
+    targetChannelId?: string,
+  ): Promise<CompetitorTeardown> {
+    await delay(1100); // simulate the model thinking
+    const v = competitorVideos.find((cv) => cv.id === competitorVideoId);
+    if (!v) throw new Error("Competitor video not found");
+    const channel =
+      channels.find((c) => c.id === targetChannelId) ?? channels[0];
+
+    const hook = hz(v.hook ?? "story cold open");
+    const structure = hz(v.storyStructure ?? "rise and fall");
+    const topic = v.topic ?? v.title;
+    const teardown: CompetitorTeardown = {
+      whyItWorked:
+        `"${v.title}" broke out (${v.viewsPerDay ? Math.round(v.viewsPerDay).toLocaleString() + "/day, " : ""}` +
+        `z=${v.outlierScore ?? "high"}) on a ${hook.toLowerCase()} paired with a ${structure.toLowerCase()} ` +
+        `structure. The packaging promises a concrete payoff up front and the first 30 seconds drop the ` +
+        `viewer inside a single scene rather than explaining context.`,
+      observations:
+        `The demand signal is the mechanism, not the topic: the ${hook.toLowerCase()} + a title that implies ` +
+        `hidden stakes is what travels. Its retention almost certainly holds because the ${structure.toLowerCase()} ` +
+        `keeps a question open. That transfers to ${channel.name}'s niche without copying the subject.`,
+      transferableMoves: [
+        `Open cold on a single vivid moment — no "in this video".`,
+        `Package the promise as a payoff or a stake, echoing the ${hook.toLowerCase()}.`,
+        `Hold one question open across the video using a ${structure.toLowerCase()} spine.`,
+      ],
+      idea: {
+        title: `${channel.name}: our take on "${topic}" — ${hook} angle`,
+        description:
+          `Adapt the mechanism behind "${v.title}" for ${channel.name}. Find a ${channel.niche ?? "niche"} ` +
+          `story where a ${hook.toLowerCase()} fits honestly, then structure it as a ${structure.toLowerCase()}. ` +
+          `Lead with the single most concrete scene; make the title imply stakes without overclaiming.`,
+        tags: [v.hook, v.storyStructure, "competitor_teardown"].filter(Boolean) as string[],
+      },
+    };
+
+    // Persist the analysis onto the video so it sticks in the table.
+    v.whyItWorked = teardown.whyItWorked;
+    v.aiObservations = teardown.observations;
+    persist();
+    return clone(teardown);
   }
 
   async listIdeas() { await delay(); return clone(ideas); }

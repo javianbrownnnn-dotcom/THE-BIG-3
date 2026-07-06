@@ -18,6 +18,7 @@ import type {
   CompetitorChannel,
   CompetitorChannelInput,
   CompetitorScanResult,
+  CompetitorTeardown,
   CompetitorVideo,
   CompetitorVideoInput,
   Idea,
@@ -522,6 +523,24 @@ export class SupabaseProvider implements DataProvider {
     });
     if (error) throw new Error(error.message ?? "Competitor scan failed");
     return data as CompetitorScanResult;
+  }
+
+  async generateTeardown(
+    competitorVideoId: string,
+    targetChannelId?: string,
+  ): Promise<CompetitorTeardown> {
+    const organizationId = await this.requireOrgId();
+    const { data, error } = await this.db.functions.invoke("competitor-teardown", {
+      body: { organizationId, competitorVideoId, targetChannelId },
+    });
+    if (error) throw new Error(error.message ?? "Teardown failed");
+    const teardown = data as CompetitorTeardown;
+    // Persist the analysis onto the video so it sticks in the table.
+    await this.db.from("competitor_videos").update({
+      why_it_worked: teardown.whyItWorked,
+      ai_observations: teardown.observations,
+    }).eq("id", competitorVideoId);
+    return teardown;
   }
 
   async listIdeas(): Promise<Idea[]> {
