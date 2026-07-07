@@ -240,7 +240,7 @@ Deno.serve(async (req) => {
         content:
           `<detected_changes>\n${JSON.stringify(findings)}\n</detected_changes>\n\n` +
           `<company_data>\n${contextToPrompt(ctx)}\n</company_data>`,
-      }], { system: ANALYST_SYSTEM, temperature: 0.2 });
+      }], { system: ANALYST_SYSTEM });
 
       for (const ins of analysis.insights ?? []) {
         await db.from("ai_insights").insert({
