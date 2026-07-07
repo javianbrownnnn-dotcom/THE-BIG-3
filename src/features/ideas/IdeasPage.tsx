@@ -146,7 +146,7 @@ export function IdeasPage() {
         description="Capture fast, validate with data, produce the winners."
         actions={
           <>
-            <Button variant="outline" size="sm" onClick={() => setBriefOpen(true)}>
+            <Button variant="ghost" size="sm" onClick={() => setBriefOpen(true)}>
               <MessageCircleQuestion /> Brief for ChatGPT
             </Button>
             <Button variant="outline" size="sm" onClick={() => setGenerateOpen(true)}>
@@ -163,8 +163,8 @@ export function IdeasPage() {
       {(ideas ?? []).length === 0 ? (
         <EmptyState
           icon={Lightbulb}
-          title="No ideas yet"
-          description="Capture anything — a title, a competitor video, a half-thought. Or let AI generate a batch from what's working in your niche."
+          title="Capture your first idea"
+          description="A title, a half-thought, a competitor video that made you jealous — get it in the inbox. Or let AI draft a batch from what's already working."
           action={
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => setGenerateOpen(true)}>

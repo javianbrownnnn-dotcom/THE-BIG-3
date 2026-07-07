@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
+import { BottomNav } from "./BottomNav";
 import { CommandPalette } from "./CommandPalette";
 
 export function AppShell() {
@@ -55,10 +56,12 @@ export function AppShell() {
       <Sidebar />
       <div className="md:pl-56">
         <Topbar onOpenPalette={() => setPaletteOpen(true)} />
-        <main className="mx-auto max-w-6xl px-4 py-6 md:px-8 md:py-8">
+        {/* pb clears the phone tab bar; md+ has the sidebar instead */}
+        <main className="mx-auto max-w-6xl px-4 pb-24 pt-5 md:px-8 md:py-8">
           <Outlet />
         </main>
       </div>
+      <BottomNav />
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
     </div>
   );

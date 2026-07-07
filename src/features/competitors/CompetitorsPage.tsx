@@ -245,8 +245,8 @@ export function CompetitorsPage() {
       {filteredVideos.length === 0 ? (
         <EmptyState
           icon={Swords}
-          title="No competitor videos yet"
-          description="Add a channel in your niche and hit Scan to pull its recent uploads — outliers are flagged automatically."
+          title="Track the channels you compete with"
+          description="Add a channel and scan it — we flag the uploads that broke out beyond its normal range. Those outliers are proven demand you can learn from."
           action={
             <Button size="sm" onClick={() => setChannelDialogOpen(true)}>
               <Plus /> Add channel

@@ -102,8 +102,8 @@ export function VaultPage() {
       {shipped.length === 0 ? (
         <EmptyState
           icon={Archive}
-          title="The vault is empty"
-          description="Publish a video from Production and it lands here — permanently archived with every part and its real performance."
+          title="Nothing archived yet"
+          description="Publish a video from Production and it lands here forever — hook, script, packaging, and how it actually performed, side by side."
         />
       ) : (
         <>

@@ -101,8 +101,8 @@ export function ReportsPage() {
       {(reports ?? []).length === 0 ? (
         <EmptyState
           icon={FileText}
-          title="No reports yet"
-          description="Generate your first report, or let the scheduled loop write the weekly one."
+          title="Your first performance report"
+          description="One page: what worked, what didn't, and what to change next — written by AI from your real numbers. The weekly one writes itself."
           action={
             <Button size="sm" onClick={() => setDialogOpen(true)}>
               <Sparkles /> Generate report

@@ -17,8 +17,6 @@ import { relativeTime } from "@/lib/format";
 import { data, getSupabaseClient } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
-import { MobileNav } from "./MobileNav";
-
 export function Topbar({ onOpenPalette }: { onOpenPalette: () => void }) {
   const { dark, toggle } = useTheme();
   const { data: me } = useMe();
@@ -32,10 +30,18 @@ export function Topbar({ onOpenPalette }: { onOpenPalette: () => void }) {
 
   return (
     <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b bg-background/80 px-3 backdrop-blur md:gap-3 md:px-6">
-      <MobileNav />
+      {/* Phone: brand mark (the bottom tab bar owns navigation) */}
+      <div className="flex items-center gap-2 md:hidden">
+        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground">
+          B3
+        </div>
+        <span className="text-sm font-semibold tracking-tight">The Big 3</span>
+      </div>
+
+      {/* Desktop: full search affordance. Phone: collapses to an icon. */}
       <button
         onClick={onOpenPalette}
-        className="flex h-9 w-full max-w-xs items-center gap-2 rounded-md border bg-card px-3 text-sm text-muted-foreground transition-colors hover:bg-accent/50"
+        className="hidden h-9 w-full max-w-xs items-center gap-2 rounded-md border bg-card px-3 text-sm text-muted-foreground transition-colors hover:bg-accent/50 md:flex"
       >
         <Search className="h-4 w-4" />
         <span className="flex-1 text-left">Search anything…</span>
@@ -45,6 +51,15 @@ export function Topbar({ onOpenPalette }: { onOpenPalette: () => void }) {
       </button>
 
       <div className="ml-auto flex items-center gap-1.5">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="md:hidden"
+          onClick={onOpenPalette}
+          aria-label="Search"
+        >
+          <Search className="h-4 w-4" />
+        </Button>
         {data.isDemo && (
           <Badge variant="warning" className="mr-1 hidden sm:inline-flex">
             Demo data

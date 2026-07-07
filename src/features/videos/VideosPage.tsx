@@ -93,67 +93,73 @@ export function VideosPage() {
         }
       />
 
-      {/* Filter row — one row above the content */}
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <Input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Filter by title…"
-          className="w-56"
-        />
-        <Select value={channelId} onValueChange={setChannelId}>
-          <SelectTrigger className="w-52">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>All channels</SelectItem>
-            {(channels ?? []).map((c) => (
-              <SelectItem key={c.id} value={c.id}>
-                {c.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={hook} onValueChange={setHook}>
-          <SelectTrigger className="w-44">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>All hooks</SelectItem>
-            {hooks.map((h) => (
-              <SelectItem key={h} value={h}>
-                {humanize(h)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button
-          variant={favOnly ? "secondary" : "ghost"}
-          size="sm"
-          onClick={() => setFavOnly((f) => !f)}
-        >
-          <Star className={cn("h-4 w-4", favOnly && "fill-warning text-warning")} />
-          Favorites
-        </Button>
-        <span className="ml-auto text-sm text-muted-foreground">
-          {filtered.length} video{filtered.length === 1 ? "" : "s"}
-        </span>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() =>
-            exportCsv(filtered, (id) => channels?.find((c) => c.id === id)?.name ?? "")
-          }
-        >
-          <Download /> CSV
-        </Button>
+      {/* Filters: search on top, paired selects, then one quiet utility row */}
+      <div className="mb-4 space-y-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search videos…"
+            className="w-full sm:w-56"
+          />
+          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
+            <Select value={channelId} onValueChange={setChannelId}>
+              <SelectTrigger className="sm:w-52">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>All channels</SelectItem>
+                {(channels ?? []).map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={hook} onValueChange={setHook}>
+              <SelectTrigger className="sm:w-44">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>All hooks</SelectItem>
+                {hooks.map((h) => (
+                  <SelectItem key={h} value={h}>
+                    {humanize(h)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant={favOnly ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => setFavOnly((f) => !f)}
+          >
+            <Star className={cn("h-4 w-4", favOnly && "fill-warning text-warning")} />
+            Favorites
+          </Button>
+          <span className="ml-auto text-xs text-muted-foreground">
+            {filtered.length} video{filtered.length === 1 ? "" : "s"}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() =>
+              exportCsv(filtered, (id) => channels?.find((c) => c.id === id)?.name ?? "")
+            }
+          >
+            <Download /> CSV
+          </Button>
+        </div>
       </div>
 
       {filtered.length === 0 ? (
         <EmptyState
           icon={VideoIcon}
-          title="No videos match"
-          description="Log your first video or loosen the filters. Every video keeps a full history of metric snapshots."
+          title="No videos here yet"
+          description="Log your first video (or loosen the filters). Every video keeps its full metric history, so the loop can learn what works."
           action={
             <Button size="sm" onClick={() => setDialogOpen(true)}>
               <Plus /> Log video

@@ -369,8 +369,8 @@ export function ProductionPage() {
       {(productions ?? []).length === 0 ? (
         <EmptyState
           icon={Clapperboard}
-          title="No videos in production"
-          description="Create the first doc — hook, script, packaging, goal — and move it across the board as it gets made."
+          title="Start your first video"
+          description="Create a video doc — hook, script, packaging — and move it through the board. When it publishes, the whole thing archives itself in the Vault."
           action={
             <Button size="sm" onClick={() => setDialogOpen(true)}>
               <Plus /> New video

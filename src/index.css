@@ -109,6 +109,19 @@
   body {
     @apply bg-background text-foreground font-sans;
     font-feature-settings: "cv02", "cv03";
+    /* Never let a wide child (chart svg, table) expand the mobile layout
+       viewport — that zooms the whole app out and breaks fixed elements.
+       Wide content must scroll inside its own overflow-x-auto container. */
+    overflow-x: hidden;
+  }
+
+  /* Recharts renders a fixed-width svg after measuring; keep it from ever
+     imposing an intrinsic min-width on the page. */
+  .recharts-responsive-container,
+  .recharts-wrapper,
+  .recharts-wrapper svg {
+    min-width: 0 !important;
+    max-width: 100%;
   }
 
   /* Recessive, consistent scrollbars */
