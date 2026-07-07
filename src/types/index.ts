@@ -89,6 +89,8 @@ export interface Channel {
   uploadCadence?: string;
   description?: string;
   youtubeChannelId?: string;
+  /** Set when the owner OAuth (analytics + upload) succeeded for this channel. */
+  youtubeConnectedAt?: string;
   goals: ChannelGoal[];
   createdAt: string;
 }

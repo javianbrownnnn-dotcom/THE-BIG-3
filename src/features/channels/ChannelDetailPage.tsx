@@ -96,7 +96,9 @@ export function ChannelDetailPage() {
           .join(" · ")}
         actions={
           <>
-            {channel.youtubeChannelId ? (
+            {channel.youtubeConnectedAt ? (
+              <Badge variant="success">YouTube connected</Badge>
+            ) : channel.youtubeChannelId ? (
               <Badge variant="success">YouTube linked</Badge>
             ) : (
               <Badge variant="warning">YouTube not linked</Badge>

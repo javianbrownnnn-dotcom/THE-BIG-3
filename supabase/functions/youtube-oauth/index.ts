@@ -30,10 +30,19 @@ Deno.serve(async (req) => {
 
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
-  const state = url.searchParams.get("state"); // channelId
+  const state = url.searchParams.get("state"); // {c: channelId, r: returnTo} (b64) or bare channelId
 
   // ---- callback: Google redirects here with ?code&state ----
   if (code && state) {
+    let channelId = state;
+    let returnTo: string | null = null;
+    try {
+      const parsed = JSON.parse(atob(state));
+      if (parsed?.c) channelId = parsed.c;
+      if (typeof parsed?.r === "string" && parsed.r.startsWith("https://")) returnTo = parsed.r;
+    } catch {
+      // old-style state: bare channelId
+    }
     try {
       const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
         method: "POST",
@@ -58,14 +67,23 @@ Deno.serve(async (req) => {
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
       );
       await db.from("youtube_credentials").upsert({
-        channel_id: state,
+        channel_id: channelId,
         refresh_token: tokens.refresh_token,
         scope: tokens.scope,
       });
-      // Bounce the user back to the app.
+      // Safe, non-secret status flag the app can read to show "connected".
+      await db.from("channels")
+        .update({ youtube_connected_at: new Date().toISOString() })
+        .eq("id", channelId);
+      // Bounce straight back into the app when we know where it lives; the
+      // app spots ?yt=connected and confirms with a toast + badge.
+      if (returnTo) {
+        const dest = returnTo + (returnTo.includes("?") ? "&" : "?") + "yt=connected";
+        return new Response(null, { status: 302, headers: { Location: dest } });
+      }
       return new Response(
-        `<html><body style="font-family:system-ui;background:#0d0d0d;color:#fff;display:grid;place-items:center;height:100vh"><div style="text-align:center"><h2>YouTube connected ✓</h2><p>You can close this tab and return to The Big 3 OS.</p></div></body></html>`,
-        { headers: { "content-type": "text/html" } },
+        `<!doctype html><html><body style="font-family:system-ui;background:#0d0d0d;color:#fff;display:grid;place-items:center;height:100vh"><div style="text-align:center"><h2>YouTube connected &#10003;</h2><p>You can close this tab and return to The Big 3 OS.</p></div></body></html>`,
+        { headers: { "content-type": "text/html; charset=utf-8" } },
       );
     } catch (err) {
       console.error(err);
@@ -75,8 +93,9 @@ Deno.serve(async (req) => {
 
   // ---- authUrl: app asks for the consent URL for a channel ----
   try {
-    const { channelId } = await req.json();
+    const { channelId, returnTo } = await req.json();
     if (!channelId) return jsonResponse({ error: "channelId required" }, 400);
+    const statePayload = btoa(JSON.stringify({ c: channelId, r: returnTo ?? null }));
     const consent = new URL("https://accounts.google.com/o/oauth2/v2/auth");
     consent.searchParams.set("client_id", clientId);
     consent.searchParams.set("redirect_uri", redirectUri);
@@ -84,7 +103,7 @@ Deno.serve(async (req) => {
     consent.searchParams.set("scope", SCOPE);
     consent.searchParams.set("access_type", "offline");
     consent.searchParams.set("prompt", "consent");
-    consent.searchParams.set("state", channelId);
+    consent.searchParams.set("state", statePayload);
     return jsonResponse({ authUrl: consent.toString() });
   } catch (err) {
     return jsonResponse({ error: String(err) }, 500);
