@@ -1137,6 +1137,12 @@ export class DemoProvider implements DataProvider {
     persist();
   }
 
+  async connectYouTubeUrl(): Promise<string> {
+    throw new Error(
+      "Connecting YouTube runs on your live backend. Add the Google OAuth secrets in Supabase, then use this on the deployed site.",
+    );
+  }
+
   async getVideoAnalytics(videoId: string): Promise<VideoAnalytics> {
     await delay(700);
     const v = videos.find((x) => x.id === videoId);
