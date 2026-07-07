@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { AtSign, MessageSquare, Send, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -13,6 +13,7 @@ import {
   useMembers,
 } from "@/hooks/queries";
 import { relativeTime } from "@/lib/format";
+import { usePersistedState } from "@/hooks/usePersistedState";
 import type { CommentEntityType, Member } from "@/types";
 
 // Render a body with @Name mentions highlighted.
@@ -53,7 +54,10 @@ export function CommentsThread({
   const addComment = useAddComment(entityType, entityId);
   const deleteComment = useDeleteComment(entityType, entityId);
 
-  const [body, setBody] = useState("");
+  const [body, setBody, clearBody] = usePersistedState(
+    `draft.comment.${entityType}.${entityId}`,
+    "",
+  );
   const memberNames = useMemo(() => (members ?? []).map((m) => m.displayName), [members]);
 
   // Resolve @Name tokens in the body to member ids.
@@ -75,7 +79,7 @@ export function CommentsThread({
     addComment.mutate(
       { entityType, entityId, body: text, mentions: resolveMentions(text) },
       {
-        onSuccess: () => setBody(""),
+        onSuccess: () => clearBody(),
         onError: (err) => toast.error(err instanceof Error ? err.message : String(err)),
       },
     );
