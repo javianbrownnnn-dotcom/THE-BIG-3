@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Lightbulb, Plus, Sparkles } from "lucide-react";
+import { Lightbulb, MessageCircleQuestion, Plus, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { EmptyState } from "@/components/layout/EmptyState";
@@ -28,6 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useChannels, useCreateIdea, useIdeas, useUpdateIdea } from "@/hooks/queries";
 import type { Idea, IdeaPriority, IdeaStatus } from "@/types";
 import { GenerateIdeasDialog } from "./GenerateIdeasDialog";
+import { BriefDialog } from "./BriefDialog";
 
 const STATUSES: IdeaStatus[] = ["inbox", "researching", "approved", "in_production", "published", "archived"];
 const PRIORITIES: IdeaPriority[] = ["low", "medium", "high", "urgent"];
@@ -100,6 +101,7 @@ export function IdeasPage() {
   const createIdea = useCreateIdea();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [generateOpen, setGenerateOpen] = useState(false);
+  const [briefOpen, setBriefOpen] = useState(false);
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -144,6 +146,9 @@ export function IdeasPage() {
         description="Capture fast, validate with data, produce the winners."
         actions={
           <>
+            <Button variant="outline" size="sm" onClick={() => setBriefOpen(true)}>
+              <MessageCircleQuestion /> Brief for ChatGPT
+            </Button>
             <Button variant="outline" size="sm" onClick={() => setGenerateOpen(true)}>
               <Sparkles /> Generate ideas
             </Button>
@@ -153,6 +158,7 @@ export function IdeasPage() {
           </>
         }
       />
+      <BriefDialog open={briefOpen} onOpenChange={setBriefOpen} />
 
       {(ideas ?? []).length === 0 ? (
         <EmptyState

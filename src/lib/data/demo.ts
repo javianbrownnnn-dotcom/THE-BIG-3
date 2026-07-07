@@ -1137,6 +1137,12 @@ export class DemoProvider implements DataProvider {
     persist();
   }
 
+  async shareBrief(): Promise<string> {
+    throw new Error(
+      "Share links need the live backend — in demo mode use Copy and paste the brief directly.",
+    );
+  }
+
   async connectYouTubeUrl(): Promise<string> {
     throw new Error(
       "Connecting YouTube runs on your live backend. Add the Google OAuth secrets in Supabase, then use this on the deployed site.",
