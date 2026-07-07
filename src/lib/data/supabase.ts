@@ -272,6 +272,7 @@ export class SupabaseProvider implements DataProvider {
       uploadCadence: row.upload_cadence ?? undefined,
       description: row.description ?? undefined,
       youtubeChannelId: row.youtube_channel_id ?? undefined,
+      youtubeConnectedAt: row.youtube_connected_at ?? undefined,
       goals: (row.channel_goals ?? []).map((g: any) => ({
         id: g.id, channelId: g.channel_id, metric: g.metric,
         targetValue: g.target_value, period: g.period, notes: g.notes ?? undefined,
@@ -310,6 +311,7 @@ export class SupabaseProvider implements DataProvider {
       uploadCadence: data.upload_cadence ?? undefined,
       description: data.description ?? undefined,
       youtubeChannelId: data.youtube_channel_id ?? undefined,
+      youtubeConnectedAt: data.youtube_connected_at ?? undefined,
       goals: [],
       createdAt: data.created_at,
     };
@@ -425,7 +427,7 @@ export class SupabaseProvider implements DataProvider {
 
   async connectYouTubeUrl(channelId: string): Promise<string> {
     const { data, error } = await this.db.functions.invoke("youtube-oauth", {
-      body: { channelId },
+      body: { channelId, returnTo: window.location.href },
     });
     if (error) throw new Error(error.message ?? "Could not start the YouTube connection");
     if (!data?.authUrl) {

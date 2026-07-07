@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { BottomNav } from "./BottomNav";
@@ -8,6 +10,21 @@ import { CommandPalette } from "./CommandPalette";
 export function AppShell() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  // Landing back from the Google consent flow: confirm loudly, then clean the URL.
+  useEffect(() => {
+    if (!window.location.href.includes("yt=connected")) return;
+    toast.success("YouTube connected ✓", {
+      description: "Live analytics and publishing are on for this channel.",
+      duration: 8000,
+    });
+    queryClient.invalidateQueries({ queryKey: ["channels"] });
+    const clean = window.location.href
+      .replace(/[?&]yt=connected/, (m) => (m.startsWith("?") ? "?" : ""))
+      .replace(/\?$/, "");
+    window.history.replaceState(null, "", clean);
+  }, [queryClient]);
 
   // Global keyboard shortcuts: ⌘K palette, g-then-key navigation.
   useEffect(() => {

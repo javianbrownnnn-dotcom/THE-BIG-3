@@ -975,3 +975,10 @@ create policy "editors update tasks" on tasks for update to authenticated
 drop policy if exists "editors delete tasks" on tasks;
 create policy "editors delete tasks" on tasks for delete to authenticated
   using (has_org_role(organization_id, 'editor'));
+
+-- ============================================================================
+-- ---- 0011_youtube_connected_at.sql -----------------------------------------
+-- Non-secret "owner OAuth succeeded" status so the app can show connected.
+-- ============================================================================
+
+alter table channels add column if not exists youtube_connected_at timestamptz;

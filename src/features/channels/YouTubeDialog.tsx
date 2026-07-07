@@ -40,6 +40,7 @@ export function YouTubeDialog({
   const [connecting, setConnecting] = useState(false);
 
   const linked = !!channel.youtubeChannelId;
+  const connected = !!channel.youtubeConnectedAt;
 
   const runSync = async () => {
     if (!ref.trim() || !apiKey.trim()) {
@@ -139,18 +140,37 @@ export function YouTubeDialog({
         {/* Step 2 — owner connection */}
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-sm font-medium">
-            <span className="grid h-4 w-4 place-items-center rounded-full border text-[10px]">2</span>
+            {connected ? (
+              <CheckCircle2 className="h-4 w-4 text-success" />
+            ) : (
+              <span className="grid h-4 w-4 place-items-center rounded-full border text-[10px]">2</span>
+            )}
             Connect as owner — analytics &amp; uploads
+            {connected && <span className="text-xs font-normal text-success">connected</span>}
           </div>
           <div className="space-y-2 pl-6">
-            <p className="text-xs leading-relaxed text-muted-foreground">
-              Sign in with the Google account that owns this channel. Unlocks the real retention
-              curve, traffic sources, impressions — and lets the app publish videos for you. No
-              keys to copy; just approve on Google's screen.
-            </p>
-            <Button size="sm" variant="outline" onClick={connect} disabled={connecting}>
-              <PlugZap /> {connecting ? "Opening Google…" : "Connect with Google"}
-            </Button>
+            {connected ? (
+              <>
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  Google connection active — live retention, traffic sources, impressions, and
+                  publishing are on for this channel. Nothing else to do here.
+                </p>
+                <Button size="sm" variant="ghost" onClick={connect} disabled={connecting}>
+                  <PlugZap /> {connecting ? "Opening Google…" : "Reconnect"}
+                </Button>
+              </>
+            ) : (
+              <>
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  Sign in with the Google account that owns this channel. Unlocks the real
+                  retention curve, traffic sources, impressions — and lets the app publish videos
+                  for you. No keys to copy; just approve on Google's screen.
+                </p>
+                <Button size="sm" variant="outline" onClick={connect} disabled={connecting}>
+                  <PlugZap /> {connecting ? "Opening Google…" : "Connect with Google"}
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </DialogContent>
