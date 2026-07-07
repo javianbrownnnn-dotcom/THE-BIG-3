@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Lightbulb, MessageCircleQuestion, Plus, Sparkles } from "lucide-react";
+import { Clapperboard, Lightbulb, MessageCircleQuestion, Plus, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { EmptyState } from "@/components/layout/EmptyState";
@@ -25,7 +25,8 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { useChannels, useCreateIdea, useIdeas, useUpdateIdea } from "@/hooks/queries";
+import { useNavigate } from "react-router-dom";
+import { useChannels, useCreateIdea, useCreateProduction, useIdeas, useUpdateIdea } from "@/hooks/queries";
 import type { Idea, IdeaPriority, IdeaStatus } from "@/types";
 import { GenerateIdeasDialog } from "./GenerateIdeasDialog";
 import { BriefDialog } from "./BriefDialog";
@@ -40,7 +41,26 @@ const priorityVariant = (p: IdeaPriority) =>
 function IdeaCard({ idea }: { idea: Idea }) {
   const { data: channels } = useChannels();
   const updateIdea = useUpdateIdea();
+  const createProduction = useCreateProduction();
+  const navigate = useNavigate();
   const channel = channels?.find((c) => c.id === idea.channelId);
+
+  // One tap from idea to a prefilled video doc — no retyping.
+  const produce = async () => {
+    const channelId = idea.channelId ?? channels?.[0]?.id;
+    if (!channelId) {
+      toast.error("Add a channel first (Channels page)");
+      return;
+    }
+    const doc = await createProduction.mutateAsync({
+      title: idea.title,
+      channelId,
+      topic: idea.tags[0] ?? undefined,
+    });
+    updateIdea.mutate({ id: idea.id, patch: { status: "in_production" } });
+    toast.success("Video doc created — everything carried over");
+    navigate(`/production/${doc.id}`);
+  };
 
   return (
     <Card>
@@ -60,6 +80,16 @@ function IdeaCard({ idea }: { idea: Idea }) {
           </Badge>
         ))}
       </div>
+      {idea.status !== "in_production" && idea.status !== "published" && idea.status !== "archived" && (
+        <Button
+          size="sm"
+          className="h-7 w-full text-xs"
+          onClick={produce}
+          disabled={createProduction.isPending}
+        >
+          <Clapperboard className="h-3.5 w-3.5" /> Produce this
+        </Button>
+      )}
       <Select
         value={idea.status}
         onValueChange={(status) => {
