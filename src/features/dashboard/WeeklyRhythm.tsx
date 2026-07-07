@@ -63,15 +63,25 @@ export function WeeklyRhythm() {
           {done.length}/{STEPS.length}
         </Badge>
       </CardHeader>
-      <CardContent className="space-y-1">
+      <CardContent className="space-y-0.5">
+        {/* progress toward a completed week */}
+        <div className="mb-2.5 h-1 overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full rounded-full bg-primary transition-all"
+            style={{ width: `${(done.length / STEPS.length) * 100}%` }}
+          />
+        </div>
         {STEPS.map((step, i) => {
           const checked = done.includes(i);
           return (
-            <div key={i} className="flex items-center gap-2.5 rounded-md px-1 py-1.5">
+            <div
+              key={i}
+              className="-mx-1.5 flex items-center gap-2.5 rounded-lg px-1.5 py-2 transition-colors hover:bg-accent/50"
+            >
               <button
                 onClick={() => toggle(i)}
                 aria-label={checked ? `Mark "${step.label}" not done` : `Mark "${step.label}" done`}
-                className="shrink-0 text-muted-foreground transition-colors hover:text-foreground"
+                className="-m-2 shrink-0 p-2 text-muted-foreground transition-colors hover:text-foreground"
               >
                 {checked ? (
                   <CheckCircle2 className="h-4.5 w-4.5 h-[18px] w-[18px] text-success" />

@@ -35,6 +35,70 @@ import {
   windowStats,
 } from "./stats";
 import { WeeklyRhythm } from "./WeeklyRhythm";
+import type { AiRecommendation, Idea, Sop } from "@/types";
+
+/** One card, one verb: the next thing that moves the loop forward. */
+function NextBestAction({
+  openRec,
+  sopDue,
+  ideaWaiting,
+}: {
+  openRec?: AiRecommendation;
+  sopDue?: Sop;
+  ideaWaiting?: Idea;
+}) {
+  const action = openRec
+    ? {
+        eyebrow: "AI recommendation waiting",
+        title: openRec.title,
+        to: "/coach",
+        cta: "Review & decide",
+        icon: Bot,
+      }
+    : sopDue
+      ? {
+          eyebrow: "SOP due for review",
+          title: sopDue.title,
+          to: `/sops/${sopDue.id}`,
+          cta: "Review SOP",
+          icon: ListChecks,
+        }
+      : ideaWaiting
+        ? {
+            eyebrow: "Idea waiting in the inbox",
+            title: ideaWaiting.title,
+            to: "/ideas",
+            cta: "Validate it",
+            icon: Lightbulb,
+          }
+        : {
+            eyebrow: "All clear",
+            title: "Log your latest video so the loop can learn from it",
+            to: "/videos",
+            cta: "Log video",
+            icon: VideoIcon,
+          };
+  const Icon = action.icon;
+
+  return (
+    <Card className="mt-3 border-primary/25 bg-gradient-to-r from-primary/[0.08] to-transparent md:mt-4">
+      <CardContent className="flex items-center gap-3 p-3.5 md:p-4">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/15">
+          <Icon className="h-4.5 w-4.5 h-[18px] w-[18px] text-primary" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-[11px] font-medium text-primary">{action.eyebrow}</div>
+          <div className="truncate text-sm font-medium">{action.title}</div>
+        </div>
+        <Button size="sm" asChild className="shrink-0">
+          <Link to={action.to}>
+            {action.cta} <ArrowRight />
+          </Link>
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
 
 export function DashboardPage() {
   const { data: videos, isLoading } = useVideos();
@@ -93,8 +157,8 @@ export function DashboardPage() {
         }
       />
 
-      {/* KPI row */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {/* KPI row — 2-up on phones so the pulse fits one screen */}
+      <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-3">
         <MetricCard
           label="Videos published"
           value={String(current.published)}
@@ -131,8 +195,15 @@ export function DashboardPage() {
         />
       </div>
 
+      {/* Next best action — the single most useful thing to do right now */}
+      <NextBestAction
+        openRec={openRecs[0]}
+        sopDue={sopsDue[0]}
+        ideaWaiting={ideasWaiting[0]}
+      />
+
       {/* The loop, as a checklist */}
-      <div className="mt-4">
+      <div className="mt-3 md:mt-4">
         <WeeklyRhythm />
       </div>
 

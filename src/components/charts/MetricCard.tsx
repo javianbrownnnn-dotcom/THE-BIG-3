@@ -37,24 +37,24 @@ export function MetricCard({
 
   return (
     <Card className={cn("relative overflow-hidden", className)}>
-      <CardContent className="p-5">
-        <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+      <CardContent className="p-3.5 md:p-5">
+        <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
           {label}
           {hint && (
             <Tooltip>
               <TooltipTrigger aria-label={`What's a good ${label}?`}>
                 <Info className="h-3.5 w-3.5" />
               </TooltipTrigger>
-              <TooltipContent className="max-w-64 normal-case tracking-normal">
+              <TooltipContent className="max-w-64">
                 {hint}
               </TooltipContent>
             </Tooltip>
           )}
         </div>
-        <div className="mt-2 flex items-end justify-between gap-3">
-          <div className="text-2xl font-semibold leading-none tracking-tight">{value}</div>
+        <div className="mt-1.5 flex items-end justify-between gap-2 md:mt-2 md:gap-3">
+          <div className="text-xl font-semibold leading-none tracking-tight md:text-2xl">{value}</div>
           {sparkData && sparkData.length > 1 && (
-            <div className="h-9 w-24 shrink-0" aria-hidden>
+            <div className="h-8 w-16 shrink-0 md:h-9 md:w-24" aria-hidden>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={sparkData} margin={{ top: 2, right: 0, bottom: 2, left: 0 }}>
                   <Line
@@ -71,7 +71,7 @@ export function MetricCard({
           )}
         </div>
         {delta != null && (
-          <div className="mt-2 flex items-center gap-1 text-xs">
+          <div className="mt-1.5 flex items-center gap-1 text-xs md:mt-2">
             <span
               className="flex items-center gap-0.5 font-medium"
               style={{ color: isGood ? theme.deltaUp : theme.deltaDown }}
@@ -79,7 +79,7 @@ export function MetricCard({
               {isUp ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
               {Math.abs(delta).toFixed(1)}%
             </span>
-            <span className="text-muted-foreground">{deltaLabel}</span>
+            <span className="truncate whitespace-nowrap text-muted-foreground">{deltaLabel}</span>
           </div>
         )}
       </CardContent>
