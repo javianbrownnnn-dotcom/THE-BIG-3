@@ -18,6 +18,7 @@ import type {
   Comment,
   CommentEntityType,
   CommentInput,
+  DiscordConfig,
   CompetitorChannel,
   CompetitorChannelInput,
   CompetitorScanResult,
@@ -43,6 +44,8 @@ import type {
   SopVersion,
   SopVersionInput,
   SopWithHistory,
+  Task,
+  TaskInput,
   Video,
   VideoAnalytics,
   VideoInput,
@@ -1102,6 +1105,104 @@ export class SupabaseProvider implements DataProvider {
 
   async deleteComment(id: string): Promise<void> {
     const { error } = await this.db.from("comments").delete().eq("id", id);
+    if (error) throw error;
+  }
+
+  private mapTask(row: any): Task {
+    return {
+      id: row.id, organizationId: row.organization_id,
+      title: row.title, notes: row.notes ?? undefined,
+      status: row.status,
+      assigneeId: row.assignee_id ?? undefined,
+      assigneeName: row.profiles?.display_name ?? undefined,
+      dueAt: row.due_at ?? undefined,
+      createdBy: row.created_by ?? undefined,
+      createdAt: row.created_at,
+    };
+  }
+
+  async listTasks(): Promise<Task[]> {
+    const orgId = await this.requireOrgId();
+    const { data, error } = await this.db
+      .from("tasks").select("*, profiles:assignee_id(display_name)")
+      .eq("organization_id", orgId)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map((r: any) => this.mapTask(r));
+  }
+
+  async createTask(input: TaskInput): Promise<Task> {
+    const orgId = await this.requireOrgId();
+    const { data: auth } = await this.db.auth.getUser();
+    const { data, error } = await this.db.from("tasks").insert({
+      organization_id: orgId,
+      title: input.title,
+      notes: input.notes,
+      status: input.status ?? "todo",
+      assignee_id: input.assigneeId,
+      due_at: input.dueAt,
+      created_by: auth.user?.id,
+    }).select("*, profiles:assignee_id(display_name)").single();
+    if (error) throw error;
+    return this.mapTask(data);
+  }
+
+  async updateTask(id: string, patch: Partial<TaskInput>): Promise<Task> {
+    const row: Record<string, unknown> = {};
+    if (patch.title !== undefined) row.title = patch.title;
+    if (patch.notes !== undefined) row.notes = patch.notes;
+    if (patch.status !== undefined) row.status = patch.status;
+    if (patch.assigneeId !== undefined) row.assignee_id = patch.assigneeId || null;
+    if (patch.dueAt !== undefined) row.due_at = patch.dueAt || null;
+    const { data, error } = await this.db.from("tasks").update(row).eq("id", id)
+      .select("*, profiles:assignee_id(display_name)").single();
+    if (error) throw error;
+    return this.mapTask(data);
+  }
+
+  async deleteTask(id: string): Promise<void> {
+    const { error } = await this.db.from("tasks").delete().eq("id", id);
+    if (error) throw error;
+  }
+
+  async getDiscordConfig(): Promise<DiscordConfig | null> {
+    const orgId = await this.requireOrgId();
+    const { data } = await this.db.from("integrations")
+      .select("config, enabled").eq("organization_id", orgId).eq("provider", "discord")
+      .maybeSingle();
+    const cfg = data?.config as DiscordConfig | undefined;
+    return cfg?.webhookUrl ? { webhookUrl: cfg.webhookUrl, userIds: cfg.userIds ?? {} } : null;
+  }
+
+  async saveDiscordConfig(config: DiscordConfig): Promise<void> {
+    const orgId = await this.requireOrgId();
+    const { data: auth } = await this.db.auth.getUser();
+    const { error } = await this.db.from("integrations").upsert(
+      {
+        organization_id: orgId,
+        provider: "discord",
+        config,
+        enabled: !!config.webhookUrl,
+        created_by: auth.user?.id,
+      },
+      { onConflict: "organization_id,provider" },
+    );
+    if (error) throw error;
+  }
+
+  async deleteChannel(id: string): Promise<void> {
+    // Cascades to the channel's videos + snapshots (SQL foreign keys).
+    const { error } = await this.db.from("channels").delete().eq("id", id);
+    if (error) throw error;
+  }
+
+  async deleteCompetitorChannel(id: string): Promise<void> {
+    const { error } = await this.db.from("competitor_channels").delete().eq("id", id);
+    if (error) throw error;
+  }
+
+  async deleteProduction(id: string): Promise<void> {
+    const { error } = await this.db.from("productions").delete().eq("id", id);
     if (error) throw error;
   }
 

@@ -28,7 +28,7 @@ const SHORTCUTS: Array<[string, string]> = [
   ["g then x", "Go to Competitors"],
   ["g then i", "Go to Ideas"],
   ["g then s", "Go to SOPs"],
-  ["g then r", "Go to Reports"],
+  ["g then t", "Go to Tasks"],
   ["g then a", "Go to AI Coach"],
 ];
 

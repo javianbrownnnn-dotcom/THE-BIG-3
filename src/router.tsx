@@ -12,7 +12,7 @@ import { CompetitorsPage } from "@/features/competitors/CompetitorsPage";
 import { IdeasPage } from "@/features/ideas/IdeasPage";
 import { SopsPage } from "@/features/sops/SopsPage";
 import { SopDetailPage } from "@/features/sops/SopDetailPage";
-import { ReportsPage } from "@/features/reports/ReportsPage";
+import { TasksPage } from "@/features/tasks/TasksPage";
 import { CoachPage } from "@/features/coach/CoachPage";
 import { SettingsPage } from "@/features/settings/SettingsPage";
 
@@ -38,8 +38,7 @@ export const router = createRouter(
       { path: "/ideas", element: <IdeasPage /> },
       { path: "/sops", element: <SopsPage /> },
       { path: "/sops/:id", element: <SopDetailPage /> },
-      { path: "/reports", element: <ReportsPage /> },
-      { path: "/reports/:id", element: <ReportsPage /> },
+      { path: "/tasks", element: <TasksPage /> },
       { path: "/coach", element: <CoachPage /> },
       { path: "/settings", element: <SettingsPage /> },
     ],

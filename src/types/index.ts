@@ -206,6 +206,36 @@ export interface Idea {
   createdAt: string;
 }
 
+export type TaskStatus = "todo" | "doing" | "done";
+
+export interface Task {
+  id: string;
+  organizationId: string;
+  title: string;
+  notes?: string;
+  status: TaskStatus;
+  assigneeId?: string;
+  assigneeName?: string;
+  dueAt?: string;
+  createdBy?: string;
+  createdAt: string;
+}
+
+export interface TaskInput {
+  title: string;
+  notes?: string;
+  status?: TaskStatus;
+  assigneeId?: string;
+  dueAt?: string;
+}
+
+/** Discord notifications for tasks: one org webhook + member → Discord id map. */
+export interface DiscordConfig {
+  webhookUrl: string;
+  /** member id → Discord user id, used to @mention the assignee. */
+  userIds: Record<string, string>;
+}
+
 export type CommentEntityType = "production" | "sop" | "idea";
 
 export interface Comment {

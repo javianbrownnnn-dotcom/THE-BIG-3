@@ -18,6 +18,7 @@ import type {
   Comment,
   CommentEntityType,
   CommentInput,
+  DiscordConfig,
   CompetitorScanResult,
   CompetitorTeardown,
   CompetitorVideo,
@@ -42,6 +43,8 @@ import type {
   RetentionPoint,
   SopVersionInput,
   SopWithHistory,
+  Task,
+  TaskInput,
   TrafficSource,
   Video,
   VideoAnalytics,
@@ -915,6 +918,25 @@ const productions: Production[] = [
   },
 ];
 
+// A few seeded tasks so the manager shows its shape immediately.
+const tasks: Task[] = [
+  {
+    id: uid("tsk"), organizationId: org.id, title: "Record VO for the guitar video",
+    status: "doing", assigneeId: members[0].id, assigneeName: members[0].displayName,
+    dueAt: daysAgo(-2), createdBy: members[1].id, createdAt: daysAgo(2),
+  },
+  {
+    id: uid("tsk"), organizationId: org.id, title: "Thumbnail A/B for Dead Sea Scrolls",
+    status: "todo", assigneeId: members[2].id, assigneeName: members[2].displayName,
+    dueAt: daysAgo(-4), createdBy: members[0].id, createdAt: daysAgo(1),
+  },
+  {
+    id: uid("tsk"), organizationId: org.id, title: "Reply to sponsor email",
+    status: "done", assigneeId: members[1].id, assigneeName: members[1].displayName,
+    createdBy: members[1].id, createdAt: daysAgo(3),
+  },
+];
+
 // Seed a short discussion on the first production doc so the collaboration
 // surface isn't empty in the demo.
 const comments: Comment[] = [
@@ -943,7 +965,7 @@ function persist() {
       STORAGE_KEY,
       JSON.stringify({
         channels, videos, competitorChannels, competitorVideos, ideas, sops, insights,
-        recommendations, reports, notifications, activity, productions, invites, comments,
+        recommendations, reports, notifications, activity, productions, invites, comments, tasks,
       }),
     );
   } catch {
@@ -976,6 +998,7 @@ function replaceInPlace<T>(target: T[], source: T[] | undefined) {
     replaceInPlace(productions, s.productions);
     replaceInPlace(invites, s.invites);
     replaceInPlace(comments, s.comments);
+    replaceInPlace(tasks, s.tasks);
   } catch {
     // Corrupt state — fall back to the fresh seed.
     localStorage.removeItem(STORAGE_KEY);
@@ -1669,6 +1692,85 @@ export class DemoProvider implements DataProvider {
   async deleteComment(id: string) {
     const i = comments.findIndex((c) => c.id === id);
     if (i >= 0) comments.splice(i, 1);
+    persist();
+  }
+
+  async listTasks() {
+    await delay();
+    return clone(tasks);
+  }
+
+  async createTask(input: TaskInput): Promise<Task> {
+    const assignee = members.find((m) => m.id === input.assigneeId);
+    const task: Task = {
+      id: runtimeId("tsk"), organizationId: org.id,
+      title: input.title, notes: input.notes,
+      status: input.status ?? "todo",
+      assigneeId: input.assigneeId, assigneeName: assignee?.displayName,
+      dueAt: input.dueAt, createdBy: currentUser.id,
+      createdAt: new Date().toISOString(),
+    };
+    tasks.unshift(task);
+    persist();
+    return clone(task);
+  }
+
+  async updateTask(id: string, patch: Partial<TaskInput>): Promise<Task> {
+    const task = tasks.find((t) => t.id === id);
+    if (!task) throw new Error("Task not found");
+    if (patch.title !== undefined) task.title = patch.title;
+    if (patch.notes !== undefined) task.notes = patch.notes;
+    if (patch.status !== undefined) task.status = patch.status;
+    if (patch.dueAt !== undefined) task.dueAt = patch.dueAt;
+    if (patch.assigneeId !== undefined) {
+      task.assigneeId = patch.assigneeId;
+      task.assigneeName = members.find((m) => m.id === patch.assigneeId)?.displayName;
+    }
+    persist();
+    return clone(task);
+  }
+
+  async deleteTask(id: string) {
+    const i = tasks.findIndex((t) => t.id === id);
+    if (i >= 0) tasks.splice(i, 1);
+    persist();
+  }
+
+  async getDiscordConfig(): Promise<DiscordConfig | null> {
+    try {
+      const raw = localStorage.getItem("big3.discord");
+      return raw ? (JSON.parse(raw) as DiscordConfig) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async saveDiscordConfig(config: DiscordConfig) {
+    localStorage.setItem("big3.discord", JSON.stringify(config));
+  }
+
+  async deleteChannel(id: string) {
+    const i = channels.findIndex((c) => c.id === id);
+    if (i >= 0) channels.splice(i, 1);
+    // A channel's videos go with it (matches the SQL cascade).
+    for (let v = videos.length - 1; v >= 0; v--) {
+      if (videos[v].channelId === id) videos.splice(v, 1);
+    }
+    persist();
+  }
+
+  async deleteCompetitorChannel(id: string) {
+    const i = competitorChannels.findIndex((c) => c.id === id);
+    if (i >= 0) competitorChannels.splice(i, 1);
+    for (let v = competitorVideos.length - 1; v >= 0; v--) {
+      if (competitorVideos[v].competitorChannelId === id) competitorVideos.splice(v, 1);
+    }
+    persist();
+  }
+
+  async deleteProduction(id: string) {
+    const i = productions.findIndex((p) => p.id === id);
+    if (i >= 0) productions.splice(i, 1);
     persist();
   }
 

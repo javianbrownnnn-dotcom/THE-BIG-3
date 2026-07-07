@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { Flame, Plus, Radar, Swords, Users } from "lucide-react";
+import { Flame, Plus, Radar, Swords, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { EmptyState } from "@/components/layout/EmptyState";
@@ -40,6 +40,7 @@ import {
   useCompetitorVideos,
   useCreateCompetitorChannel,
   useCreateCompetitorVideo,
+  useDeleteCompetitorChannel,
   useScanCompetitorChannel,
 } from "@/hooks/queries";
 import { getStoredApiKey } from "@/lib/youtube";
@@ -55,6 +56,17 @@ export function CompetitorsPage() {
   const createVideo = useCreateCompetitorVideo();
   const createChannel = useCreateCompetitorChannel();
   const scan = useScanCompetitorChannel();
+  const deleteCompetitor = useDeleteCompetitorChannel();
+
+  const removeCompetitor = (c: CompetitorChannel) => {
+    if (!window.confirm(`Stop tracking "${c.name}"? Its tracked videos are removed too.`)) return;
+    deleteCompetitor.mutate(c.id, {
+      onSuccess: () => {
+        if (channelFilter === c.id) setChannelFilter(null);
+        toast.success(`Stopped tracking ${c.name}`);
+      },
+    });
+  };
   const [scanningId, setScanningId] = useState<string | null>(null);
 
   const [videoDialogOpen, setVideoDialogOpen] = useState(false);
@@ -180,18 +192,30 @@ export function CompetitorsPage() {
                       <p className="truncate text-xs text-muted-foreground">{c.niche}</p>
                     )}
                   </div>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    disabled={scanningId === c.id || scan.isPending}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      runScan(c);
-                    }}
-                  >
-                    <Radar className={scanningId === c.id ? "animate-pulse" : ""} />
-                    {scanningId === c.id ? "Scanning…" : "Scan"}
-                  </Button>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      disabled={scanningId === c.id || scan.isPending}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        runScan(c);
+                      }}
+                    >
+                      <Radar className={scanningId === c.id ? "animate-pulse" : ""} />
+                      {scanningId === c.id ? "Scanning…" : "Scan"}
+                    </Button>
+                    <button
+                      className="p-1 text-muted-foreground transition-colors hover:text-destructive"
+                      aria-label={`Stop tracking ${c.name}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeCompetitor(c);
+                      }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
                   {c.subscriberCount != null && (

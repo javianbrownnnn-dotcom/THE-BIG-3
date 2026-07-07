@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -38,6 +38,7 @@ import {
   useMe,
   useMembers,
   useProduction,
+  useDeleteProduction,
   usePublishProduction,
   usePublishToYouTube,
   useSops,
@@ -102,6 +103,21 @@ export function ProductionDetailPage() {
   const { data: sops } = useSops();
   const updateProduction = useUpdateProduction();
   const publishProduction = usePublishProduction();
+  const deleteProduction = useDeleteProduction();
+  const navigate = useNavigate();
+
+  const removeDoc = () => {
+    if (!form) return;
+    if (!window.confirm(`Delete "${form.title}"? The doc and its checklists are gone for good.`))
+      return;
+    deleteProduction.mutate(form.id, {
+      onSuccess: () => {
+        toast.success("Video doc deleted");
+        navigate("/production");
+      },
+      onError: (err) => toast.error(err instanceof Error ? err.message : String(err)),
+    });
+  };
   const publishToYouTube = usePublishToYouTube();
   const draftProduction = useDraftProduction();
 
@@ -271,6 +287,15 @@ export function ProductionDetailPage() {
                 })}
               </SelectContent>
             </Select>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="text-muted-foreground hover:text-destructive"
+              onClick={removeDoc}
+              aria-label="Delete video doc"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
           </div>
         }
       />

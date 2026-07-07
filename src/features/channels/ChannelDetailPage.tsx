@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Bot, Youtube } from "lucide-react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { ArrowLeft, Bot, Trash2, Youtube } from "lucide-react";
+import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { BarBreakdown } from "@/components/charts/BarBreakdown";
 import { MetricCard } from "@/components/charts/MetricCard";
@@ -10,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VideoTable } from "@/features/videos/VideoTable";
-import { useChannel, useInsights, useVideos } from "@/hooks/queries";
+import { useChannel, useDeleteChannel, useInsights, useVideos } from "@/hooks/queries";
 import { useRecordRecent } from "@/hooks/useRecents";
 import { compactNumber, humanize, percent } from "@/lib/format";
 import {
@@ -28,6 +29,25 @@ export function ChannelDetailPage() {
   const { data: videos } = useVideos(id);
   const { data: insights } = useInsights();
   const [syncOpen, setSyncOpen] = useState(false);
+  const navigate = useNavigate();
+  const deleteChannel = useDeleteChannel();
+
+  const removeChannel = () => {
+    const n = (videos ?? []).length;
+    const ok = window.confirm(
+      `Delete "${channel?.name}"?` +
+        (n ? ` Its ${n} tracked video${n === 1 ? "" : "s"} and their metric history go with it.` : "") +
+        " This can't be undone.",
+    );
+    if (!ok) return;
+    deleteChannel.mutate(id, {
+      onSuccess: () => {
+        toast.success("Channel deleted");
+        navigate("/channels");
+      },
+      onError: (err) => toast.error(err instanceof Error ? err.message : String(err)),
+    });
+  };
   useRecordRecent(
     channel ? { to: `/channels/${channel.id}`, label: channel.name, kind: "channel" } : null,
   );
@@ -83,6 +103,15 @@ export function ChannelDetailPage() {
             )}
             <Button size="sm" onClick={() => setSyncOpen(true)}>
               <Youtube /> Set up YouTube
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="text-muted-foreground hover:text-destructive"
+              onClick={removeChannel}
+              aria-label="Delete channel"
+            >
+              <Trash2 className="h-4 w-4" />
             </Button>
           </>
         }

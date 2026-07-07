@@ -937,3 +937,41 @@ create policy "members create briefs" on shared_briefs for insert to authenticat
 drop policy if exists "members delete briefs" on shared_briefs;
 create policy "members delete briefs" on shared_briefs for delete to authenticated
   using (is_org_member(organization_id));
+
+-- ============================================================================
+-- ---- 0010_tasks.sql ---------------------------------------------------------
+-- Kanban task manager: todo → doing → done, assignee, due date. Discord
+-- notifications use the integrations table (provider='discord').
+-- ============================================================================
+
+create table if not exists tasks (
+  id               uuid primary key default gen_random_uuid(),
+  organization_id  uuid not null references organizations (id) on delete cascade,
+  title            text not null,
+  notes            text,
+  status           text not null default 'todo' check (status in ('todo', 'doing', 'done')),
+  assignee_id      uuid references profiles (id) on delete set null,
+  due_at           timestamptz,
+  created_by       uuid references profiles (id),
+  created_at       timestamptz not null default now(),
+  updated_at       timestamptz not null default now()
+);
+create index if not exists tasks_org_idx on tasks (organization_id, status, due_at);
+
+drop trigger if exists tasks_updated_at on tasks;
+create trigger tasks_updated_at before update on tasks
+  for each row execute function set_updated_at();
+
+alter table tasks enable row level security;
+drop policy if exists "members read tasks" on tasks;
+create policy "members read tasks" on tasks for select to authenticated
+  using (is_org_member(organization_id));
+drop policy if exists "editors write tasks" on tasks;
+create policy "editors write tasks" on tasks for insert to authenticated
+  with check (has_org_role(organization_id, 'editor'));
+drop policy if exists "editors update tasks" on tasks;
+create policy "editors update tasks" on tasks for update to authenticated
+  using (has_org_role(organization_id, 'editor'));
+drop policy if exists "editors delete tasks" on tasks;
+create policy "editors delete tasks" on tasks for delete to authenticated
+  using (has_org_role(organization_id, 'editor'));

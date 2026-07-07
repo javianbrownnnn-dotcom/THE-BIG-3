@@ -16,6 +16,7 @@ import type {
   CompetitorChannelInput,
   CompetitorScanResult,
   CompetitorTeardown,
+  DiscordConfig,
   Invite,
   InviteInput,
   CompetitorVideo,
@@ -33,6 +34,8 @@ import type {
   ReportType,
   Sop,
   SopInput,
+  Task,
+  TaskInput,
   SopVersionInput,
   SopWithHistory,
   Video,
@@ -187,6 +190,20 @@ export interface DataProvider {
   listComments(entityType: CommentEntityType, entityId: string): Promise<Comment[]>;
   addComment(input: CommentInput): Promise<Comment>;
   deleteComment(id: string): Promise<void>;
+
+  /** Kanban task manager (todo → doing → done, assignee, due date). */
+  listTasks(): Promise<Task[]>;
+  createTask(input: TaskInput): Promise<Task>;
+  updateTask(id: string, patch: Partial<TaskInput>): Promise<Task>;
+  deleteTask(id: string): Promise<void>;
+  /** Discord webhook + member mapping used for task notifications. */
+  getDiscordConfig(): Promise<DiscordConfig | null>;
+  saveDiscordConfig(config: DiscordConfig): Promise<void>;
+
+  /** Remove records that no longer exist in the world. Destructive. */
+  deleteChannel(id: string): Promise<void>;
+  deleteCompetitorChannel(id: string): Promise<void>;
+  deleteProduction(id: string): Promise<void>;
 
   listActivity(): Promise<ActivityItem[]>;
 

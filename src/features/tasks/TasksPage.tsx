@@ -1,0 +1,507 @@
+import { useMemo, useState } from "react";
+import {
+  ArrowRight,
+  Bell,
+  CalendarDays,
+  Check,
+  Clapperboard,
+  KanbanSquare,
+  ListTodo,
+  Plus,
+  Trash2,
+} from "lucide-react";
+import { Link } from "react-router-dom";
+import { toast } from "sonner";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { EmptyState } from "@/components/layout/EmptyState";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  useCreateTask,
+  useDeleteTask,
+  useDiscordConfig,
+  useMe,
+  useMembers,
+  useProductions,
+  useSaveDiscordConfig,
+  useTasks,
+  useUpdateTask,
+} from "@/hooks/queries";
+import { notifyTaskCreated, notifyTaskStatus, sendTestPing } from "@/lib/discord";
+import { cn } from "@/lib/utils";
+import type { Task, TaskStatus } from "@/types";
+
+const COLUMNS: Array<{ status: TaskStatus; label: string }> = [
+  { status: "todo", label: "To do" },
+  { status: "doing", label: "In progress" },
+  { status: "done", label: "Done" },
+];
+
+const NEXT: Record<TaskStatus, TaskStatus | null> = { todo: "doing", doing: "done", done: null };
+
+function dueTone(task: Task): string {
+  if (!task.dueAt || task.status === "done") return "text-muted-foreground";
+  return new Date(task.dueAt).getTime() < Date.now() ? "text-destructive" : "text-muted-foreground";
+}
+
+function shortDue(iso?: string): string {
+  if (!iso) return "";
+  return new Date(iso).toLocaleDateString("en", { weekday: "short", month: "short", day: "numeric" });
+}
+
+function TaskCard({ task }: { task: Task }) {
+  const updateTask = useUpdateTask();
+  const deleteTask = useDeleteTask();
+  const { data: me } = useMe();
+  const { data: config } = useDiscordConfig();
+  const next = NEXT[task.status];
+
+  const move = (status: TaskStatus) => {
+    updateTask.mutate(
+      { id: task.id, patch: { status } },
+      {
+        onSuccess: (updated) => {
+          if (config) notifyTaskStatus(config, updated, me?.displayName ?? "Someone");
+        },
+      },
+    );
+  };
+
+  return (
+    <Card>
+      <CardContent className="space-y-2 p-3">
+        <div className="flex items-start justify-between gap-2">
+          <div
+            className={cn(
+              "text-sm font-medium leading-snug",
+              task.status === "done" && "text-muted-foreground line-through",
+            )}
+          >
+            {task.title}
+          </div>
+          <button
+            className="shrink-0 p-0.5 text-muted-foreground transition-colors hover:text-destructive"
+            onClick={() => deleteTask.mutate(task.id, { onSuccess: () => toast("Task removed") })}
+            aria-label="Delete task"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
+        {task.notes && <p className="line-clamp-2 text-xs text-muted-foreground">{task.notes}</p>}
+        <div className="flex items-center gap-2">
+          {task.assigneeName && (
+            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Avatar className="h-5 w-5">
+                <AvatarFallback className="text-[9px]">
+                  {task.assigneeName.slice(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              {task.assigneeName}
+            </span>
+          )}
+          {task.dueAt && (
+            <span className={cn("flex items-center gap-1 text-xs", dueTone(task))}>
+              <CalendarDays className="h-3 w-3" /> {shortDue(task.dueAt)}
+            </span>
+          )}
+          <span className="ml-auto" />
+          {next && (
+            <Button size="sm" variant="secondary" className="h-6 px-2 text-xs" onClick={() => move(next)}>
+              {next === "done" ? <Check className="h-3 w-3" /> : <ArrowRight className="h-3 w-3" />}
+              {next === "doing" ? "Start" : "Done"}
+            </Button>
+          )}
+          {!next && (
+            <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={() => move("todo")}>
+              Reopen
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+/** One schedule: tasks + production due dates, grouped by week. */
+function TasksCalendar({ tasks }: { tasks: Task[] }) {
+  const { data: productions } = useProductions();
+
+  type Item = { when: Date; label: string; kind: "task" | "video"; done: boolean; to?: string };
+  const items: Item[] = [
+    ...tasks
+      .filter((t) => t.dueAt)
+      .map((t) => ({
+        when: new Date(t.dueAt!),
+        label: t.assigneeName ? `${t.title} · ${t.assigneeName}` : t.title,
+        kind: "task" as const,
+        done: t.status === "done",
+      })),
+    ...(productions ?? [])
+      .filter((p) => (p.dueDate || p.scheduledAt) && p.stage !== "published")
+      .map((p) => ({
+        when: new Date(p.scheduledAt ?? p.dueDate!),
+        label: p.title,
+        kind: "video" as const,
+        done: false,
+        to: `/production/${p.id}`,
+      })),
+  ].sort((a, b) => a.when.getTime() - b.when.getTime());
+
+  if (!items.length) {
+    return (
+      <p className="py-10 text-center text-sm text-muted-foreground">
+        Nothing scheduled. Give a task a due date — video due dates from Production show here too.
+      </p>
+    );
+  }
+
+  const weekOf = (d: Date) => {
+    const monday = new Date(d);
+    monday.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    monday.setHours(0, 0, 0, 0);
+    return monday;
+  };
+  const groups = new Map<string, Item[]>();
+  for (const item of items) {
+    const key = weekOf(item.when).toISOString();
+    groups.set(key, [...(groups.get(key) ?? []), item]);
+  }
+  const now = Date.now();
+
+  return (
+    <div className="space-y-4">
+      {[...groups.entries()].map(([week, rows]) => (
+        <div key={week}>
+          <div className="mb-1.5 text-xs font-medium text-muted-foreground">
+            Week of{" "}
+            {new Date(week).toLocaleDateString("en", { month: "long", day: "numeric" })}
+          </div>
+          <div className="space-y-1.5">
+            {rows.map((item, i) => {
+              const overdue = !item.done && item.when.getTime() < now;
+              const row = (
+                <div
+                  className={cn(
+                    "flex items-center gap-2.5 rounded-lg border px-3 py-2 text-sm",
+                    item.done && "opacity-60",
+                  )}
+                >
+                  <span className="w-14 shrink-0 text-xs tabular-nums text-muted-foreground">
+                    {item.when.toLocaleDateString("en", { weekday: "short", day: "numeric" })}
+                  </span>
+                  {item.kind === "video" ? (
+                    <Clapperboard className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  ) : (
+                    <ListTodo className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  )}
+                  <span className={cn("min-w-0 flex-1 truncate", item.done && "line-through")}>
+                    {item.label}
+                  </span>
+                  {overdue && <Badge variant="destructive">overdue</Badge>}
+                  {item.kind === "video" && <Badge variant="outline">video</Badge>}
+                </div>
+              );
+              return item.to ? (
+                <Link key={i} to={item.to} className="block">
+                  {row}
+                </Link>
+              ) : (
+                <div key={i}>{row}</div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function DiscordDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const { data: members } = useMembers();
+  const { data: config } = useDiscordConfig();
+  const save = useSaveDiscordConfig();
+  const [webhookUrl, setWebhookUrl] = useState("");
+  const [userIds, setUserIds] = useState<Record<string, string>>({});
+  const [loadedFor, setLoadedFor] = useState<string | null>(null);
+
+  // Hydrate the form once per open from the stored config.
+  if (open && loadedFor !== "open") {
+    setWebhookUrl(config?.webhookUrl ?? "");
+    setUserIds(config?.userIds ?? {});
+    setLoadedFor("open");
+  }
+  if (!open && loadedFor === "open") setLoadedFor(null);
+
+  const submit = async () => {
+    try {
+      await save.mutateAsync({ webhookUrl: webhookUrl.trim(), userIds });
+      if (webhookUrl.trim()) {
+        await sendTestPing(webhookUrl.trim());
+        toast.success("Connected — check your Discord channel for the test ping");
+      } else {
+        toast.success("Discord notifications turned off");
+      }
+      onOpenChange(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Bell className="h-4 w-4" /> Discord notifications
+          </DialogTitle>
+          <DialogDescription>
+            Task updates post to one channel. Map each teammate to their Discord user ID and
+            they get @mentioned on their tasks.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label>Webhook URL</Label>
+            <Input
+              type="password"
+              value={webhookUrl}
+              onChange={(e) => setWebhookUrl(e.target.value)}
+              placeholder="https://discord.com/api/webhooks/…"
+            />
+            <p className="text-xs text-muted-foreground">
+              Discord → your server → channel settings → Integrations → Webhooks → New webhook →
+              Copy URL.
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            <Label>@Mentions (optional)</Label>
+            {(members ?? []).map((m) => (
+              <div key={m.id} className="flex items-center gap-2">
+                <span className="w-20 shrink-0 truncate text-sm">{m.displayName}</span>
+                <Input
+                  value={userIds[m.id] ?? ""}
+                  onChange={(e) => setUserIds({ ...userIds, [m.id]: e.target.value })}
+                  placeholder="Discord user ID (right-click profile → Copy User ID)"
+                  className="h-8 text-xs"
+                />
+              </div>
+            ))}
+            <p className="text-xs text-muted-foreground">
+              Needs Developer Mode on in Discord (Settings → Advanced) to copy IDs.
+            </p>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button onClick={submit} disabled={save.isPending}>
+            Save & test
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export function TasksPage() {
+  const { data: tasks, isLoading } = useTasks();
+  const { data: members } = useMembers();
+  const { data: me } = useMe();
+  const { data: config } = useDiscordConfig();
+  const createTask = useCreateTask();
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [discordOpen, setDiscordOpen] = useState(false);
+  const [form, setForm] = useState({ title: "", notes: "", assigneeId: "", dueAt: "" });
+
+  const byStatus = useMemo(() => {
+    const map = new Map<TaskStatus, Task[]>();
+    for (const c of COLUMNS) map.set(c.status, []);
+    for (const t of tasks ?? []) map.get(t.status)?.push(t);
+    return map;
+  }, [tasks]);
+
+  const submit = async () => {
+    if (!form.title.trim()) {
+      toast.error("Give the task a title");
+      return;
+    }
+    const created = await createTask.mutateAsync({
+      title: form.title.trim(),
+      notes: form.notes.trim() || undefined,
+      assigneeId: form.assigneeId || undefined,
+      dueAt: form.dueAt ? new Date(form.dueAt).toISOString() : undefined,
+    });
+    if (config) notifyTaskCreated(config, created, me?.displayName ?? "Someone");
+    toast.success("Task added");
+    setForm({ title: "", notes: "", assigneeId: "", dueAt: "" });
+    setDialogOpen(false);
+  };
+
+  if (isLoading) return <Skeleton className="h-96" />;
+
+  return (
+    <div className="animate-fade-in">
+      <PageHeader
+        title="Tasks"
+        description="Who's doing what, by when — with the publish schedule on the same calendar."
+        actions={
+          <>
+            <Button variant="ghost" size="sm" onClick={() => setDiscordOpen(true)}>
+              <Bell /> {config ? "Discord ✓" : "Connect Discord"}
+            </Button>
+            <Button size="sm" onClick={() => setDialogOpen(true)}>
+              <Plus /> New task
+            </Button>
+          </>
+        }
+      />
+
+      <Tabs defaultValue="board">
+        <TabsList className="mb-4">
+          <TabsTrigger value="board" className="gap-1.5">
+            <KanbanSquare className="h-3.5 w-3.5" /> Board
+          </TabsTrigger>
+          <TabsTrigger value="calendar" className="gap-1.5">
+            <CalendarDays className="h-3.5 w-3.5" /> Calendar
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="board">
+          {(tasks ?? []).length === 0 ? (
+            <EmptyState
+              icon={ListTodo}
+              title="Nothing on the board"
+              description="Add the first task — assign it, give it a due date, and (with Discord connected) your teammate gets pinged automatically."
+              action={
+                <Button size="sm" onClick={() => setDialogOpen(true)}>
+                  <Plus /> New task
+                </Button>
+              }
+            />
+          ) : (
+            <div className="grid gap-3 md:grid-cols-3 md:gap-4">
+              {COLUMNS.map(({ status, label }) => (
+                <div key={status}>
+                  <div className="mb-2 flex items-center justify-between px-0.5">
+                    <span className="text-xs font-medium text-muted-foreground">{label}</span>
+                    <Badge variant="secondary">{byStatus.get(status)?.length ?? 0}</Badge>
+                  </div>
+                  <div className="space-y-2">
+                    {(byStatus.get(status) ?? []).map((t) => (
+                      <TaskCard key={t.id} task={t} />
+                    ))}
+                    {(byStatus.get(status) ?? []).length === 0 && (
+                      <div className="rounded-lg border border-dashed py-6 text-center text-xs text-muted-foreground">
+                        Empty
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="calendar">
+          <TasksCalendar tasks={tasks ?? []} />
+        </TabsContent>
+      </Tabs>
+
+      {/* New task */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>New task</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label>Task</Label>
+              <Input
+                value={form.title}
+                onChange={(e) => setForm({ ...form, title: e.target.value })}
+                placeholder="Record VO for the guitar video"
+                autoFocus
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1.5">
+                <Label>Assign to</Label>
+                <Select
+                  value={form.assigneeId}
+                  onValueChange={(v) => setForm({ ...form, assigneeId: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Unassigned" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(members ?? []).map((m) => (
+                      <SelectItem key={m.id} value={m.id}>
+                        {m.displayName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Due</Label>
+                <Input
+                  type="date"
+                  value={form.dueAt}
+                  onChange={(e) => setForm({ ...form, dueAt: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Notes (optional)</Label>
+              <Textarea
+                rows={2}
+                value={form.notes}
+                onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={submit} disabled={createTask.isPending}>
+              <Plus /> Add task
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <DiscordDialog open={discordOpen} onOpenChange={setDiscordOpen} />
+    </div>
+  );
+}
