@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
           `Title: ${prod.title}\nTopic: ${prod.topic ?? ""}\nGoal: ${prod.goal ?? ""}\n\n` +
           `<company_data>\n${contextToPrompt(ctx)}\n</company_data>`,
       },
-    ], { system: SYSTEM, temperature: 0.6 });
+    ], { system: SYSTEM });
 
     // Guard the shape so the client always gets a usable DraftResult.
     return jsonResponse({

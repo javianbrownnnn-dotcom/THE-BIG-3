@@ -12,7 +12,6 @@ export interface ClaudeMessage {
 export interface ClaudeOptions {
   system?: string;
   maxTokens?: number;
-  temperature?: number;
   model?: string;
 }
 
@@ -30,10 +29,10 @@ export async function askClaude(
       "x-api-key": apiKey,
       "anthropic-version": "2023-06-01",
     },
+    // No temperature: current Claude models reject it as deprecated.
     body: JSON.stringify({
       model: options.model ?? DEFAULT_MODEL,
       max_tokens: options.maxTokens ?? 4096,
-      temperature: options.temperature ?? 0.3,
       system: options.system,
       messages,
     }),
