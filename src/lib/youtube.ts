@@ -42,17 +42,28 @@ async function ytGet(path: string, params: Record<string, string>, apiKey: strin
   }
   if (!res.ok) {
     const body = await res.json().catch(() => null);
-    const reason = body?.error?.errors?.[0]?.reason ?? "";
+    const reason: string = body?.error?.errors?.[0]?.reason ?? body?.error?.status ?? "";
+    const googleMsg: string = body?.error?.message ?? "";
     if (res.status === 403 && reason.includes("quota")) {
       throw new YouTubeApiError("YouTube API daily quota exceeded — try again tomorrow.", 403);
     }
+    // Translate Google's reason codes into the exact fix, and always surface
+    // the raw reason so a screenshot of the toast is enough to diagnose.
+    const hint =
+      reason === "API_KEY_INVALID" || reason === "keyInvalid"
+        ? "The saved key doesn't match a real key — re-copy it from Google Cloud (Show key) and paste again."
+        : reason.includes("REFERRER") || reason.includes("BLOCKED")
+          ? "The key's Application restriction is blocking this site — set it to None in Google Cloud → Credentials."
+          : reason === "accessNotConfigured" || reason === "SERVICE_DISABLED"
+            ? "YouTube Data API v3 isn't enabled on the key's project — enable it in the API Library, wait 2 minutes."
+            : "Check the key and that 'YouTube Data API v3' is enabled for it.";
     if (res.status === 400 || res.status === 403) {
       throw new YouTubeApiError(
-        "YouTube rejected the API key. Check the key and that 'YouTube Data API v3' is enabled for it.",
+        `YouTube said: ${reason || res.status}. ${hint}${googleMsg ? ` (${googleMsg})` : ""}`,
         res.status,
       );
     }
-    throw new YouTubeApiError(`YouTube API error ${res.status}`, res.status);
+    throw new YouTubeApiError(`YouTube API error ${res.status}${reason ? ` (${reason})` : ""}`, res.status);
   }
   return res.json();
 }
