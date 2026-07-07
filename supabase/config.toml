@@ -9,3 +9,8 @@ project_id = "the-big-3"
 # so they keep the default verify_jwt = true.
 [functions.youtube-oauth]
 verify_jwt = false
+
+# share-brief serves a public read-only brief by unguessable token (pasted
+# into ChatGPT etc.), so it must be reachable without a JWT too.
+[functions.share-brief]
+verify_jwt = false

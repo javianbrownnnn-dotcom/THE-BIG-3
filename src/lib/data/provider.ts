@@ -82,6 +82,12 @@ export interface DataProvider {
    */
   connectYouTubeUrl(channelId: string): Promise<string>;
 
+  /**
+   * Freeze a markdown idea brief behind a public unguessable-token URL that an
+   * outside AI (ChatGPT etc.) can fetch. Live mode only; demo copies instead.
+   */
+  shareBrief(title: string, contentMd: string): Promise<string>;
+
   listCompetitorChannels(): Promise<CompetitorChannel[]>;
   listCompetitorVideos(filter?: {
     onlyOutliers?: boolean;

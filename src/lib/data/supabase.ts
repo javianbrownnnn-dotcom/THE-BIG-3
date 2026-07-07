@@ -160,9 +160,11 @@ export class SupabaseProvider implements DataProvider {
   readonly isDemo = false;
   private db: SupabaseClient;
   private orgId: string | null = null;
+  private projectUrl: string;
 
   constructor(url: string, anonKey: string) {
     this.db = createClient(url, anonKey);
+    this.projectUrl = url.replace(/\/$/, "");
   }
 
   get client(): SupabaseClient {
@@ -399,6 +401,23 @@ export class SupabaseProvider implements DataProvider {
     if (error) throw new Error(error.message ?? "Could not load YouTube analytics");
     if ((data as any)?.error) throw new Error((data as any).error);
     return data as VideoAnalytics;
+  }
+
+  async shareBrief(title: string, contentMd: string): Promise<string> {
+    const orgId = await this.requireOrgId();
+    const { data: auth } = await this.db.auth.getUser();
+    const bytes = crypto.getRandomValues(new Uint8Array(18));
+    const token = btoa(String.fromCharCode(...bytes))
+      .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    const { error } = await this.db.from("shared_briefs").insert({
+      organization_id: orgId,
+      token,
+      title,
+      content_md: contentMd,
+      created_by: auth.user?.id,
+    });
+    if (error) throw error;
+    return `${this.projectUrl}/functions/v1/share-brief?t=${token}`;
   }
 
   async connectYouTubeUrl(channelId: string): Promise<string> {
