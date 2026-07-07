@@ -28,6 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useNavigate } from "react-router-dom";
 import { useChannels, useCreateIdea, useCreateProduction, useIdeas, useUpdateIdea } from "@/hooks/queries";
 import type { Idea, IdeaPriority, IdeaStatus } from "@/types";
+import { usePersistedState } from "@/hooks/usePersistedState";
 import { GenerateIdeasDialog } from "./GenerateIdeasDialog";
 import { BriefDialog } from "./BriefDialog";
 
@@ -132,7 +133,7 @@ export function IdeasPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [generateOpen, setGenerateOpen] = useState(false);
   const [briefOpen, setBriefOpen] = useState(false);
-  const [form, setForm] = useState({
+  const [form, setForm, clearForm] = usePersistedState("draft.idea", {
     title: "",
     description: "",
     channelId: "",
@@ -163,7 +164,7 @@ export function IdeasPage() {
       tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
     });
     toast.success("Idea captured");
-    setForm({ title: "", description: "", channelId: "", priority: "medium", tags: "" });
+    clearForm();
     setDialogOpen(false);
   };
 

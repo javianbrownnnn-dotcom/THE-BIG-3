@@ -127,6 +127,33 @@ export function ProductionDetailPage() {
   const saveTimer = useRef<number>();
   const loadedId = useRef<string>();
   const thumbFileRef = useRef<HTMLInputElement>(null);
+  // Everything typed but not yet saved. Accumulated (not just the last edit)
+  // and flushed immediately when the app is backgrounded — iOS kills PWAs
+  // without warning, and losing typed text is unforgivable.
+  const pendingRef = useRef<ProductionPatch | null>(null);
+  const formIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const flush = () => {
+      const changes = pendingRef.current;
+      const id = formIdRef.current;
+      if (!changes || !id) return;
+      pendingRef.current = null;
+      window.clearTimeout(saveTimer.current);
+      updateProduction.mutate({ id, patch: changes });
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", flush);
+    return () => {
+      flush(); // leaving the page counts too
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", flush);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (production && production.id !== loadedId.current) {
@@ -147,16 +174,25 @@ export function ProductionDetailPage() {
     return <div className="py-20 text-center text-muted-foreground">Video doc not found.</div>;
   }
 
+  formIdRef.current = form.id;
+
   const patch = (changes: ProductionPatch) => {
     const next = { ...form, ...changes } as Production;
     setForm(next);
     setSaveState("saving");
+    // Accumulate: rapid edits to different fields all save, not just the last.
+    pendingRef.current = { ...pendingRef.current, ...changes };
     window.clearTimeout(saveTimer.current);
     saveTimer.current = window.setTimeout(async () => {
+      const toSave = pendingRef.current;
+      if (!toSave) return;
+      pendingRef.current = null;
       try {
-        await updateProduction.mutateAsync({ id: form.id, patch: changes });
+        await updateProduction.mutateAsync({ id: form.id, patch: toSave });
         setSaveState("saved");
       } catch (err) {
+        // Put the failed changes back so the next edit or flush retries them.
+        pendingRef.current = { ...toSave, ...(pendingRef.current ?? {}) };
         setSaveState("idle");
         toast.error(err instanceof Error ? err.message : String(err));
       }

@@ -174,6 +174,24 @@ export class SupabaseProvider implements DataProvider {
     return this.db;
   }
 
+  /**
+   * Invoke an edge function and surface ITS error message — supabase-js
+   * otherwise collapses every failure into "non-2xx status code".
+   */
+  private async invokeFn<T>(name: string, body: Record<string, unknown>): Promise<T> {
+    const { data, error } = await this.db.functions.invoke(name, { body });
+    if (error) {
+      const ctx = (error as any).context;
+      if (ctx && typeof ctx.json === "function") {
+        const payload = await ctx.json().catch(() => null);
+        if (payload?.error) throw new Error(String(payload.error));
+      }
+      throw new Error(error.message ?? `${name} failed`);
+    }
+    if ((data as any)?.error) throw new Error(String((data as any).error));
+    return data as T;
+  }
+
   private async requireOrgId(): Promise<string> {
     if (this.orgId) return this.orgId;
     const { data, error } = await this.db
@@ -400,12 +418,7 @@ export class SupabaseProvider implements DataProvider {
   }
 
   async getVideoAnalytics(videoId: string): Promise<VideoAnalytics> {
-    const { data, error } = await this.db.functions.invoke("youtube-analytics", {
-      body: { videoId },
-    });
-    if (error) throw new Error(error.message ?? "Could not load YouTube analytics");
-    if ((data as any)?.error) throw new Error((data as any).error);
-    return data as VideoAnalytics;
+    return this.invokeFn<VideoAnalytics>("youtube-analytics", { videoId });
   }
 
   async shareBrief(title: string, contentMd: string): Promise<string> {
@@ -426,14 +439,12 @@ export class SupabaseProvider implements DataProvider {
   }
 
   async connectYouTubeUrl(channelId: string): Promise<string> {
-    const { data, error } = await this.db.functions.invoke("youtube-oauth", {
-      body: { channelId, returnTo: window.location.href },
+    const data = await this.invokeFn<{ authUrl?: string }>("youtube-oauth", {
+      channelId,
+      returnTo: window.location.href,
     });
-    if (error) throw new Error(error.message ?? "Could not start the YouTube connection");
-    if (!data?.authUrl) {
-      throw new Error(data?.error ?? "Google OAuth isn't configured on the backend yet.");
-    }
-    return data.authUrl as string;
+    if (!data?.authUrl) throw new Error("Google OAuth isn't configured on the backend yet.");
+    return data.authUrl;
   }
 
   async listCompetitorChannels(): Promise<CompetitorChannel[]> {
@@ -566,11 +577,7 @@ export class SupabaseProvider implements DataProvider {
   }
 
   async scanCompetitorChannel(channelId: string): Promise<CompetitorScanResult> {
-    const { data, error } = await this.db.functions.invoke("competitor-scan", {
-      body: { channelId },
-    });
-    if (error) throw new Error(error.message ?? "Competitor scan failed");
-    return data as CompetitorScanResult;
+    return this.invokeFn<CompetitorScanResult>("competitor-scan", { channelId });
   }
 
   async generateTeardown(
@@ -578,11 +585,9 @@ export class SupabaseProvider implements DataProvider {
     targetChannelId?: string,
   ): Promise<CompetitorTeardown> {
     const organizationId = await this.requireOrgId();
-    const { data, error } = await this.db.functions.invoke("competitor-teardown", {
-      body: { organizationId, competitorVideoId, targetChannelId },
+    const teardown = await this.invokeFn<CompetitorTeardown>("competitor-teardown", {
+      organizationId, competitorVideoId, targetChannelId,
     });
-    if (error) throw new Error(error.message ?? "Teardown failed");
-    const teardown = data as CompetitorTeardown;
     // Persist the analysis onto the video so it sticks in the table.
     await this.db.from("competitor_videos").update({
       why_it_worked: teardown.whyItWorked,
@@ -652,11 +657,10 @@ export class SupabaseProvider implements DataProvider {
 
   async generateIdeas(channelId?: string, count = 6): Promise<GeneratedIdea[]> {
     const orgId = await this.requireOrgId();
-    const { data, error } = await this.db.functions.invoke("ai-ideas", {
-      body: { organizationId: orgId, channelId, count },
+    const data = await this.invokeFn<{ ideas?: GeneratedIdea[] }>("ai-ideas", {
+      organizationId: orgId, channelId, count,
     });
-    if (error) throw error;
-    return (data?.ideas ?? []) as GeneratedIdea[];
+    return data?.ideas ?? [];
   }
 
   async updateIdea(id: string, patch: Partial<IdeaInput>): Promise<Idea> {
@@ -770,19 +774,16 @@ export class SupabaseProvider implements DataProvider {
 
   async draftProduction(production: Production): Promise<DraftResult> {
     const orgId = await this.requireOrgId();
-    const { data, error } = await this.db.functions.invoke("ai-write", {
-      body: { organizationId: orgId, productionId: production.id },
+    return this.invokeFn<DraftResult>("ai-write", {
+      organizationId: orgId, productionId: production.id,
     });
-    if (error) throw error;
-    return data as DraftResult;
   }
 
   async publishToYouTube(productionId: string): Promise<{ videoUrl: string; simulated: boolean }> {
     const orgId = await this.requireOrgId();
-    const { data, error } = await this.db.functions.invoke("youtube-upload", {
-      body: { organizationId: orgId, productionId },
+    const data = await this.invokeFn<{ videoUrl: string }>("youtube-upload", {
+      organizationId: orgId, productionId,
     });
-    if (error) throw error;
     return { videoUrl: data.videoUrl, simulated: false };
   }
 
@@ -1011,16 +1012,13 @@ export class SupabaseProvider implements DataProvider {
     type: ReportType; channelId?: string; periodStart: string; periodEnd: string;
   }): Promise<Report> {
     const orgId = await this.requireOrgId();
-    const { data, error } = await this.db.functions.invoke("generate-report", {
-      body: {
-        organizationId: orgId,
-        channelId: input.channelId,
-        type: input.type,
-        periodStart: input.periodStart,
-        periodEnd: input.periodEnd,
-      },
+    const data = await this.invokeFn<{ id: string }>("generate-report", {
+      organizationId: orgId,
+      channelId: input.channelId,
+      type: input.type,
+      periodStart: input.periodStart,
+      periodEnd: input.periodEnd,
     });
-    if (error) throw error;
     const report = await this.getReport(data.id);
     if (!report) throw new Error("report generation failed");
     return report;
@@ -1228,17 +1226,17 @@ export class SupabaseProvider implements DataProvider {
 
   async askCoach(message: string, _history: ChatMessage[]): Promise<CoachReply> {
     const orgId = await this.requireOrgId();
-    const { data, error } = await this.db.functions.invoke("ai-coach", {
-      body: { organizationId: orgId, message },
+    const data = await this.invokeFn<{ conversationId: string; answer: string }>("ai-coach", {
+      organizationId: orgId, message,
     });
-    if (error) throw error;
     return { conversationId: data.conversationId, answer: data.answer };
   }
 
   async runLearningLoop() {
-    const { data, error } = await this.db.functions.invoke("learning-loop", { body: {} });
-    if (error) throw error;
-    const results: Array<{ insights?: number; recommendations?: number }> = data?.results ?? [];
+    const data = await this.invokeFn<{ results?: Array<{ insights?: number; recommendations?: number }> }>(
+      "learning-loop", {},
+    );
+    const results = data?.results ?? [];
     const insights = results.reduce((a, r) => a + (r.insights ?? 0), 0);
     const recommendations = results.reduce((a, r) => a + (r.recommendations ?? 0), 0);
     return { insights, recommendations, notifications: 0 };

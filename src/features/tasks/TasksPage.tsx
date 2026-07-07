@@ -50,6 +50,7 @@ import {
   useUpdateTask,
 } from "@/hooks/queries";
 import { notifyTaskCreated, notifyTaskStatus, sendTestPing } from "@/lib/discord";
+import { usePersistedState } from "@/hooks/usePersistedState";
 import { cn } from "@/lib/utils";
 import type { Task, TaskStatus } from "@/types";
 
@@ -341,7 +342,9 @@ export function TasksPage() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [discordOpen, setDiscordOpen] = useState(false);
-  const [form, setForm] = useState({ title: "", notes: "", assigneeId: "", dueAt: "" });
+  const [form, setForm, clearForm] = usePersistedState("draft.task", {
+    title: "", notes: "", assigneeId: "", dueAt: "",
+  });
 
   const byStatus = useMemo(() => {
     const map = new Map<TaskStatus, Task[]>();
@@ -363,7 +366,7 @@ export function TasksPage() {
     });
     if (config) notifyTaskCreated(config, created, me?.displayName ?? "Someone");
     toast.success("Task added");
-    setForm({ title: "", notes: "", assigneeId: "", dueAt: "" });
+    clearForm();
     setDialogOpen(false);
   };
 

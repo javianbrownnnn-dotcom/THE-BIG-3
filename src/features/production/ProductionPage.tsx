@@ -44,6 +44,7 @@ import {
   useUpdateProduction,
 } from "@/hooks/queries";
 import { humanize, relativeTime, shortDate } from "@/lib/format";
+import { usePersistedState } from "@/hooks/usePersistedState";
 import { cn } from "@/lib/utils";
 import { PRODUCTION_STAGES, type Production, type ProductionStage } from "@/types";
 import { SPEED_STACK, STARTER_STACK } from "./speedStack";
@@ -329,7 +330,9 @@ export function ProductionPage() {
   const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [aiDraft, setAiDraft] = useState(true);
-  const [form, setForm] = useState({ title: "", channelId: "", topic: "", assigneeId: "", dueDate: "" });
+  const [form, setForm, clearForm] = usePersistedState("draft.video", {
+    title: "", channelId: "", topic: "", assigneeId: "", dueDate: "",
+  });
 
   const byStage = useMemo(() => {
     const map = new Map<ProductionStage, Production[]>();
@@ -351,7 +354,7 @@ export function ProductionPage() {
       dueDate: form.dueDate || undefined,
     });
     setDialogOpen(false);
-    setForm({ title: "", channelId: "", topic: "", assigneeId: "", dueDate: "" });
+    clearForm();
     if (aiDraft) {
       // Draft BEFORE opening the doc, so it opens pre-filled (the open form
       // intentionally never clobbers itself with later background updates).
