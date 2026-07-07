@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Bot, Youtube } from "lucide-react";
+import { ArrowLeft, Bot, PlugZap, Youtube } from "lucide-react";
+import { toast } from "sonner";
+import { data as dataProvider } from "@/lib/data";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { BarBreakdown } from "@/components/charts/BarBreakdown";
 import { MetricCard } from "@/components/charts/MetricCard";
@@ -28,6 +30,23 @@ export function ChannelDetailPage() {
   const { data: videos } = useVideos(id);
   const { data: insights } = useInsights();
   const [syncOpen, setSyncOpen] = useState(false);
+  const [connecting, setConnecting] = useState(false);
+
+  const connectYouTube = async () => {
+    setConnecting(true);
+    try {
+      const url = await dataProvider.connectYouTubeUrl(id);
+      // Open Google's consent screen; the callback stores the refresh token.
+      window.open(url, "_blank", "noopener");
+      toast.success("Approve access in the new tab, then come back", {
+        description: "Once you approve, this channel's analytics and uploads go live.",
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    } finally {
+      setConnecting(false);
+    }
+  };
   useRecordRecent(
     channel ? { to: `/channels/${channel.id}`, label: channel.name, kind: "channel" } : null,
   );
@@ -81,6 +100,14 @@ export function ChannelDetailPage() {
             ) : (
               <Badge variant="warning">YouTube not linked</Badge>
             )}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={connectYouTube}
+              disabled={connecting}
+            >
+              <PlugZap /> {connecting ? "Opening…" : "Connect YouTube"}
+            </Button>
             <Button size="sm" onClick={() => setSyncOpen(true)}>
               <Youtube /> Sync YouTube
             </Button>

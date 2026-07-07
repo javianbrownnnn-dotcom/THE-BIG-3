@@ -397,7 +397,19 @@ export class SupabaseProvider implements DataProvider {
       body: { videoId },
     });
     if (error) throw new Error(error.message ?? "Could not load YouTube analytics");
+    if ((data as any)?.error) throw new Error((data as any).error);
     return data as VideoAnalytics;
+  }
+
+  async connectYouTubeUrl(channelId: string): Promise<string> {
+    const { data, error } = await this.db.functions.invoke("youtube-oauth", {
+      body: { channelId },
+    });
+    if (error) throw new Error(error.message ?? "Could not start the YouTube connection");
+    if (!data?.authUrl) {
+      throw new Error(data?.error ?? "Google OAuth isn't configured on the backend yet.");
+    }
+    return data.authUrl as string;
   }
 
   async listCompetitorChannels(): Promise<CompetitorChannel[]> {

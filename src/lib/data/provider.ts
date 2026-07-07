@@ -75,6 +75,12 @@ export interface DataProvider {
    * (channel-owner OAuth); demo mode returns a realistic simulated shape.
    */
   getVideoAnalytics(videoId: string): Promise<VideoAnalytics>;
+  /**
+   * Start the YouTube OAuth connect for a channel (analytics + upload): returns
+   * the Google consent URL to open. Live mode only — needs the Google OAuth
+   * secrets configured on the backend.
+   */
+  connectYouTubeUrl(channelId: string): Promise<string>;
 
   listCompetitorChannels(): Promise<CompetitorChannel[]>;
   listCompetitorVideos(filter?: {
