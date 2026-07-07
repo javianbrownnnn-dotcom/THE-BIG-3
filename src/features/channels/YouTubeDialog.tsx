@@ -53,7 +53,9 @@ export function YouTubeDialog({
       await qc.invalidateQueries({ queryKey: ["videos"] });
       await qc.invalidateQueries({ queryKey: ["channels"] });
       toast.success(
-        `Synced ${result.channelTitle}: ${result.created} new videos, ${result.snapshotsAppended} snapshots updated`,
+        result.totalFetched === 0
+          ? `Linked ${result.channelTitle} — no public uploads yet. Sync again after your first video goes live.`
+          : `Synced ${result.channelTitle}: ${result.created} new videos, ${result.snapshotsAppended} snapshots updated`,
       );
       setEditKey(false);
     } catch (err) {

@@ -139,19 +139,28 @@ export async function fetchUploads(
   apiKey: string,
   maxVideos = 200,
 ): Promise<YtVideo[]> {
+  // A brand-new channel has no public uploads yet; YouTube 404s its uploads
+  // playlist. That's an empty channel, not an error.
+  if (!uploadsPlaylistId) return [];
   const ids: string[] = [];
   let pageToken: string | undefined;
   while (ids.length < maxVideos) {
-    const page = await ytGet(
-      "playlistItems",
-      {
-        part: "contentDetails",
-        playlistId: uploadsPlaylistId,
-        maxResults: "50",
-        ...(pageToken ? { pageToken } : {}),
-      },
-      apiKey,
-    );
+    let page;
+    try {
+      page = await ytGet(
+        "playlistItems",
+        {
+          part: "contentDetails",
+          playlistId: uploadsPlaylistId,
+          maxResults: "50",
+          ...(pageToken ? { pageToken } : {}),
+        },
+        apiKey,
+      );
+    } catch (err) {
+      if (err instanceof YouTubeApiError && err.status === 404) return [];
+      throw err;
+    }
     for (const item of page.items ?? []) {
       if (item.contentDetails?.videoId) ids.push(item.contentDetails.videoId);
     }
