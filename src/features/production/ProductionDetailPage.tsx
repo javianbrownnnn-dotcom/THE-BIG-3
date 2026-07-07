@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   AlertTriangle,
   ArrowLeft,
+  ArrowRight as ArrowRightIcon,
   CheckCircle2,
   ImageIcon,
   Palette,
@@ -271,22 +272,6 @@ export function ProductionDetailPage() {
                 {publishToYouTube.isPending ? "Publishing…" : "Publish to YouTube"}
               </Button>
             )}
-            <Select value={form.stage} onValueChange={(v) => setStage(v as ProductionStage)}>
-              <SelectTrigger className="w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {PRODUCTION_STAGES.map((stage) => {
-                  const gated = (stage === "scheduled" || stage === "published") && !canPost;
-                  return (
-                    <SelectItem key={stage} value={stage} disabled={gated}>
-                      {STAGE_LABELS[stage]}
-                      {gated ? " (owner only)" : ""}
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
             <Button
               size="icon"
               variant="ghost"
@@ -299,6 +284,54 @@ export function ProductionDetailPage() {
           </div>
         }
       />
+
+      {/* The pipeline, always visible: where this video is and the one tap
+          that moves it forward. Tapping a chip jumps stages (posting gated). */}
+      <div className="mb-4 flex items-center gap-2 overflow-x-auto pb-1" data-overflow-ok>
+        <div className="flex items-center gap-1">
+          {PRODUCTION_STAGES.map((stage, i) => {
+            const currentIdx = PRODUCTION_STAGES.indexOf(form.stage);
+            const isCurrent = stage === form.stage;
+            const isDone = i < currentIdx;
+            const gated = (stage === "scheduled" || stage === "published") && !canPost;
+            return (
+              <button
+                key={stage}
+                onClick={() => !gated && setStage(stage)}
+                disabled={gated}
+                className={cn(
+                  "flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
+                  isCurrent
+                    ? "border-primary bg-primary/15 text-primary"
+                    : isDone
+                      ? "border-transparent bg-muted text-muted-foreground"
+                      : "border-border text-muted-foreground hover:bg-accent",
+                  gated && "opacity-50",
+                )}
+              >
+                {isDone && <CheckCircle2 className="h-3 w-3 text-success" />}
+                {STAGE_LABELS[stage]}
+              </button>
+            );
+          })}
+        </div>
+        {(() => {
+          const idx = PRODUCTION_STAGES.indexOf(form.stage);
+          const next = PRODUCTION_STAGES[idx + 1];
+          if (!next) return null;
+          const gated = (next === "scheduled" || next === "published") && !canPost;
+          return (
+            <Button
+              size="sm"
+              className="ml-auto shrink-0"
+              disabled={gated}
+              onClick={() => setStage(next)}
+            >
+              {STAGE_LABELS[next]} <ArrowRightIcon className="h-3.5 w-3.5" />
+            </Button>
+          );
+        })()}
+      </div>
 
       <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
         {/* Main doc */}

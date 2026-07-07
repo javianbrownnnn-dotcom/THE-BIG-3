@@ -38,6 +38,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   useChannels,
   useCreateProduction,
+  useDraftProduction,
   useMembers,
   useProductions,
   useUpdateProduction,
@@ -323,8 +324,11 @@ export function ProductionPage() {
   const { data: channels } = useChannels();
   const { data: members } = useMembers();
   const createProduction = useCreateProduction();
+  const draftProduction = useDraftProduction();
+  const updateProduction = useUpdateProduction();
   const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [aiDraft, setAiDraft] = useState(true);
   const [form, setForm] = useState({ title: "", channelId: "", topic: "", assigneeId: "", dueDate: "" });
 
   const byStage = useMemo(() => {
@@ -348,7 +352,34 @@ export function ProductionPage() {
     });
     setDialogOpen(false);
     setForm({ title: "", channelId: "", topic: "", assigneeId: "", dueDate: "" });
-    toast.success("Video created — the doc is ready");
+    if (aiDraft) {
+      // Draft BEFORE opening the doc, so it opens pre-filled (the open form
+      // intentionally never clobbers itself with later background updates).
+      const work = (async () => {
+        const draft = await draftProduction.mutateAsync(created);
+        await updateProduction.mutateAsync({
+          id: created.id,
+          patch: {
+            hookText: draft.hookText,
+            scriptBody: draft.scriptBody,
+            description: draft.description,
+            titleCandidates: draft.titleCandidates,
+          },
+        });
+      })();
+      toast.promise(work, {
+        loading: "Doc created — laying in an AI draft…",
+        success: "Draft ready — react to it, don't start from blank.",
+        error: "Doc created (draft skipped — you can run AI draft inside).",
+      });
+      try {
+        await work;
+      } catch {
+        // doc still opens; the in-doc AI draft button remains available
+      }
+    } else {
+      toast.success("Video created — the doc is ready");
+    }
     navigate(`/production/${created.id}`);
   };
 
@@ -497,6 +528,15 @@ export function ProductionPage() {
               </div>
             </div>
           </div>
+          <label className="flex cursor-pointer items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={aiDraft}
+              onChange={(e) => setAiDraft(e.target.checked)}
+              className="h-4 w-4 accent-[hsl(var(--primary))]"
+            />
+            Start with an AI draft — hook, script, titles (fills only empty fields)
+          </label>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setDialogOpen(false)}>
               Cancel
