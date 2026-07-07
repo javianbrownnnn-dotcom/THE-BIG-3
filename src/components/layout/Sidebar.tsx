@@ -3,7 +3,7 @@ import {
   Archive,
   Bot,
   Clapperboard,
-  FileText,
+  ListTodo,
   Lightbulb,
   LayoutDashboard,
   ListChecks,
@@ -24,7 +24,7 @@ export const NAV = [
   { to: "/competitors", label: "Competitors", icon: Swords },
   { to: "/ideas", label: "Ideas", icon: Lightbulb },
   { to: "/sops", label: "SOPs", icon: ListChecks },
-  { to: "/reports", label: "Reports", icon: FileText },
+  { to: "/tasks", label: "Tasks", icon: ListTodo },
   { to: "/coach", label: "AI Coach", icon: Bot },
   { to: "/settings", label: "Settings", icon: Settings },
 ];

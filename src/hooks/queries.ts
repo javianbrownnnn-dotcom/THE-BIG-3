@@ -13,10 +13,12 @@ import type {
   ChannelInput,
   CommentEntityType,
   CommentInput,
+  DiscordConfig,
   CompetitorChannel,
   CompetitorChannelInput,
   CompetitorVideoInput,
   InviteInput,
+  TaskInput,
   IdeaInput,
   Production,
   ProductionInput,
@@ -66,6 +68,75 @@ export const useVideoAnalytics = (videoId: string | undefined) =>
     retry: false, // a missing YouTube connection is a 409, not a transient error
     staleTime: 5 * 60_000,
   });
+
+export const useTasks = () =>
+  useQuery({ queryKey: ["tasks"], queryFn: () => data.listTasks() });
+
+export function useCreateTask() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: TaskInput) => data.createTask(input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["tasks"] }),
+  });
+}
+
+export function useUpdateTask() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (args: { id: string; patch: Partial<TaskInput> }) =>
+      data.updateTask(args.id, args.patch),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["tasks"] }),
+  });
+}
+
+export function useDeleteTask() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => data.deleteTask(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["tasks"] }),
+  });
+}
+
+export const useDiscordConfig = () =>
+  useQuery({ queryKey: ["discordConfig"], queryFn: () => data.getDiscordConfig() });
+
+export function useSaveDiscordConfig() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (config: DiscordConfig) => data.saveDiscordConfig(config),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["discordConfig"] }),
+  });
+}
+
+export function useDeleteChannel() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => data.deleteChannel(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["channels"] });
+      qc.invalidateQueries({ queryKey: ["videos"] });
+    },
+  });
+}
+
+export function useDeleteCompetitorChannel() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => data.deleteCompetitorChannel(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: keys.competitorChannels });
+      qc.invalidateQueries({ queryKey: ["competitor-videos"] });
+    },
+  });
+}
+
+export function useDeleteProduction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => data.deleteProduction(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["productions"] }),
+  });
+}
 
 export const useComments = (entityType: CommentEntityType, entityId: string) =>
   useQuery({

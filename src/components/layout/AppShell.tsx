@@ -32,7 +32,7 @@ export function AppShell() {
         window.clearTimeout(gTimer);
         const routes: Record<string, string> = {
           d: "/", c: "/channels", v: "/videos", x: "/competitors",
-          i: "/ideas", s: "/sops", r: "/reports", a: "/coach",
+          i: "/ideas", s: "/sops", t: "/tasks", a: "/coach",
         };
         const to = routes[e.key.toLowerCase()];
         if (to) {
