@@ -356,14 +356,20 @@ export function ProductionPage() {
       toast.error("A working title and a channel are required");
       return;
     }
-    const created = await createProduction.mutateAsync({
-      title: form.title.trim(),
-      channelId: form.channelId,
-      format: form.format ?? "long_form",
-      topic: form.topic.trim() || undefined,
-      assigneeId: form.assigneeId || undefined,
-      dueDate: form.dueDate || undefined,
-    });
+    let created: Production;
+    try {
+      created = await createProduction.mutateAsync({
+        title: form.title.trim(),
+        channelId: form.channelId,
+        format: form.format ?? "long_form",
+        topic: form.topic.trim() || undefined,
+        assigneeId: form.assigneeId || undefined,
+        dueDate: form.dueDate || undefined,
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+      return;
+    }
     setDialogOpen(false);
     clearForm();
     if (aiDraft) {

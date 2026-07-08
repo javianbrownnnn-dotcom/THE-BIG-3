@@ -35,17 +35,21 @@ export function ChannelsPage() {
       toast.error("The channel needs a name");
       return;
     }
-    await createChannel.mutateAsync({
-      name: form.name.trim(),
-      niche: form.niche.trim() || undefined,
-      uploadCadence: form.uploadCadence.trim() || undefined,
-      youtubeChannelId: form.youtube.trim() || undefined,
-    });
-    toast.success(
-      `${form.name} added — every dashboard, chart, and the AI now include it. Open it and hit "Sync YouTube" to pull its videos.`,
-    );
-    setForm({ name: "", youtube: "", niche: "", uploadCadence: "" });
-    setDialogOpen(false);
+    try {
+      await createChannel.mutateAsync({
+        name: form.name.trim(),
+        niche: form.niche.trim() || undefined,
+        uploadCadence: form.uploadCadence.trim() || undefined,
+        youtubeChannelId: form.youtube.trim() || undefined,
+      });
+      toast.success(
+        `${form.name} added — every dashboard, chart, and the AI now include it. Open it and hit "Sync YouTube" to pull its videos.`,
+      );
+      setForm({ name: "", youtube: "", niche: "", uploadCadence: "" });
+      setDialogOpen(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    }
   };
 
   if (isLoading) {

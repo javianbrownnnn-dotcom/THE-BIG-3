@@ -53,14 +53,18 @@ function IdeaCard({ idea }: { idea: Idea }) {
       toast.error("Add a channel first (Channels page)");
       return;
     }
-    const doc = await createProduction.mutateAsync({
-      title: idea.title,
-      channelId,
-      topic: idea.tags[0] ?? undefined,
-    });
-    updateIdea.mutate({ id: idea.id, patch: { status: "in_production" } });
-    toast.success("Video doc created — everything carried over");
-    navigate(`/production/${doc.id}`);
+    try {
+      const doc = await createProduction.mutateAsync({
+        title: idea.title,
+        channelId,
+        topic: idea.tags[0] ?? undefined,
+      });
+      updateIdea.mutate({ id: idea.id, patch: { status: "in_production" } });
+      toast.success("Video doc created — everything carried over");
+      navigate(`/production/${doc.id}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    }
   };
 
   return (
@@ -155,17 +159,21 @@ export function IdeasPage() {
       toast.error("A title is all that's required");
       return;
     }
-    await createIdea.mutateAsync({
-      title: form.title,
-      description: form.description || undefined,
-      channelId: form.channelId || undefined,
-      priority: form.priority,
-      status: "inbox",
-      tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
-    });
-    toast.success("Idea captured");
-    clearForm();
-    setDialogOpen(false);
+    try {
+      await createIdea.mutateAsync({
+        title: form.title,
+        description: form.description || undefined,
+        channelId: form.channelId || undefined,
+        priority: form.priority,
+        status: "inbox",
+        tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
+      });
+      toast.success("Idea captured");
+      clearForm();
+      setDialogOpen(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    }
   };
 
   if (isLoading) return <Skeleton className="h-96" />;

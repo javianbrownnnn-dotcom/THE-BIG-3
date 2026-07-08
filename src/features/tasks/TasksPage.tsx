@@ -358,16 +358,20 @@ export function TasksPage() {
       toast.error("Give the task a title");
       return;
     }
-    const created = await createTask.mutateAsync({
-      title: form.title.trim(),
-      notes: form.notes.trim() || undefined,
-      assigneeId: form.assigneeId || undefined,
-      dueAt: form.dueAt ? new Date(form.dueAt).toISOString() : undefined,
-    });
-    if (config) notifyTaskCreated(config, created, me?.displayName ?? "Someone");
-    toast.success("Task added");
-    clearForm();
-    setDialogOpen(false);
+    try {
+      const created = await createTask.mutateAsync({
+        title: form.title.trim(),
+        notes: form.notes.trim() || undefined,
+        assigneeId: form.assigneeId || undefined,
+        dueAt: form.dueAt ? new Date(form.dueAt).toISOString() : undefined,
+      });
+      if (config) notifyTaskCreated(config, created, me?.displayName ?? "Someone");
+      toast.success("Task added");
+      clearForm();
+      setDialogOpen(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    }
   };
 
   if (isLoading) return <Skeleton className="h-96" />;

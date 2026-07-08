@@ -103,18 +103,22 @@ export function SopDetailPage() {
       toast.error("Say what changed and why — future-you will thank you");
       return;
     }
-    await addVersion.mutateAsync({
-      sopId: sop.id,
-      input: {
-        purpose: form.purpose,
-        whenToUse: form.whenToUse || undefined,
-        steps: form.steps.split("\n").map((s) => s.trim()).filter(Boolean),
-        examples: form.examples || undefined,
-        changeSummary: form.changeSummary,
-      },
-    });
-    toast.success(`Version ${(current?.versionNumber ?? 0) + 1} saved — history preserved`);
-    setDialogOpen(false);
+    try {
+      await addVersion.mutateAsync({
+        sopId: sop.id,
+        input: {
+          purpose: form.purpose,
+          whenToUse: form.whenToUse || undefined,
+          steps: form.steps.split("\n").map((s) => s.trim()).filter(Boolean),
+          examples: form.examples || undefined,
+          changeSummary: form.changeSummary,
+        },
+      });
+      toast.success(`Version ${(current?.versionNumber ?? 0) + 1} saved — history preserved`);
+      setDialogOpen(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    }
   };
 
   return (
