@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { Brain, Flame, Plus, Radar, Swords, Trash2, Users } from "lucide-react";
+import { BookOpen, Brain, Flame, Plus, Radar, Swords, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { EmptyState } from "@/components/layout/EmptyState";
@@ -45,6 +45,8 @@ import {
 } from "@/hooks/queries";
 import { getStoredApiKey } from "@/lib/youtube";
 import { CompetitorTeardownDialog } from "./CompetitorTeardownDialog";
+import { TeardownLibrary } from "./TeardownLibrary";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { compactNumber, humanize, relativeTime, shortDate } from "@/lib/format";
 import type { CompetitorChannel } from "@/types";
 
@@ -218,6 +220,21 @@ export function CompetitorsPage() {
         );
       })()}
 
+      <Tabs defaultValue="landscape">
+        <TabsList className="mb-4">
+          <TabsTrigger value="landscape" className="gap-1.5">
+            <Swords className="h-3.5 w-3.5" /> Landscape
+          </TabsTrigger>
+          <TabsTrigger value="teardowns" className="gap-1.5">
+            <BookOpen className="h-3.5 w-3.5" /> Teardown library
+            {(() => {
+              const n = (allVideos ?? []).filter((v) => v.teardown).length;
+              return n > 0 ? <Badge variant="secondary">{n}</Badge> : null;
+            })()}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="landscape">
       {/* Tracked channels, sectioned by niche — the landscape at a glance. */}
       {nicheGroups.map(([niche, channelsInNiche]) => (
         <div key={niche} className="mb-5">
@@ -399,6 +416,13 @@ export function CompetitorsPage() {
           </CardContent>
         </Card>
       )}
+
+        </TabsContent>
+
+        <TabsContent value="teardowns">
+          <TeardownLibrary />
+        </TabsContent>
+      </Tabs>
 
       {/* Add channel dialog */}
       <Dialog open={channelDialogOpen} onOpenChange={setChannelDialogOpen}>
