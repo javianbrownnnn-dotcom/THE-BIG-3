@@ -54,7 +54,7 @@ import type {
   VideoWithHistory,
 } from "@/types";
 import type { DataProvider } from "./provider";
-import { draftFromTemplates } from "@/features/production/draft";
+import { draftFromTemplates, shortsFromScript } from "@/features/production/draft";
 import { aggregateChannelStats, simulateChannelScan } from "@/features/competitors/scan";
 
 // ---------------------------------------------------------------------------
@@ -828,6 +828,7 @@ const productions: Production[] = [
     channelId: "ch_biz",
     title: "The company that owns every guitar brand",
     stage: "scripting",
+    format: "long_form",
     assigneeId: "user_javian",
     dueDate: daysAgo(-6).slice(0, 10),
     topic: "Music industry consolidation",
@@ -862,6 +863,7 @@ const productions: Production[] = [
     channelId: "ch_rel",
     title: "What the Dead Sea Scrolls actually say",
     stage: "editing",
+    format: "long_form",
     assigneeId: "user_robert",
     dueDate: daysAgo(-10).slice(0, 10),
     topic: "Dead Sea Scrolls",
@@ -891,6 +893,7 @@ const productions: Production[] = [
     channelId: "ch_sales",
     title: "I cold-called 100 CEOs with one script",
     stage: "packaging",
+    format: "long_form",
     assigneeId: "user_amara",
     dueDate: daysAgo(-3).slice(0, 10),
     scheduledAt: undefined,
@@ -996,6 +999,8 @@ function replaceInPlace<T>(target: T[], source: T[] | undefined) {
     replaceInPlace(notifications, s.notifications);
     replaceInPlace(activity, s.activity);
     replaceInPlace(productions, s.productions);
+    // Docs persisted before the Shorts feature have no format — default them.
+    for (const p of productions) p.format = p.format ?? "long_form";
     replaceInPlace(invites, s.invites);
     replaceInPlace(comments, s.comments);
     replaceInPlace(tasks, s.tasks);
@@ -1440,6 +1445,7 @@ export class DemoProvider implements DataProvider {
       createdAt: now,
       updatedAt: now,
       ...input,
+      format: input.format ?? "long_form",
     };
     productions.unshift(row);
     persist();
@@ -1469,6 +1475,48 @@ export class DemoProvider implements DataProvider {
     return draftFromTemplates(production, videos);
   }
 
+  async deriveShorts(productionId: string, count: number): Promise<Production[]> {
+    await delay(900);
+    const source = productions.find((p) => p.id === productionId);
+    if (!source) throw new Error("production not found");
+    const shorts = shortsFromScript(source, count);
+    const now = new Date().toISOString();
+    const created = shorts.map((s): Production => ({
+      id: runtimeId("prod"),
+      organizationId: org.id,
+      channelId: source.channelId,
+      title: s.title,
+      stage: "scripting",
+      format: "short",
+      topic: source.topic,
+      assigneeId: source.assigneeId ?? currentUser.id,
+      hookText: s.hook,
+      scriptBody: s.script,
+      notes: [
+        s.onScreenText ? `On-screen text: ${s.onScreenText}` : "",
+        `Derived from: ${source.title}`,
+      ].filter(Boolean).join("\n"),
+      titleCandidates: [],
+      referenceLinks: [],
+      assetLinks: [],
+      checklists: {},
+      voStatus: "not_started",
+      createdAt: now,
+      updatedAt: now,
+    }));
+    productions.unshift(...created);
+    activity.unshift({
+      id: runtimeId("act"),
+      actorName: currentUser.displayName,
+      action: `derived ${created.length} short${created.length > 1 ? "s" : ""} from`,
+      entityType: "production",
+      entityLabel: source.title,
+      createdAt: now,
+    });
+    persist();
+    return clone(created);
+  }
+
   async publishToYouTube(productionId: string) {
     await delay(1600); // simulate the upload
     await this.publishProduction(productionId); // owner check, creates linked video
@@ -1496,7 +1544,7 @@ export class DemoProvider implements DataProvider {
         title: starred,
         topic: prod.topic,
         publishedAt: new Date().toISOString(),
-        format: "long_form",
+        format: prod.format ?? "long_form",
         manualNotes: prod.goal ? `Goal: ${prod.goal}` : undefined,
       });
       prod.linkedVideoId = video.id;

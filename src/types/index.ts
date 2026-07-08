@@ -436,6 +436,7 @@ export interface Production {
   channelId: string;
   title: string;
   stage: ProductionStage;
+  format: VideoFormat;
   assigneeId?: string;
   dueDate?: string;
   scheduledAt?: string;
@@ -466,9 +467,18 @@ export interface Production {
 export interface ProductionInput {
   channelId: string;
   title: string;
+  format?: VideoFormat;
   topic?: string;
   assigneeId?: string;
   dueDate?: string;
+}
+
+/** One Short derived from a long-form script by AI (or the demo engine). */
+export interface DerivedShort {
+  title: string;
+  hook: string;
+  script: string;
+  onScreenText?: string;
 }
 
 export type ProductionPatch = Partial<

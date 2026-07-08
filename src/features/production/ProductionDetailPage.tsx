@@ -8,6 +8,7 @@ import {
   ImageIcon,
   Palette,
   Plus,
+  Scissors,
   Sparkles,
   Star,
   Trash2,
@@ -22,6 +23,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CommentsThread } from "@/components/CommentsThread";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -35,6 +44,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import {
   useChannels,
+  useDeriveShorts,
   useDraftProduction,
   useMe,
   useMembers,
@@ -121,8 +131,11 @@ export function ProductionDetailPage() {
   };
   const publishToYouTube = usePublishToYouTube();
   const draftProduction = useDraftProduction();
+  const deriveShorts = useDeriveShorts();
 
   const [form, setForm] = useState<Production | null>(null);
+  const [shortsOpen, setShortsOpen] = useState(false);
+  const [shortsCount, setShortsCount] = useState(3);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const saveTimer = useRef<number>();
   const loadedId = useRef<string>();
@@ -248,6 +261,27 @@ export function ProductionDetailPage() {
     }
   };
 
+  const makeShorts = async () => {
+    try {
+      const created = await deriveShorts.mutateAsync({
+        productionId: form.id,
+        count: shortsCount,
+      });
+      setShortsOpen(false);
+      toast.success(
+        `${created.length} Short doc${created.length > 1 ? "s" : ""} created in Scripting`,
+        {
+          action: { label: "View board", onClick: () => navigate("/production") },
+        },
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const hasScript =
+    wordCount(form.hookText) + wordCount(form.scriptBody) + wordCount(form.scriptOutro) >= 40;
+
   const findings = critique(form);
   const runtime = estimatedRuntime(form);
   const stageSop = sopForStage(form.stage, sops ?? []);
@@ -301,6 +335,11 @@ export function ProductionDetailPage() {
         description={`${channel?.name ?? ""}${form.topic ? ` · ${form.topic}` : ""}`}
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            {form.format === "short" && (
+              <Badge variant="outline" className="border-primary/40 text-primary">
+                Short
+              </Badge>
+            )}
             <GoalScore production={form} />
             {canPost && form.stage !== "published" && (
               <Button size="sm" onClick={publishYouTube} disabled={publishToYouTube.isPending}>
@@ -482,6 +521,17 @@ export function ProductionDetailPage() {
                   <Wand2 className={draftProduction.isPending ? "animate-pulse" : ""} />
                   {draftProduction.isPending ? "Drafting…" : "AI draft"}
                 </Button>
+                {form.format !== "short" && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShortsOpen(true)}
+                    disabled={!hasScript}
+                    title={hasScript ? undefined : "Write or AI-draft the script first"}
+                  >
+                    <Scissors /> Make Shorts
+                  </Button>
+                )}
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -821,6 +871,47 @@ export function ProductionDetailPage() {
           </Card>
         </div>
       </div>
+
+      <Dialog open={shortsOpen} onOpenChange={setShortsOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Make Shorts from this script</DialogTitle>
+            <DialogDescription>
+              AI cuts the script into self-contained vertical Shorts — one beat each, hook-first,
+              ~45–60 seconds. Each becomes its own doc in Scripting on the same channel.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1.5">
+            <Label>How many Shorts?</Label>
+            <div className="flex gap-1.5">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setShortsCount(n)}
+                  className={cn(
+                    "flex-1 rounded-md border py-1.5 text-sm tabular-nums transition-colors",
+                    shortsCount === n
+                      ? "border-primary/50 bg-primary/10 font-medium text-primary"
+                      : "text-muted-foreground hover:bg-muted",
+                  )}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setShortsOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={makeShorts} disabled={deriveShorts.isPending}>
+              <Scissors className={deriveShorts.isPending ? "animate-pulse" : ""} />
+              {deriveShorts.isPending ? "Cutting…" : `Create ${shortsCount} Short${shortsCount > 1 ? "s" : ""}`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

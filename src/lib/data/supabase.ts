@@ -12,6 +12,7 @@ import type {
   Channel,
   ChannelInput,
   ChatMessage,
+  DerivedShort,
   DraftResult,
   GeneratedIdea,
   CoachReply,
@@ -686,6 +687,7 @@ export class SupabaseProvider implements DataProvider {
       channelId: row.channel_id,
       title: row.title,
       stage: row.stage,
+      format: row.format ?? "long_form",
       assigneeId: row.assignee_id ?? undefined,
       dueDate: row.due_date ?? undefined,
       scheduledAt: row.scheduled_at ?? undefined,
@@ -714,6 +716,7 @@ export class SupabaseProvider implements DataProvider {
   private productionPatchToRow(patch: ProductionPatch): Record<string, unknown> {
     const map: Array<[keyof ProductionPatch, string]> = [
       ["channelId", "channel_id"], ["title", "title"], ["stage", "stage"],
+      ["format", "format"],
       ["assigneeId", "assignee_id"], ["dueDate", "due_date"],
       ["scheduledAt", "scheduled_at"], ["topic", "topic"], ["goal", "goal"],
       ["goalMetric", "goal_metric"], ["goalTarget", "goal_target"],
@@ -752,6 +755,7 @@ export class SupabaseProvider implements DataProvider {
       organization_id: orgId,
       channel_id: input.channelId,
       title: input.title,
+      format: input.format ?? "long_form",
       topic: input.topic,
       assignee_id: input.assigneeId ?? auth.user?.id,
       due_date: input.dueDate,
@@ -779,6 +783,39 @@ export class SupabaseProvider implements DataProvider {
     });
   }
 
+  async deriveShorts(productionId: string, count: number): Promise<Production[]> {
+    const orgId = await this.requireOrgId();
+    const source = await this.getProduction(productionId);
+    if (!source) throw new Error("production not found");
+    const data = await this.invokeFn<{ shorts?: DerivedShort[] }>("ai-shorts", {
+      organizationId: orgId, productionId, count,
+    });
+    const shorts = data?.shorts ?? [];
+    if (!shorts.length) throw new Error("No shorts came back — write more script first");
+
+    const { data: auth } = await this.db.auth.getUser();
+    const rows = shorts.map((s) => ({
+      organization_id: orgId,
+      channel_id: source.channelId,
+      title: s.title,
+      format: "short",
+      stage: "scripting",
+      topic: source.topic,
+      hook_text: s.hook,
+      script_body: s.script,
+      notes: [
+        s.onScreenText ? `On-screen text: ${s.onScreenText}` : "",
+        `Derived from: ${source.title}`,
+      ].filter(Boolean).join("\n"),
+      assignee_id: source.assigneeId ?? auth.user?.id,
+      created_by: auth.user?.id,
+    }));
+    const { data: created, error } = await this.db
+      .from("productions").insert(rows).select("*");
+    if (error) throw error;
+    return (created ?? []).map((r: any) => this.mapProduction(r));
+  }
+
   async publishToYouTube(productionId: string): Promise<{ videoUrl: string; simulated: boolean }> {
     const orgId = await this.requireOrgId();
     const data = await this.invokeFn<{ videoUrl: string }>("youtube-upload", {
@@ -798,7 +835,7 @@ export class SupabaseProvider implements DataProvider {
         title: starred,
         topic: prod.topic,
         publishedAt: new Date().toISOString(),
-        format: "long_form",
+        format: prod.format ?? "long_form",
         manualNotes: prod.goal ? `Goal: ${prod.goal}` : undefined,
       });
       linkedVideoId = video.id;
