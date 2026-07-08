@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import {
+  Film,
   Archive,
   Bot,
   Clapperboard,
@@ -31,6 +32,7 @@ const PAGES = [
   { to: "/vault", label: "Vault", icon: Archive },
   { to: "/channels", label: "Channels", icon: Tv },
   { to: "/videos", label: "Videos", icon: Video },
+  { to: "/studio", label: "Content Studio", icon: Film },
   { to: "/competitors", label: "Competitors", icon: Swords },
   { to: "/ideas", label: "Ideas", icon: Lightbulb },
   { to: "/sops", label: "SOPs", icon: ListChecks },

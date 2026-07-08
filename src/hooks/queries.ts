@@ -10,6 +10,12 @@ import { data } from "@/lib/data";
 import { getStoredApiKey } from "@/lib/youtube";
 import { scanCompetitorFromYouTube } from "@/features/competitors/liveScan";
 import type {
+  ContentProject,
+  ContentProjectInput,
+  FeedbackRuleCategory,
+  StudioFeedback,
+  StudioStep,
+  ThumbnailVariant,
   ChannelInput,
   CommentEntityType,
   CommentInput,
@@ -47,6 +53,10 @@ export const keys = {
   productions: ["productions"] as const,
   production: (id: string) => ["productions", id] as const,
   sops: ["sops"] as const,
+  contentProjects: ["content-projects"] as const,
+  contentProject: (id: string) => ["content-projects", id] as const,
+  studioPersonas: ["studio-personas"] as const,
+  feedbackRules: ["feedback-rules"] as const,
   sop: (id: string) => ["sops", id] as const,
   insights: ["insights"] as const,
   recommendations: ["recommendations"] as const,
@@ -467,5 +477,128 @@ export function useMarkNotificationRead() {
   return useMutation({
     mutationFn: (id: string) => data.markNotificationRead(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.notifications }),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Modern Ambition Content Studio
+// ---------------------------------------------------------------------------
+
+export const useContentProjects = () =>
+  useQuery({ queryKey: keys.contentProjects, queryFn: () => data.listContentProjects() });
+
+export const useContentProject = (id: string) =>
+  useQuery({
+    queryKey: keys.contentProject(id),
+    queryFn: () => data.getContentProject(id),
+    enabled: !!id,
+  });
+
+export const useStudioPersonas = () =>
+  useQuery({ queryKey: keys.studioPersonas, queryFn: () => data.listStudioPersonas() });
+
+export const useFeedbackRules = () =>
+  useQuery({ queryKey: keys.feedbackRules, queryFn: () => data.listFeedbackRules() });
+
+export function useCreateContentProject() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: ContentProjectInput) => data.createContentProject(input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.contentProjects }),
+  });
+}
+
+export function useUpdateContentProject() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (args: { id: string; patch: Partial<ContentProject> }) =>
+      data.updateContentProject(args.id, args.patch),
+    onSuccess: (result) => {
+      qc.setQueryData(keys.contentProject(result.id), result);
+      qc.invalidateQueries({ queryKey: keys.contentProjects });
+    },
+  });
+}
+
+export function useDeleteContentProject() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => data.deleteContentProject(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.contentProjects }),
+  });
+}
+
+export function useRunStudioStep() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (args: { projectId: string; step: StudioStep }) =>
+      data.runStudioStep(args.projectId, args.step),
+    onSuccess: (result) => {
+      qc.setQueryData(keys.contentProject(result.id), result);
+      qc.invalidateQueries({ queryKey: keys.contentProjects });
+      qc.invalidateQueries({ queryKey: keys.studioPersonas });
+    },
+  });
+}
+
+export function useSubmitStudioFeedback() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (args: { projectId: string; feedback: StudioFeedback }) =>
+      data.submitStudioFeedback(args.projectId, args.feedback),
+    onSuccess: ({ project }) => {
+      qc.setQueryData(keys.contentProject(project.id), project);
+      qc.invalidateQueries({ queryKey: keys.contentProjects });
+      qc.invalidateQueries({ queryKey: keys.feedbackRules });
+      qc.invalidateQueries({ queryKey: keys.studioPersonas });
+    },
+  });
+}
+
+export function useAddFeedbackRule() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { category: FeedbackRuleCategory; rule: string; sourceFeedback?: string }) =>
+      data.addFeedbackRule(input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.feedbackRules }),
+  });
+}
+
+export function useSetFeedbackRuleActive() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (args: { id: string; active: boolean }) =>
+      data.setFeedbackRuleActive(args.id, args.active),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.feedbackRules }),
+  });
+}
+
+export function useDeleteFeedbackRule() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => data.deleteFeedbackRule(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.feedbackRules }),
+  });
+}
+
+export function useSaveThumbnailVariant() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (args: { projectId: string; variant: Omit<ThumbnailVariant, "id" | "createdAt"> }) =>
+      data.saveThumbnailVariant(args.projectId, args.variant),
+    onSuccess: (result) => {
+      qc.setQueryData(keys.contentProject(result.id), result);
+    },
+  });
+}
+
+export function useGenerateThumbnailImage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (args: { projectId: string; conceptName: string }) =>
+      data.generateThumbnailImage(args.projectId, args.conceptName),
+    onSuccess: (result) => {
+      qc.setQueryData(keys.contentProject(result.id), result);
+    },
   });
 }

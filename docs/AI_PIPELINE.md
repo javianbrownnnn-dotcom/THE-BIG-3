@@ -67,6 +67,21 @@ and their published videos carry `videos.format = 'short'` for like-with-like
 analytics. Both run with the caller's JWT; demo mode mirrors them with local
 template engines so the flow works without a backend.
 
+## 5. Content Studio (`functions/content-studio`, `functions/thumbnail-image`)
+
+The Modern Ambition documentary pipeline: relevance gate → research packet →
+title lab (20 scored variants) → thumbnail concepts (Gemini + Canva prompts)
+→ timestamped outline → full voiceover script → critique → feedback. One
+function, one `step` parameter; preconditions are enforced server-side so
+nothing generates before its inputs exist ("relevance before generation").
+Every prompt injects the channel identity, the selected personas, and the
+active Script Bible rules (feedback_rules) — feedback literally retrains the
+system. Facts are never invented: research marks unverified claims, scripts
+carry [FACT-CHECK] tags, the critique emits safety warnings. New personas are
+proposed at 30 and 100 completed projects (five max). `thumbnail-image` is
+the Gemini image adapter (GEMINI_API_KEY secret); Canva runs as a guided
+link-out and manual upload always works.
+
 ## Configuration
 
 ```bash

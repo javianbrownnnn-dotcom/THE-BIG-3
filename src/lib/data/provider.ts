@@ -16,7 +16,15 @@ import type {
   CompetitorChannelInput,
   CompetitorScanResult,
   CompetitorTeardown,
+  ContentProject,
+  ContentProjectInput,
   DiscordConfig,
+  FeedbackRule,
+  FeedbackRuleCategory,
+  StudioFeedback,
+  StudioPersona,
+  StudioStep,
+  ThumbnailVariant,
   Invite,
   InviteInput,
   CompetitorVideo,
@@ -211,6 +219,62 @@ export interface DataProvider {
   deleteChannel(id: string): Promise<void>;
   deleteCompetitorChannel(id: string): Promise<void>;
   deleteProduction(id: string): Promise<void>;
+
+  // ------------------------------------------------------------------
+  // Modern Ambition Content Studio: the gated documentary pipeline.
+  // Relevance before generation; every artifact stored; feedback becomes
+  // reusable rules (the Script Bible) injected into future generations.
+  // ------------------------------------------------------------------
+  listContentProjects(): Promise<ContentProject[]>;
+  getContentProject(id: string): Promise<ContentProject | null>;
+  createContentProject(input: ContentProjectInput): Promise<ContentProject>;
+  updateContentProject(
+    id: string,
+    patch: Partial<ContentProject>,
+  ): Promise<ContentProject>;
+  deleteContentProject(id: string): Promise<void>;
+  /**
+   * Run one AI step of the pipeline (relevance, research, titles, thumbnails,
+   * outline, script, critique, personaReview). Live mode routes to Claude via
+   * the content-studio edge function (which injects channel identity,
+   * personas, and active Script Bible rules); demo mode uses honest template
+   * scaffolds. Returns the updated project.
+   */
+  runStudioStep(projectId: string, step: StudioStep): Promise<ContentProject>;
+  /** Built-in personas plus AI-proposed ones (unlock at 30/100 videos, 5 max). */
+  listStudioPersonas(): Promise<StudioPersona[]>;
+  /** The Script Bible. */
+  listFeedbackRules(): Promise<FeedbackRule[]>;
+  addFeedbackRule(input: {
+    category: FeedbackRuleCategory;
+    rule: string;
+    sourceFeedback?: string;
+  }): Promise<FeedbackRule>;
+  setFeedbackRuleActive(id: string, active: boolean): Promise<void>;
+  deleteFeedbackRule(id: string): Promise<void>;
+  /**
+   * Store the human's ratings + notes on a finished project, distill the
+   * notes into reusable Script Bible rules, and mark the project done.
+   */
+  submitStudioFeedback(
+    projectId: string,
+    feedback: StudioFeedback,
+  ): Promise<{ project: ContentProject; rules: FeedbackRule[] }>;
+  /** Persist a produced thumbnail (Gemini image, Canva export, or upload). */
+  saveThumbnailVariant(
+    projectId: string,
+    variant: Omit<ThumbnailVariant, "id" | "createdAt">,
+  ): Promise<ContentProject>;
+  /**
+   * Generate a thumbnail image for a concept via the cheapest automated
+   * provider (Gemini). Live mode calls the thumbnail-image edge function —
+   * if GEMINI_API_KEY isn't configured it returns setup instructions in the
+   * error. Demo mode fabricates a placeholder so the flow is explorable.
+   */
+  generateThumbnailImage(
+    projectId: string,
+    conceptName: string,
+  ): Promise<ContentProject>;
 
   listActivity(): Promise<ActivityItem[]>;
 

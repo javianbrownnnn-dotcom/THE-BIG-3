@@ -12,8 +12,16 @@ import type {
   Channel,
   ChannelInput,
   ChatMessage,
+  ContentProject,
+  ContentProjectInput,
   DerivedShort,
   DraftResult,
+  FeedbackRule,
+  FeedbackRuleCategory,
+  StudioFeedback,
+  StudioPersona,
+  StudioStep,
+  ThumbnailVariant,
   GeneratedIdea,
   CoachReply,
   Comment,
@@ -55,6 +63,7 @@ import type {
   VideoWithHistory,
 } from "@/types";
 import type { DataProvider } from "./provider";
+import { BUILTIN_PERSONAS } from "@/features/studio/personas";
 
 function mapMetrics(row: any): VideoMetrics {
   return {
@@ -1246,6 +1255,246 @@ export class SupabaseProvider implements DataProvider {
   async deleteProduction(id: string): Promise<void> {
     const { error } = await this.db.from("productions").delete().eq("id", id);
     if (error) throw error;
+  }
+
+
+  // ------------------------------------------------------------------
+  // Modern Ambition Content Studio
+  // ------------------------------------------------------------------
+
+  private mapContentProject(row: any): ContentProject {
+    return {
+      id: row.id,
+      organizationId: row.organization_id,
+      channelId: row.channel_id ?? undefined,
+      topic: row.topic,
+      status: row.status,
+      primaryPersona: row.primary_persona ?? undefined,
+      secondaryPersona: row.secondary_persona ?? undefined,
+      videoLengthMinutes: row.video_length_minutes ?? 15,
+      relevance: row.relevance ?? undefined,
+      research: row.research ?? undefined,
+      titleLab: row.title_lab ?? undefined,
+      selectedTitle: row.selected_title ?? undefined,
+      thumbnailLab: row.thumbnail_lab ?? undefined,
+      selectedThumbnail: row.selected_thumbnail ?? undefined,
+      thumbnailVariants: Array.isArray(row.thumbnail_variants) ? row.thumbnail_variants : [],
+      outline: row.outline ?? undefined,
+      script: row.script ?? undefined,
+      critique: row.critique ?? undefined,
+      feedback: row.feedback ?? undefined,
+      linkedProductionId: row.linked_production_id ?? undefined,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    };
+  }
+
+  private contentPatchToRow(patch: Partial<ContentProject>): Record<string, unknown> {
+    const map: Array<[keyof ContentProject, string]> = [
+      ["channelId", "channel_id"], ["topic", "topic"], ["status", "status"],
+      ["primaryPersona", "primary_persona"], ["secondaryPersona", "secondary_persona"],
+      ["videoLengthMinutes", "video_length_minutes"], ["relevance", "relevance"],
+      ["research", "research"], ["titleLab", "title_lab"],
+      ["selectedTitle", "selected_title"], ["thumbnailLab", "thumbnail_lab"],
+      ["selectedThumbnail", "selected_thumbnail"], ["thumbnailVariants", "thumbnail_variants"],
+      ["outline", "outline"], ["script", "script"], ["critique", "critique"],
+      ["feedback", "feedback"], ["linkedProductionId", "linked_production_id"],
+    ];
+    const row: Record<string, unknown> = {};
+    for (const [from, to] of map) {
+      if (patch[from] !== undefined) row[to] = patch[from];
+    }
+    return row;
+  }
+
+  async listContentProjects(): Promise<ContentProject[]> {
+    const orgId = await this.requireOrgId();
+    const { data, error } = await this.db
+      .from("content_projects").select("*").eq("organization_id", orgId)
+      .order("updated_at", { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map((r: any) => this.mapContentProject(r));
+  }
+
+  async getContentProject(id: string): Promise<ContentProject | null> {
+    const { data } = await this.db
+      .from("content_projects").select("*").eq("id", id).single();
+    return data ? this.mapContentProject(data) : null;
+  }
+
+  async createContentProject(input: ContentProjectInput): Promise<ContentProject> {
+    const orgId = await this.requireOrgId();
+    const { data: auth } = await this.db.auth.getUser();
+    const { data, error } = await this.db.from("content_projects").insert({
+      organization_id: orgId,
+      channel_id: input.channelId ?? null,
+      topic: input.topic,
+      primary_persona: input.primaryPersona ?? null,
+      secondary_persona: input.secondaryPersona ?? null,
+      video_length_minutes: input.videoLengthMinutes ?? 15,
+      created_by: auth.user?.id,
+    }).select("*").single();
+    if (error) throw error;
+    return this.mapContentProject(data);
+  }
+
+  async updateContentProject(
+    id: string,
+    patch: Partial<ContentProject>,
+  ): Promise<ContentProject> {
+    const { data, error } = await this.db
+      .from("content_projects")
+      .update(this.contentPatchToRow(patch))
+      .eq("id", id).select("*").single();
+    if (error) throw error;
+    return this.mapContentProject(data);
+  }
+
+  async deleteContentProject(id: string): Promise<void> {
+    const { error } = await this.db.from("content_projects").delete().eq("id", id);
+    if (error) throw error;
+  }
+
+  async runStudioStep(projectId: string, step: StudioStep): Promise<ContentProject> {
+    const orgId = await this.requireOrgId();
+    // The edge function loads the project, injects channel identity, personas
+    // and active Script Bible rules, runs Claude, writes the artifact back,
+    // and returns the updated row.
+    const data = await this.invokeFn<{ project: any }>("content-studio", {
+      organizationId: orgId, projectId, step,
+    });
+    return this.mapContentProject(data.project);
+  }
+
+  async listStudioPersonas(): Promise<StudioPersona[]> {
+    const orgId = await this.requireOrgId();
+    const { data } = await this.db
+      .from("content_personas").select("*").eq("organization_id", orgId)
+      .order("created_at");
+    const ai: StudioPersona[] = (data ?? []).map((r: any) => ({
+      id: r.id,
+      name: r.name,
+      ageRange: r.definition?.ageRange ?? undefined,
+      description: r.definition?.description ?? "",
+      respondsTo: r.definition?.respondsTo ?? [],
+      source: "ai",
+      active: r.active,
+    }));
+    return [...BUILTIN_PERSONAS, ...ai];
+  }
+
+  async listFeedbackRules(): Promise<FeedbackRule[]> {
+    const orgId = await this.requireOrgId();
+    const { data, error } = await this.db
+      .from("feedback_rules").select("*").eq("organization_id", orgId)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map((r: any) => ({
+      id: r.id,
+      category: r.category,
+      rule: r.rule,
+      sourceFeedback: r.source_feedback ?? undefined,
+      active: r.active,
+      createdAt: r.created_at,
+    }));
+  }
+
+  async addFeedbackRule(input: {
+    category: FeedbackRuleCategory;
+    rule: string;
+    sourceFeedback?: string;
+  }): Promise<FeedbackRule> {
+    const orgId = await this.requireOrgId();
+    const { data: auth } = await this.db.auth.getUser();
+    const { data, error } = await this.db.from("feedback_rules").insert({
+      organization_id: orgId,
+      category: input.category,
+      rule: input.rule,
+      source_feedback: input.sourceFeedback ?? null,
+      created_by: auth.user?.id,
+    }).select("*").single();
+    if (error) throw error;
+    return {
+      id: data.id, category: data.category, rule: data.rule,
+      sourceFeedback: data.source_feedback ?? undefined,
+      active: data.active, createdAt: data.created_at,
+    };
+  }
+
+  async setFeedbackRuleActive(id: string, active: boolean): Promise<void> {
+    const { error } = await this.db.from("feedback_rules").update({ active }).eq("id", id);
+    if (error) throw error;
+  }
+
+  async deleteFeedbackRule(id: string): Promise<void> {
+    const { error } = await this.db.from("feedback_rules").delete().eq("id", id);
+    if (error) throw error;
+  }
+
+  async submitStudioFeedback(
+    projectId: string,
+    feedback: StudioFeedback,
+  ): Promise<{ project: ContentProject; rules: FeedbackRule[] }> {
+    const orgId = await this.requireOrgId();
+    await this.updateContentProject(projectId, { feedback, status: "done" });
+    // Claude distills the notes into reusable rules and inserts them; it also
+    // checks the 30/100 persona-unlock milestones.
+    const data = await this.invokeFn<{ project: any; rules: any[] }>("content-studio", {
+      organizationId: orgId, projectId, step: "feedbackRules", feedback,
+    });
+    return {
+      project: this.mapContentProject(data.project),
+      rules: (data.rules ?? []).map((r: any) => ({
+        id: r.id, category: r.category, rule: r.rule,
+        sourceFeedback: r.source_feedback ?? undefined,
+        active: r.active ?? true, createdAt: r.created_at,
+      })),
+    };
+  }
+
+  async saveThumbnailVariant(
+    projectId: string,
+    variant: Omit<ThumbnailVariant, "id" | "createdAt">,
+  ): Promise<ContentProject> {
+    const project = await this.getContentProject(projectId);
+    if (!project) throw new Error("project not found");
+    const existing = variant.selected
+      ? project.thumbnailVariants.map((v) => ({ ...v, selected: false }))
+      : project.thumbnailVariants;
+    const next: ThumbnailVariant = {
+      ...variant,
+      id: `thv_${Date.now().toString(36)}${Math.floor(Math.random() * 1e6).toString(36)}`,
+      createdAt: new Date().toISOString(),
+    };
+    return this.updateContentProject(projectId, {
+      thumbnailVariants: [...existing, next],
+    });
+  }
+
+  async generateThumbnailImage(
+    projectId: string,
+    conceptName: string,
+  ): Promise<ContentProject> {
+    const orgId = await this.requireOrgId();
+    // Gemini renders the concept's image prompt server-side (GEMINI_API_KEY
+    // as an edge-function secret — never in the client). Missing key returns
+    // setup instructions in the error message instead of breaking.
+    const data = await this.invokeFn<{ imageUrl: string; prompt: string }>(
+      "thumbnail-image",
+      { organizationId: orgId, projectId, conceptName },
+    );
+    const project = await this.getContentProject(projectId);
+    return this.saveThumbnailVariant(projectId, {
+      provider: "gemini",
+      conceptName,
+      imageUrl: data.imageUrl,
+      prompt: data.prompt,
+      pairedTitle: project?.selectedTitle,
+      relevanceScore: project?.thumbnailLab?.concepts.find(
+        (c) => c.conceptName === conceptName,
+      )?.relevanceScore,
+      selected: (project?.thumbnailVariants.length ?? 0) === 0,
+    });
   }
 
   async listActivity(): Promise<ActivityItem[]> {
