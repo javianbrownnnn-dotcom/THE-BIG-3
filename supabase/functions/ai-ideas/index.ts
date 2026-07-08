@@ -14,6 +14,8 @@ Rules:
 - Each idea is a concrete angle with tension, not a broad topic. "How Rolex manufactures scarcity", not "a video about Rolex".
 - Ground ideas in the demand evidence: lean toward mechanisms proven by the competitor outliers provided.
 - Do NOT repeat topics the channel has already covered (a list is provided).
+- Do NOT duplicate anything the team is currently working on (in-flight productions and Content Studio projects are provided) — propose ideas that complement the current slate instead.
+- Follow the Script Bible rules (writing law distilled from the creator's own feedback).
 - Favor the channel's best-performing hook types and story structures.
 Return STRICT JSON: { "ideas": [{ "title": string, "description": string, "rationale": string, "suggestedHook": string, "tags": string[] }] }`;
 
@@ -47,7 +49,9 @@ Deno.serve(async (req) => {
           `\n\nAlready covered (avoid these): ${JSON.stringify(coveredTopics)}` +
           `\n\nChannels: ${JSON.stringify(ctx.channels)}` +
           `\n\nCompetitor outliers (demand evidence): ${JSON.stringify(ctx.competitorOutliers)}` +
-          `\n\nRecent videos with metrics: ${JSON.stringify(ctx.videos.slice(0, 30))}`,
+          `\n\nRecent videos with metrics: ${JSON.stringify(ctx.videos.slice(0, 30))}` +
+          `\n\nCurrently in the works (do not duplicate; complement): ${JSON.stringify(ctx.currentWork)}` +
+          `\n\nScript Bible rules (follow): ${JSON.stringify(ctx.scriptBible)}`,
       },
     ]);
 

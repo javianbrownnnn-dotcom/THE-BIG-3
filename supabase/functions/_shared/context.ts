@@ -13,6 +13,14 @@ export interface OrgContext {
   recentInsights: any[];
   openRecommendations: any[];
   /**
+   * What the team is working on RIGHT NOW: in-flight production docs and
+   * active Content Studio projects. Every AI surface sees this so answers,
+   * drafts, and idea generation align with (and never duplicate) the slate.
+   */
+  currentWork: { productions: any[]; studioProjects: any[] };
+  /** Active Script Bible rules — writing law distilled from creator feedback. */
+  scriptBible: any[];
+  /**
    * The distilled competitor playbook: the latest teardown synthesis (written
    * by the learning loop every 20 teardowns) plus the most-repeated
    * transferable moves. This is how "the AIs train on the winning
@@ -69,6 +77,22 @@ export async function loadOrgContext(
     .order("outlier_score", { ascending: false })
     .limit(20);
 
+  const [inFlight, studioActive, bibleRules] = await Promise.all([
+    db.from("productions")
+      .select("title,topic,stage,format,due_date,scheduled_at")
+      .eq("organization_id", organizationId)
+      .neq("stage", "published")
+      .order("updated_at", { ascending: false }).limit(20),
+    db.from("content_projects")
+      .select("topic,status,selected_title,primary_persona,video_length_minutes")
+      .eq("organization_id", organizationId)
+      .neq("status", "done")
+      .order("updated_at", { ascending: false }).limit(20),
+    db.from("feedback_rules")
+      .select("category,rule")
+      .eq("organization_id", organizationId).eq("active", true),
+  ]);
+
   const [synthesis, tornDown] = await Promise.all([
     db.from("ai_insights").select("title,body,created_at,data")
       .eq("organization_id", organizationId)
@@ -105,6 +129,11 @@ export async function loadOrgContext(
       synthesis: synthesis.data?.[0] ?? null,
       winningMoves,
     },
+    currentWork: {
+      productions: inFlight.data ?? [],
+      studioProjects: studioActive.data ?? [],
+    },
+    scriptBible: bibleRules.data ?? [],
   };
 }
 
@@ -124,5 +153,9 @@ export function contextToPrompt(ctx: OrgContext): string {
     JSON.stringify(ctx.recentInsights),
     "## Open recommendations",
     JSON.stringify(ctx.openRecommendations),
+    "## What the team is working on right now (align with this; never duplicate it)",
+    JSON.stringify(ctx.currentWork),
+    "## Script Bible (writing rules from the creator's own feedback — follow them)",
+    JSON.stringify(ctx.scriptBible),
   ].join("\n\n");
 }

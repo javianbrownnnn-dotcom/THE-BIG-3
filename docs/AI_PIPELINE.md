@@ -2,8 +2,12 @@
 
 The Claude-powered surfaces share one grounding layer
 (`supabase/functions/_shared/context.ts`): channels, recent videos with their
-latest metrics, active SOPs, competitor outliers, recent insights, and open
-recommendations. Same facts everywhere → consistent strategy.
+latest metrics, active SOPs, competitor outliers, the distilled competitor
+playbook, recent insights, open recommendations, **what the team is working on
+right now** (in-flight productions + active Content Studio projects), and the
+active Script Bible rules. Same facts everywhere → consistent strategy: the
+coach ties advice to the current slate, and idea generation never pitches
+something already in the works.
 
 ## 1. AI Coach (`functions/ai-coach`)
 

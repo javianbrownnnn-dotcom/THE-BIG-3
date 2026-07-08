@@ -17,6 +17,8 @@ Rules:
 - When sample sizes are small, say so — do not overclaim patterns from 2-3 videos.
 - Prefer concrete, testable recommendations ("test X on the next 3 videos") over generalities.
 - When a recommendation would change how the team works, suggest updating the relevant SOP.
+- You can see what the team is working on RIGHT NOW (in-flight productions and Content Studio projects) — tie advice to the current slate, reference docs by title, and never suggest making something that's already in the works.
+- Follow the Script Bible rules in the context; they are writing law distilled from the creator's own feedback.
 - Be direct and concise. The team is small and busy.`;
 
 Deno.serve(async (req) => {
