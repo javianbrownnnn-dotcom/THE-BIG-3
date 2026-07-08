@@ -42,9 +42,17 @@ export function buildIdeaBrief(input: {
   lines.push("");
   lines.push(
     "You are helping a small YouTube media company brainstorm video ideas. " +
-      "Everything below is their real performance data. Suggest specific video ideas " +
-      "(concrete angles with tension, not broad topics), lean on the mechanisms that " +
-      "are proven below, and avoid topics already covered.",
+      "Everything below is their real performance data. Suggest specific video ideas, " +
+      "lean on the mechanisms that are proven below, and avoid topics already covered.",
+    "",
+    "HARD RULES for every idea:",
+    "1. It must be about a REAL, NAMED subject — an actual founder, company, brand, " +
+      "or documented event. \"How Howard Schultz lost Starbucks twice\" is valid; " +
+      "\"a founder who lost his company\" is NOT. No template angles, no hypotheticals.",
+    "2. Only real, widely documented stories — never invent people, events, or numbers. " +
+      "If you are not confident the story is real, do not pitch it.",
+    "3. Each idea needs tension: a cost, a contradiction, a downfall, or a hidden mechanism " +
+      "in that specific story.",
   );
 
   lines.push("", "## Channels");
@@ -122,9 +130,12 @@ export function buildIdeaBrief(input: {
   lines.push(
     "",
     "## What to give back",
-    "8-12 specific video ideas. For each: a working title, the channel it's for, " +
-      "the hook type and structure to use (from the proven lists above), and one " +
-      "sentence on why it should work given the data.",
+    "8-12 specific video ideas, every one about a real named founder, company, or event " +
+      "(hard rule 1 above). For each: a working title that NAMES the subject, the channel " +
+      "it's for, the hook type and structure to use (from the proven lists above), the real " +
+      "story beat the video hangs on (a documented decision, scandal, collapse, or turning " +
+      "point), and one sentence on why it should work given the data. Reject your own idea " +
+      "and replace it if it could apply to more than one company or person.",
   );
 
   return lines.join("\n");
