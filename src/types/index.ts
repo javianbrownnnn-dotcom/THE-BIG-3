@@ -187,6 +187,9 @@ export interface CompetitorVideo {
   storyStructure?: string;
   whyItWorked?: string;
   aiObservations?: string;
+  /** Full AI teardown, banked for playbook synthesis (every 20 teardowns). */
+  teardown?: CompetitorTeardown;
+  teardownAt?: string;
   isOutlier: boolean;
   outlierScore?: number;
   views?: number;

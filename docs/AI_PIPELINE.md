@@ -36,6 +36,7 @@ Runs daily with the service role (GitHub Action → edge function). Per org:
 | Interpret | Claude receives the detected changes + full context, returns strict JSON: insights and recommendations |
 | Draft SOP versions | when evidence is strong, the loop INSERTs a new `sop_versions` row (`source = 'ai'`) — append-only, team reviews before adopting |
 | Notify | `ctr_drop`, `retention_improved`, `competitor_outlier`, `ai_recommendation` notifications |
+| Synthesize teardowns | every 20 banked competitor teardowns, Claude distills the repeating winning mechanisms into a playbook insight + SOP change proposals (approval queue). The playbook is injected into the shared context, so every AI surface trains on it |
 
 Two deliberate constraints:
 

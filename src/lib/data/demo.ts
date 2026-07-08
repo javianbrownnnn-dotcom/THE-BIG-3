@@ -1330,9 +1330,12 @@ export class DemoProvider implements DataProvider {
       },
     };
 
-    // Persist the analysis onto the video so it sticks in the table.
+    // Persist the analysis onto the video so it sticks in the table — and the
+    // full teardown, which the learning loop synthesizes every 20 teardowns.
     v.whyItWorked = teardown.whyItWorked;
     v.aiObservations = teardown.observations;
+    v.teardown = teardown;
+    v.teardownAt = new Date().toISOString();
     persist();
     return clone(teardown);
   }
@@ -1924,6 +1927,79 @@ export class DemoProvider implements DataProvider {
           counts.recommendations++;
         }
       }
+    }
+
+    // 4. Teardown synthesis: every 20 banked teardowns, distill the winning
+    // mechanisms into a playbook insight + an SOP change proposal (approval
+    // queue — a human closes the loop). Same gate as the live backend.
+    const torn = competitorVideos.filter((v) => v.teardown);
+    const SYNTHESIS_BATCH = 20;
+    const lastSynth = insights
+      .map((i) => /from (\d+) teardowns/.exec(i.title)?.[1])
+      .filter(Boolean)
+      .map(Number)
+      .sort((a, b) => b - a)[0] ?? 0;
+    if (
+      torn.length >= SYNTHESIS_BATCH &&
+      Math.floor(torn.length / SYNTHESIS_BATCH) > Math.floor(lastSynth / SYNTHESIS_BATCH)
+    ) {
+      const tally = (key: (v: CompetitorVideo) => string | undefined) => {
+        const m = new Map<string, number>();
+        for (const v of torn) {
+          const k = key(v);
+          if (k) m.set(k, (m.get(k) ?? 0) + 1);
+        }
+        return [...m.entries()].sort((a, b) => b[1] - a[1]);
+      };
+      const topHooks = tally((v) => v.hook).slice(0, 2);
+      const topStructures = tally((v) => v.storyStructure).slice(0, 2);
+      const moveCounts = new Map<string, number>();
+      for (const v of torn) {
+        for (const move of v.teardown?.transferableMoves ?? []) {
+          moveCounts.set(move, (moveCounts.get(move) ?? 0) + 1);
+        }
+      }
+      const topMoves = [...moveCounts.entries()]
+        .sort((a, b) => b[1] - a[1]).slice(0, 5).map(([m]) => m);
+
+      addInsight({
+        kind: "competitor",
+        title: `Competitor playbook updated (from ${torn.length} teardowns)`,
+        body:
+          `Across ${torn.length} teardowns the winning standpoints are: hooks ${topHooks
+            .map(([k, n]) => `${hz(k).toLowerCase()} (${n}×)`).join(", ")}; structures ${topStructures
+            .map(([k, n]) => `${hz(k).toLowerCase()} (${n}×)`).join(", ")}. ` +
+          `Most repeated transferable moves: ${topMoves.slice(0, 3).join(" · ")}. ` +
+          `Every AI surface (coach, drafts, ideas, shorts) is now grounded in this playbook.`,
+        confidence: Math.min(0.9, 0.5 + torn.length / 100),
+      });
+      recommendations.unshift({
+        id: runtimeId("rec"), organizationId: org.id, sopId: "sop_hooks",
+        title: `Fold the competitor playbook into the Hook Writing SOP`,
+        rationale:
+          `${torn.length} teardowns point the same way: ${topHooks
+            .map(([k, n]) => `${hz(k).toLowerCase()} (${n}×)`).join(" and ")} keep winning. ` +
+          `Approving updates the SOP with the distilled moves — history preserved, old version kept.`,
+        status: "proposed",
+        proposedChange: {
+          sopId: "sop_hooks",
+          sopTitle: "Hook Writing (First 30 Seconds)",
+          purpose: "Open every video with the mechanism competitor data proves out.",
+          whenToUse: "Every script, before the first draft is called done.",
+          steps: topMoves.length
+            ? topMoves
+            : ["Open cold on a single vivid moment — no context, no 'in this video'."],
+          examples: `Distilled from ${torn.length} competitor teardowns on ${new Date().toLocaleDateString()}.`,
+          changeSummary: `Playbook synthesis from ${torn.length} teardowns: winning hooks ${topHooks.map(([k]) => hz(k).toLowerCase()).join(", ")}.`,
+        },
+        createdAt: nowIso,
+      });
+      counts.recommendations++;
+      notify(
+        "ai_recommendation",
+        "Competitor playbook synthesized",
+        `${torn.length} teardowns distilled — an SOP update is waiting for your approval.`,
+      );
     }
 
     activity.unshift({
