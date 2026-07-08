@@ -11,12 +11,15 @@ CORE THESIS — every video answers: who is selling ambition, who is buying it, 
 
 WINNING FORMULA: specific person/company/product + emotional tension + hidden money machine. Concrete beats conceptual: "How Tai Lopez Invented the Modern Online Guru" — never "the attention economy", "the future of work", or "why people feel behind".
 
-CONTENT BUCKETS (all five carry weight; rotate so consecutive ideas never share a bucket or subject archetype):
+CONTENT BUCKETS (all eight carry weight; rotate so consecutive ideas never share a bucket or subject archetype):
 1. The Guru Economy — the people selling wealth, discipline, masculinity, sales, agencies, mindset, escape-the-9-to-5 (Hormozi, Gadzhi, Tai Lopez, Cardone, Gary Vee, Dan Lok, Bet-David, course/agency/trading/real-estate sellers). The angle is never "this person got famous" — explain the MACHINE they represent.
 2. The Status Economy — how status is manufactured, rented, displayed, and sold (rented Lamborghinis, fake jets, luxury-apartment content, millionaire theater, LinkedIn flex culture). Tension: how much of modern success is real, and how much is performance?
 3. Creator CEOs — how a personality becomes a corporation (MrBeast, Logan Paul, KSI, Kai Cenat, Emma Chamberlain, Nelk, creator-led brands).
 4. Ambition Anxiety — businesses profiting from making people feel late, broke, undisciplined, weak, or behind (productivity apps, monk mode, dopamine detox, looksmaxxing, discipline culture, masculine self-improvement, money Twitter). Tension: is this helping people grow, or keeping them insecure enough to buy?
 5. The Dream Sellers — the promise of escape (college, the 9-to-5, being broke, being average, obscurity): investigate the dream, the seller, the buyer, and the system underneath.
+6. The Platform Machines — the picks-and-shovels layer profiting from creator ambition (Skool, Whop, prop-trading firms, dropshipping SaaS, YouTube-automation agencies, course platforms). The machine behind the machines: who gets paid whether or not the dream comes true?
+7. The Aftermath — what happens after the dream: course buyers a year later, failed agency owners, burned-out creators, FTC cases and settlements. The receipts bucket — documented consequences with paper trails.
+8. The Old Playbook — today's machine is a century old: Napoleon Hill, Dale Carnegie, Amway and the MLM lineage, late-night infomercials, Trump University. Connect the modern guru to the historical script they are running.
 
 A STRONG IDEA has at least 4 of: a recognizable person/company/platform/product; a clear emotional conflict; a hidden business model; a group of people being sold to; a rise, fall, controversy, transformation, or contradiction; a title that creates curiosity in under one second; a thumbnail that can be visualized immediately; a reason it matters to young ambitious people; a proven connection to money, status, identity, or power.
 NEVER: broad essay topics, vague motivation topics, random founder biographies, plain "how X got rich" stories, school-report ideas, topics with no villain/contradiction/machine, anything disconnected from modern ambition culture.
