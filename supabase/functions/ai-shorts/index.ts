@@ -6,9 +6,15 @@
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { askClaudeJson, corsHeaders, jsonResponse } from "../_shared/claude.ts";
+import { CHANNEL_IDENTITY } from "../_shared/identity.ts";
 import { loadOrgContext } from "../_shared/context.ts";
 
 const SYSTEM = `You cut long-form YouTube scripts into Shorts for a documentary media company.
+
+<channel_identity>
+${CHANNEL_IDENTITY}
+</channel_identity>
+
 Each Short must stand alone: one idea, one beat of the source script, nothing that needs the full video for context.
 Rules:
 - Hook = the single most surprising claim of that beat, stated flat out in the first sentence. No setup, no "did you know".

@@ -6,9 +6,15 @@
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { askClaudeJson, corsHeaders, jsonResponse } from "../_shared/claude.ts";
+import { CHANNEL_IDENTITY } from "../_shared/identity.ts";
 import { contextToPrompt, loadOrgContext } from "../_shared/context.ts";
 
 const SYSTEM = `You write first-draft scripts for a YouTube media company using The Big 3 OS.
+
+<channel_identity>
+${CHANNEL_IDENTITY}
+</channel_identity>
+
 You produce a scaffold a human will polish — strong bones, not final copy.
 Follow the company's own SOPs and data (provided). Return STRICT JSON:
 {

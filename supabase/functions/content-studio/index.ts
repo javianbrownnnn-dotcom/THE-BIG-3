@@ -14,15 +14,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { askClaudeJson, corsHeaders, jsonResponse } from "../_shared/claude.ts";
-
-// ---------------------------------------------------------------------------
-// Channel DNA (mirrors src/features/studio/personas.ts — keep in sync)
-// ---------------------------------------------------------------------------
-
-const CHANNEL_IDENTITY = `Modern Ambition is a faceless YouTube documentary channel about ambition, founders, empires, wealth, status, obsession, business, reinvention, downfall, and the psychology of success.
-Tone: cinematic, intelligent, mature, emotionally sharp, professional, premium, strategically dramatic, clear and easy to follow.
-NOT: generic motivational, hustle-bro, corny, overly academic, fake deep, clickbait, robotic, boring essay.
-Core creative question every video must answer: "What did ambition create, and what did it cost?"`;
+import { CHANNEL_IDENTITY } from "../_shared/identity.ts";
 
 const BUILTIN_PERSONAS = [
   {
