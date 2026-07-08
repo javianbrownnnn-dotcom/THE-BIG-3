@@ -61,30 +61,34 @@ export function VideoFormDialog({
   const onSubmit = form.handleSubmit(async (values) => {
     const hasMetrics =
       values.views != null || values.ctr != null || values.avgPercentViewed != null;
-    await createVideo.mutateAsync({
-      input: {
-        channelId: values.channelId,
-        title: values.title,
-        url: values.url || undefined,
-        publishedAt: new Date(values.publishedAt).toISOString(),
-        topic: values.topic,
-        hookType: values.hookType,
-        storyStructure: values.storyStructure,
-        durationSeconds: values.durationMinutes ? Math.round(values.durationMinutes * 60) : undefined,
-        format: values.format,
-      },
-      metrics: hasMetrics
-        ? {
-            views: values.views,
-            ctr: values.ctr,
-            avgPercentViewed: values.avgPercentViewed,
-            subscribersGained: values.subscribersGained,
-          }
-        : undefined,
-    });
-    toast.success("Video logged");
-    form.reset();
-    onOpenChange(false);
+    try {
+      await createVideo.mutateAsync({
+        input: {
+          channelId: values.channelId,
+          title: values.title,
+          url: values.url || undefined,
+          publishedAt: new Date(values.publishedAt).toISOString(),
+          topic: values.topic,
+          hookType: values.hookType,
+          storyStructure: values.storyStructure,
+          durationSeconds: values.durationMinutes ? Math.round(values.durationMinutes * 60) : undefined,
+          format: values.format,
+        },
+        metrics: hasMetrics
+          ? {
+              views: values.views,
+              ctr: values.ctr,
+              avgPercentViewed: values.avgPercentViewed,
+              subscribersGained: values.subscribersGained,
+            }
+          : undefined,
+      });
+      toast.success("Video logged");
+      form.reset();
+      onOpenChange(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    }
   });
 
   const err = form.formState.errors;

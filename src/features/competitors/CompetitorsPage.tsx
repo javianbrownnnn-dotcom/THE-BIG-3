@@ -97,16 +97,20 @@ export function CompetitorsPage() {
       toast.error("Give the channel a name");
       return;
     }
-    const created = await createChannel.mutateAsync({
-      name: channelForm.name.trim(),
-      url: channelForm.url.trim() || undefined,
-      niche: channelForm.niche.trim() || undefined,
-    });
-    setChannelDialogOpen(false);
-    setChannelForm({ name: "", url: "", niche: "" });
-    toast.success(`Tracking ${created.name}`, {
-      action: { label: "Scan now", onClick: () => runScan(created) },
-    });
+    try {
+      const created = await createChannel.mutateAsync({
+        name: channelForm.name.trim(),
+        url: channelForm.url.trim() || undefined,
+        niche: channelForm.niche.trim() || undefined,
+      });
+      setChannelDialogOpen(false);
+      setChannelForm({ name: "", url: "", niche: "" });
+      toast.success(`Tracking ${created.name}`, {
+        action: { label: "Scan now", onClick: () => runScan(created) },
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    }
   };
 
   const runScan = async (channel: CompetitorChannel) => {
@@ -131,18 +135,22 @@ export function CompetitorsPage() {
       toast.error("Channel and title are required");
       return;
     }
-    await createVideo.mutateAsync({
-      competitorChannelId: form.competitorChannelId,
-      title: form.title,
-      url: form.url || undefined,
-      topic: form.topic || undefined,
-      hook: form.hook || undefined,
-      whyItWorked: form.whyItWorked || undefined,
-      views: form.views ? +form.views : undefined,
-      viewsPerDay: form.viewsPerDay ? +form.viewsPerDay : undefined,
-    });
-    toast.success("Competitor video tracked");
-    setVideoDialogOpen(false);
+    try {
+      await createVideo.mutateAsync({
+        competitorChannelId: form.competitorChannelId,
+        title: form.title,
+        url: form.url || undefined,
+        topic: form.topic || undefined,
+        hook: form.hook || undefined,
+        whyItWorked: form.whyItWorked || undefined,
+        views: form.views ? +form.views : undefined,
+        viewsPerDay: form.viewsPerDay ? +form.viewsPerDay : undefined,
+      });
+      toast.success("Competitor video tracked");
+      setVideoDialogOpen(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    }
   };
 
   if (isLoading) return <Skeleton className="h-96" />;

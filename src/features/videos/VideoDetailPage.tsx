@@ -56,18 +56,22 @@ export function VideoDetailPage() {
   }));
 
   const submitSnapshot = async () => {
-    await addSnapshot.mutateAsync({
-      videoId: video.id,
-      metrics: {
-        views: snap.views ? +snap.views : undefined,
-        ctr: snap.ctr ? +snap.ctr : undefined,
-        avgPercentViewed: snap.pct ? +snap.pct : undefined,
-        subscribersGained: snap.subs ? +snap.subs : undefined,
-      },
-    });
-    toast.success("Snapshot recorded — history preserved");
-    setSnapOpen(false);
-    setSnap({ views: "", ctr: "", pct: "", subs: "" });
+    try {
+      await addSnapshot.mutateAsync({
+        videoId: video.id,
+        metrics: {
+          views: snap.views ? +snap.views : undefined,
+          ctr: snap.ctr ? +snap.ctr : undefined,
+          avgPercentViewed: snap.pct ? +snap.pct : undefined,
+          subscribersGained: snap.subs ? +snap.subs : undefined,
+        },
+      });
+      toast.success("Snapshot recorded — history preserved");
+      setSnapOpen(false);
+      setSnap({ views: "", ctr: "", pct: "", subs: "" });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    }
   };
 
   return (

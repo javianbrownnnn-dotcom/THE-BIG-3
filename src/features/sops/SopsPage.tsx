@@ -56,15 +56,19 @@ export function SopsPage() {
       toast.error("Title and purpose are required");
       return;
     }
-    await createSop.mutateAsync({
-      title: form.title,
-      category: form.category || undefined,
-      purpose: form.purpose,
-      steps: form.steps.split("\n").map((s) => s.trim()).filter(Boolean),
-    });
-    toast.success("SOP created — version 1 saved");
-    setForm({ title: "", category: "", purpose: "", steps: "" });
-    setDialogOpen(false);
+    try {
+      await createSop.mutateAsync({
+        title: form.title,
+        category: form.category || undefined,
+        purpose: form.purpose,
+        steps: form.steps.split("\n").map((s) => s.trim()).filter(Boolean),
+      });
+      toast.success("SOP created — version 1 saved");
+      setForm({ title: "", category: "", purpose: "", steps: "" });
+      setDialogOpen(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    }
   };
 
   if (isLoading) return <Skeleton className="h-96" />;
