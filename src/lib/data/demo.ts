@@ -1069,6 +1069,24 @@ function demoCoachAnswer(message: string): string {
   const q = message.toLowerCase();
   const fmt = (x: number) => x.toFixed(1);
 
+  if (q.includes("working on") || q.includes("current") || q.includes("in progress") || q.includes("slate")) {
+    const inFlight = productions.filter((p) => p.stage !== "published");
+    const inStudio = contentProjects.filter((c) => c.status !== "done");
+    if (!inFlight.length && !inStudio.length) {
+      return "Nothing is in flight right now — the board and the Content Studio are both clear. Good moment to run Generate Ideas or start a Studio project.";
+    }
+    return [
+      inFlight.length
+        ? `In production (${inFlight.length}):\n` +
+          inFlight.map((p) => `• "${p.title}" — ${p.stage}${p.dueDate ? `, due ${p.dueDate}` : ""}${p.format === "short" ? " (Short)" : ""}`).join("\n")
+        : "",
+      inStudio.length
+        ? `In the Content Studio (${inStudio.length}):\n` +
+          inStudio.map((c) => `• "${c.selectedTitle ?? c.topic}" — at ${c.status}`).join("\n")
+        : "",
+      "Ask me about any of these by name and I'll pull what the data says.",
+    ].filter(Boolean).join("\n\n");
+  }
   if (q.includes("hook")) {
     const stats = groupStat(videos, (v) => v.hookType, (v) => v.metrics?.ctr);
     const best = stats[0], worst = stats[stats.length - 1];
@@ -1408,6 +1426,14 @@ export class DemoProvider implements DataProvider {
         .filter((v) => !channelId || v.channelId === channelId)
         .map((v) => (v.topic ?? v.title).toLowerCase()),
     );
+    // Never pitch what's already on the slate — in-flight docs and studio
+    // projects count as covered (mirrors the live prompt's rule).
+    for (const prod of productions) {
+      if (prod.stage !== "published") covered.add((prod.topic ?? prod.title).toLowerCase());
+    }
+    for (const proj of contentProjects) {
+      if (proj.status !== "done") covered.add((proj.selectedTitle ?? proj.topic).toLowerCase());
+    }
     const targetChannels = channelId
       ? channels.filter((c) => c.id === channelId)
       : channels;
