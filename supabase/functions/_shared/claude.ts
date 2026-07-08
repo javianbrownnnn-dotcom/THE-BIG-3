@@ -50,14 +50,60 @@ export async function askClaude(
     .join("\n");
 }
 
-/** Ask Claude for strict JSON and parse it, tolerating a fenced code block. */
+/**
+ * Parse model output as JSON, tolerating the common failure shapes: fenced
+ * code blocks, prose around the object, and trailing commas.
+ */
+function parseModelJson<T>(raw: string): T {
+  const stripped = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+  try {
+    return JSON.parse(stripped) as T;
+  } catch {
+    /* fall through to repairs */
+  }
+  const start = stripped.indexOf("{");
+  const end = stripped.lastIndexOf("}");
+  if (start >= 0 && end > start) {
+    const inner = stripped.slice(start, end + 1);
+    try {
+      return JSON.parse(inner) as T;
+    } catch {
+      /* one more repair */
+    }
+    return JSON.parse(inner.replace(/,\s*([}\]])/g, "$1")) as T;
+  }
+  throw new SyntaxError("model output contained no JSON object");
+}
+
+/**
+ * Ask Claude for strict JSON. If the first response doesn't parse (usually an
+ * unescaped quote inside a string), show the model its own broken output and
+ * make it re-emit valid JSON once before giving up.
+ */
 export async function askClaudeJson<T>(
   messages: ClaudeMessage[],
   options: ClaudeOptions = {},
 ): Promise<T> {
   const raw = await askClaude(messages, options);
-  const stripped = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
-  return JSON.parse(stripped) as T;
+  try {
+    return parseModelJson<T>(raw);
+  } catch {
+    const retry = await askClaude(
+      [
+        ...messages,
+        { role: "assistant", content: raw.slice(0, 8000) },
+        {
+          role: "user",
+          content:
+            "That output was INVALID JSON (it failed to parse). Re-emit the COMPLETE response as strict, valid JSON only: " +
+            "double-quoted property names, no trailing commas, no code fences, no prose, and never use unescaped double quotes " +
+            "inside string values (use single quotes for quoted phrases instead).",
+        },
+      ],
+      options,
+    );
+    return parseModelJson<T>(retry);
+  }
 }
 
 export const corsHeaders = {

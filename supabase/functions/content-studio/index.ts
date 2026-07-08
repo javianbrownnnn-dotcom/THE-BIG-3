@@ -88,6 +88,7 @@ Return STRICT JSON:
 { "mainSubject": string, "timeline": string[], "keyEvents": string[], "keyConflicts": string[], "turningPoints": string[], "businessContext": string, "psychologicalContext": string, "culturalContext": string, "controversies": string[], "unverifiedClaims": string[], "bestAngle": string, "emotionalQuestion": string, "endingIdea": string }`;
 
 const titleLabPrompt = `You run the Title Lab. Generate exactly 20 raw titles across 5 angle categories, score each 1-10 on curiosity, clarity, emotion, specificity, accuracy, documentaryFeel, personaFit, clickPotential (honest — no misleading titles). Reject-by-low-score anything vague, clickbaity, generic, clever-but-unclear, motivational, or disconnected from the story.
+JSON safety: never put unescaped double quotes inside string values — when quoting a title or phrase inside reasoning, use single quotes.
 Style reference (do not copy): "The Billionaire Who Won Everything Except Peace", "The Quiet Empire That Took Over Your Life", "Why Ambitious People Destroy The Thing They Love".
 Return STRICT JSON:
 { "variants": [{ "title": string, "angle": string, "curiosityScore": n, "clarityScore": n, "emotionScore": n, "specificityScore": n, "accuracyScore": n, "documentaryFeelScore": n, "personaFitScore": n, "clickPotentialScore": n, "reasoning": string, "thumbnailMatch": string }] (exactly 20),
@@ -95,6 +96,7 @@ Return STRICT JSON:
 
 const thumbnailConceptPrompt = `You run the Thumbnail Concept Studio. Create 5 concepts matched to the selected title. Rules: emotionally clear in under one second; uncluttered; premium documentary feel; visually pays off the title's promise; curiosity not confusion; works on mobile; never misleading; no copyrighted logos unless the user confirms rights; no fake images of real people in misleading situations.
 Every providerPromptGemini must specify: 16:9 YouTube thumbnail, mobile-first readability, premium documentary aesthetic, one clear subject or symbol, high contrast, minimal or no text, strong emotional signal, no clutter.
+JSON safety: never put unescaped double quotes inside string values — use single quotes for quoted phrases (including textOverlayOptions).
 Return STRICT JSON:
 { "concepts": [{ "conceptName": string, "visualDescription": string, "textOverlayOptions": string[] (3), "mainEmotion": string, "composition": string, "background": string, "style": string, "mobileReadabilityScore": n, "relevanceScore": n, "providerPromptGemini": string, "providerPromptCanva": string, "negativePrompt": string, "whyItWorks": string, "shouldNot": string }] (exactly 5),
   "recommendedConcept": string }`;
@@ -198,7 +200,7 @@ Deno.serve(async (req) => {
         const r = await askClaudeJson<any>([{
           role: "user",
           content: `${ground}\n\n<research_packet>\n${JSON.stringify(project.research)}\n</research_packet>\n\nRun the Title Lab.`,
-        }], { system: titleLabPrompt, maxTokens: 6000 });
+        }], { system: titleLabPrompt, maxTokens: 8000 });
         patch.title_lab = r;
         break;
       }
@@ -207,7 +209,7 @@ Deno.serve(async (req) => {
         const r = await askClaudeJson<any>([{
           role: "user",
           content: `${ground}\n\n<research_packet>\n${JSON.stringify(project.research)}\n</research_packet>\n\nCreate the thumbnail concepts for the selected title.`,
-        }], { system: thumbnailConceptPrompt, maxTokens: 6000 });
+        }], { system: thumbnailConceptPrompt, maxTokens: 8000 });
         patch.thumbnail_lab = r;
         break;
       }
