@@ -37,6 +37,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   useChannels,
+  useContentProjects,
   useCreateProduction,
   useDraftProduction,
   useMembers,
@@ -61,8 +62,10 @@ const STAGE_LABELS: Record<ProductionStage, string> = {
 function ProductionCard({ production }: { production: Production }) {
   const { data: channels } = useChannels();
   const { data: members } = useMembers();
+  const { data: studioProjects } = useContentProjects();
   const channel = channels?.find((c) => c.id === production.channelId);
   const assignee = members?.find((m) => m.id === production.assigneeId);
+  const fromStudio = studioProjects?.some((s) => s.linkedProductionId === production.id);
   const overdue =
     production.dueDate &&
     production.stage !== "published" &&
@@ -84,6 +87,11 @@ function ProductionCard({ production }: { production: Production }) {
             {production.format === "short" && (
               <Badge variant="outline" className="border-primary/40 text-primary">
                 Short
+              </Badge>
+            )}
+            {fromStudio && (
+              <Badge variant="outline" className="border-primary/40 text-primary">
+                Studio
               </Badge>
             )}
             {channel && <Badge variant="outline">{channel.name}</Badge>}
@@ -511,6 +519,17 @@ export function ProductionPage() {
               Starts in Scripting with a full doc: hook, script, description, goal, packaging.
             </DialogDescription>
           </DialogHeader>
+          <Link
+            to="/studio"
+            className="block rounded-md border border-primary/30 bg-primary/5 p-2.5 text-xs transition-colors hover:bg-primary/10"
+            onClick={() => setDialogOpen(false)}
+          >
+            <span className="font-medium text-primary">Want the script written first?</span>{" "}
+            <span className="text-muted-foreground">
+              Start in the Content Studio — relevance check, research, titles, thumbnail and a
+              critiqued script, then it lands here in Editing. →
+            </span>
+          </Link>
           <div className="space-y-3">
             <div className="space-y-1.5">
               <Label>Working title</Label>
