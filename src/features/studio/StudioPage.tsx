@@ -34,13 +34,17 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  useChannels,
   useContentProjects,
   useCreateContentProject,
+  useCreateProduction,
   useDeleteContentProject,
   useDeleteFeedbackRule,
   useFeedbackRules,
   useSetFeedbackRuleActive,
   useStudioPersonas,
+  useUpdateContentProject,
+  useUpdateProduction,
 } from "@/hooks/queries";
 import { usePersistedState } from "@/hooks/usePersistedState";
 import { relativeTime } from "@/lib/format";
@@ -71,6 +75,10 @@ export function StudioPage() {
   const { data: rules } = useFeedbackRules();
   const { data: personas } = useStudioPersonas();
   const createProject = useCreateContentProject();
+  const updateProject = useUpdateContentProject();
+  const createProduction = useCreateProduction();
+  const updateProduction = useUpdateProduction();
+  const { data: channels } = useChannels();
   const deleteProject = useDeleteContentProject();
   const setRuleActive = useSetFeedbackRuleActive();
   const deleteRule = useDeleteFeedbackRule();
@@ -96,6 +104,29 @@ export function StudioPage() {
         secondaryPersona: form.secondaryPersona || undefined,
         videoLengthMinutes: form.length ? (Number(form.length) as StudioVideoLength) : undefined,
       });
+      // The video exists on the Production board from second one: a linked
+      // doc is created immediately (Scripting) and the Studio keeps it in
+      // sync — title, script, thumbnail — all the way to Editing.
+      const channelId = channels?.[0]?.id;
+      if (channelId) {
+        try {
+          const doc = await createProduction.mutateAsync({
+            title: created.topic,
+            channelId,
+            topic: created.topic,
+          });
+          await updateProduction.mutateAsync({
+            id: doc.id,
+            patch: { notes: `Being written in Content Studio — project: ${created.topic}` },
+          });
+          await updateProject.mutateAsync({
+            id: created.id,
+            patch: { linkedProductionId: doc.id },
+          });
+        } catch {
+          // Non-fatal: the doc can still be created at handoff time.
+        }
+      }
       clearForm();
       setDialogOpen(false);
       navigate(`/studio/${created.id}`);

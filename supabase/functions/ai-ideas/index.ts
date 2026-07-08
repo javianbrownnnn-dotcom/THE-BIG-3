@@ -10,12 +10,12 @@ import { loadOrgContext } from "../_shared/context.ts";
 
 const SYSTEM = `You are an idea strategist for a YouTube media company using The Big 3 OS.
 Relevance comes before generation. Work in two passes:
-PASS 1 — generate twice as many candidate ideas as requested. Each is a concrete angle with tension, not a broad topic. "How Rolex manufactures scarcity", not "a video about Rolex".
+PASS 1 — generate twice as many candidate ideas as requested. Each MUST be about a REAL, NAMED subject: an actual founder, company, brand, or documented event. "How Rolex manufactures scarcity" or "The day Howard Schultz lost Starbucks" — never "a company that quietly owns an industry" or "a founder who couldn't stop". Template angles and hypotheticals are invalid. Use only real, widely documented stories — never invent people, events, or numbers; if unsure a story is real, don't pitch it.
 PASS 2 — score every candidate 1-10 on this relevance rubric, then return ONLY the requested number, best first, discarding anything under 7:
   * demand evidence: is the mechanism proven by a competitor outlier or the channel's own best videos?
   * niche fit: does it belong on THIS channel, for its actual viewer?
   * emotional pull: is there a human stake, cost, or contradiction — not just information?
-  * specificity: one person / one company / one decision, never a survey of a theme
+  * specificity: names ONE real person / company / event and hangs on a documented story beat (a decision, scandal, collapse, turning point). An idea that could apply to more than one company or person scores 0 here and is cut.
   * freshness: clearly distinct from covered topics AND from everything currently in the works
 Rules:
 - Ground ideas in the demand evidence: lean toward mechanisms proven by the competitor outliers provided.
@@ -24,7 +24,8 @@ Rules:
 - Follow the Script Bible rules (writing law distilled from the creator's own feedback).
 - Favor the channel's best-performing hook types and story structures.
 - Never inflate scores: a 9 must be an idea you would bet a production budget on.
-Return STRICT JSON: { "ideas": [{ "title": string, "description": string, "rationale": string, "suggestedHook": string, "tags": string[], "relevanceScore": number, "whyRelevant": string, "personaFit": string }] }`;
+Return STRICT JSON: { "ideas": [{ "title": string, "subject": string, "storyBeat": string, "description": string, "rationale": string, "suggestedHook": string, "tags": string[], "relevanceScore": number, "whyRelevant": string, "personaFit": string }] }
+subject = the real named person/company/event. storyBeat = the documented moment the video hangs on.`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -62,10 +63,18 @@ Deno.serve(async (req) => {
       },
     ]);
 
-    // Server-side floor: whatever the model claims, nothing under 7 ships.
+    // Server-side floor: whatever the model claims, nothing under 7 ships —
+    // and nothing without a real named subject.
     const vetted = (ideas ?? [])
-      .filter((i: any) => (i.relevanceScore ?? 0) >= 7)
-      .sort((a: any, b: any) => (b.relevanceScore ?? 0) - (a.relevanceScore ?? 0));
+      .filter((i: any) => (i.relevanceScore ?? 0) >= 7 && i.subject)
+      .sort((a: any, b: any) => (b.relevanceScore ?? 0) - (a.relevanceScore ?? 0))
+      .map((i: any) => ({
+        ...i,
+        description: [
+          i.description,
+          i.storyBeat ? `Story beat: ${i.storyBeat}` : "",
+        ].filter(Boolean).join("\n"),
+      }));
     return jsonResponse({ ideas: vetted.length ? vetted : (ideas ?? []).slice(0, count) });
   } catch (err) {
     console.error(err);

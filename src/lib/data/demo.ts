@@ -1441,25 +1441,26 @@ export class DemoProvider implements DataProvider {
       groupStat(videos, (v) => v.hookType, (v) => v.metrics?.ctr)[0]?.key ??
       "story_cold_open";
 
-    // A small pool of distinct angles per channel so the demo reads varied.
-    const ANGLES: Record<string, string[]> = {
+    // Ideas name REAL subjects — actual founders, companies, documented
+    // events — never template angles. Each entry: [title, real story beat].
+    const ANGLES: Record<string, Array<[string, string]>> = {
       ch_biz: [
-        "The company that quietly owns an industry",
-        "The empire built on a product everyone hates",
-        "How a 'boring' business became untouchable",
-        "The bankruptcy that made its founder richer",
+        ["How Luxottica quietly bought every glasses brand you know", "One Italian company owns Ray-Ban, Oakley, and the stores that sell them — and prices moved accordingly."],
+        ["De Beers: the company that invented the engagement ring", "A 1938 ad campaign manufactured a 'tradition' and controlled diamond supply for a century."],
+        ["Bernard Arnault: the hostile takeover that built LVMH", "The 1988-89 battle for control of Louis Vuitton Moët Hennessy made 'the wolf in cashmere'."],
+        ["The day Howard Schultz lost Starbucks — twice", "Schultz left in 2000, watched the 2007-08 collapse, and came back to close 600 stores."],
       ],
       ch_rel: [
-        "The belief they tried to erase from history",
-        "The god a whole empire was afraid of",
-        "The forbidden text that outlived its censors",
-        "The ritual we still perform without knowing why",
+        ["The 40-year fight to publish the Dead Sea Scrolls", "A tiny committee controlled access for decades until a 1991 leak broke the monopoly."],
+        ["The Gospel of Judas: the betrayal text that survived", "Condemned in 180 AD, lost, then surfaced in the 1970s and rotted in a bank box before restoration."],
+        ["Akhenaten: the pharaoh Egypt tried to erase", "He replaced the gods with one — and his monuments were dismantled within a generation."],
+        ["What actually burned at the Library of Alexandria", "The single-fire story is a myth; the real decline took centuries of budget cuts and politics."],
       ],
       ch_sales: [
-        "The persuasion tactic that feels illegal",
-        "Why the best closers never actually pitch",
-        "The one word that doubles a 'yes'",
-        "What 1,000 cold calls taught me about 'no'",
+        ["Joe Girard: the mailman-turned-salesman who sold 13,001 cars", "Guinness's 'greatest salesman' sent 13 greeting cards a year to every customer."],
+        ["The real 'straight line': what Jordan Belfort actually taught", "Behind the movie: the script, the tonality drills, and why the SEC ended it."],
+        ["How Zig Ziglar sold cookware door-to-door into a legend", "Before the stages: the routes, the demos, and the close he never changed."],
+        ["The Kirby vacuum system: door-to-door's most extreme school", "In-home demos engineered to last two hours — and what that taught about commitment."],
       ],
     };
 
@@ -1468,9 +1469,10 @@ export class DemoProvider implements DataProvider {
     let oi = 0;
     for (const ch of targetChannels) {
       const nicheWord = (ch.niche ?? "").split(/[ ,]/)[0] || "the niche";
-      const angles = (ANGLES[ch.id] ?? [`A fresh ${nicheWord} angle`]).filter(
-        (a) => !covered.has(a.toLowerCase()),
-      );
+      const angles = (
+        ANGLES[ch.id] ??
+        ([[`A named ${nicheWord} story to research`, "Pick a real founder or event in this niche."]] as Array<[string, string]>)
+      ).filter(([a]) => !covered.has(a.toLowerCase()));
       const perChannel = Math.max(2, Math.ceil(count / targetChannels.length));
       for (let k = 0; k < perChannel && k < angles.length; k++) {
         const seed = outliers[oi++ % Math.max(outliers.length, 1)];
@@ -1481,9 +1483,10 @@ export class DemoProvider implements DataProvider {
           9,
           (seed ? 7 : 6) + (seed?.outlierScore && seed.outlierScore >= 3 ? 1 : 0) + (k === 0 ? 1 : 0),
         );
+        const [angleTitle, storyBeat] = angles[k];
         out.push({
-          title: angles[k],
-          description: `An angle for ${ch.name} built on a mechanism that's working right now in your niche.`,
+          title: angleTitle,
+          description: `Story beat: ${storyBeat}`,
           rationale: `Modeled on a competitor outlier${seed ? ` ("${seed.title}")` : ""}: ${mechanism} Open with a ${bestHook.replace(/_/g, " ")} — your highest-CTR hook type.`,
           suggestedHook: bestHook,
           tags: [nicheWord.toLowerCase(), "competitor_validated"],
