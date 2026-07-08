@@ -982,3 +982,12 @@ create policy "editors delete tasks" on tasks for delete to authenticated
 -- ============================================================================
 
 alter table channels add column if not exists youtube_connected_at timestamptz;
+
+-- ============================================================================
+-- ---- 0012_production_format.sql ---------------------------------------------
+-- Shorts join the pipeline: a production doc is long-form by default, or a
+-- short. Published docs carry the format onto the tracked video row.
+-- ============================================================================
+
+alter table productions
+  add column if not exists format video_format not null default 'long_form';

@@ -149,6 +149,13 @@ export interface DataProvider {
    */
   draftProduction(production: Production): Promise<DraftResult>;
   /**
+   * Cut a long-form script into N Shorts: each becomes its own production doc
+   * (format 'short', stage 'scripting', same channel) so it runs the normal
+   * pipeline. Live mode routes to Claude (ai-shorts edge function); demo mode
+   * derives beats from the script locally. Returns the created docs.
+   */
+  deriveShorts(productionId: string, count: number): Promise<Production[]>;
+  /**
    * Publish a production to YouTube: uploads the video and marks it published,
    * linking a tracked video record. Live mode calls the youtube-upload edge
    * function (real resumable upload via the channel's connected Google account);

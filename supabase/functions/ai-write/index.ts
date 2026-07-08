@@ -43,7 +43,12 @@ Deno.serve(async (req) => {
         role: "user",
         content:
           `Draft a first pass for this video.\n` +
-          `Title: ${prod.title}\nTopic: ${prod.topic ?? ""}\nGoal: ${prod.goal ?? ""}\n\n` +
+          `Title: ${prod.title}\nTopic: ${prod.topic ?? ""}\nGoal: ${prod.goal ?? ""}\n` +
+          `Format: ${prod.format ?? "long_form"}\n` +
+          (prod.format === "short"
+            ? `This is a vertical Short (~45-60s). hookText = the first 2 seconds: one surprising claim, no setup. scriptBody = the FULL 110-160 word script (cold claim → one proof → twist → loop back to the opening claim), not an act outline. Titles <= 80 chars.\n`
+            : "") +
+          `\n` +
           `<company_data>\n${contextToPrompt(ctx)}\n</company_data>`,
       },
     ], { system: SYSTEM });

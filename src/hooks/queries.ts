@@ -357,6 +357,18 @@ export function useDraftProduction() {
   });
 }
 
+export function useDeriveShorts() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (args: { productionId: string; count: number }) =>
+      data.deriveShorts(args.productionId, args.count),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: keys.productions });
+      qc.invalidateQueries({ queryKey: keys.activity });
+    },
+  });
+}
+
 export function usePublishToYouTube() {
   const qc = useQueryClient();
   return useMutation({

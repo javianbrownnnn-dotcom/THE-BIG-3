@@ -7,7 +7,7 @@
 // With the real backend, the same call routes through Claude via the
 // ai-coach edge function for full-quality drafts.
 
-import type { DraftResult, Production, ProductionStage, Sop, Video } from "@/types";
+import type { DerivedShort, DraftResult, Production, ProductionStage, Sop, Video } from "@/types";
 
 export type { DraftResult };
 
@@ -56,6 +56,49 @@ export function draftFromTemplates(
   ].map((t) => ({ ...t, text: t.text.length > 55 ? t.text.slice(0, 55) : t.text }));
 
   return { hookText, scriptBody, description, titleCandidates };
+}
+
+// ---------------------------------------------------------------------------
+// Shorts derivation (demo mode). One long-form script → N vertical shorts,
+// each built around a single beat of the script. Same honest-scaffold policy
+// as drafting: brackets mark what a human must replace. Live mode routes to
+// Claude via the ai-shorts edge function instead.
+// ---------------------------------------------------------------------------
+
+export function shortsFromScript(production: Production, count: number): DerivedShort[] {
+  const topic = production.topic || production.title;
+  // Each act / paragraph of the long-form outline is a candidate beat.
+  const beats = (production.scriptBody ?? "")
+    .split(/\n{2,}/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 20);
+  if (production.hookText?.trim()) beats.unshift(production.hookText.trim());
+  const angles = beats.length ? beats : [topic];
+
+  const out: DerivedShort[] = [];
+  for (let i = 0; i < count; i++) {
+    const beat = angles[i % angles.length];
+    const beatLine = beat
+      .split("\n")[0]
+      .replace(/^ACT\s*\d+\s*[—:-]\s*/i, "")
+      .replace(/\[|\]/g, "")
+      .trim();
+    const short = beatLine.length > 60 ? `${beatLine.slice(0, 57)}…` : beatLine;
+    out.push({
+      title: `${short || topic}`,
+      hook: `[First 2 seconds — the single most surprising claim from this beat, stated flat out:]\n"${short}"\n\n(No setup. Shorts lose 30% of viewers in the first 2 seconds.)`,
+      script:
+        `BEAT — ${beatLine || topic}\n\n` +
+        `[~45 seconds ≈ 110–140 words. One idea only.]\n\n` +
+        `1. Cold claim (the hook above).\n` +
+        `2. The one piece of evidence from the long-form script that proves it.\n` +
+        `3. The twist or consequence.\n` +
+        `4. Loop back to the opening claim — shorts that loop rewatch.\n\n` +
+        `(Derived from "${production.title}". Pull exact lines from that script, don't rewrite from memory.)`,
+      onScreenText: short || topic,
+    });
+  }
+  return out;
 }
 
 // ---------------------------------------------------------------------------

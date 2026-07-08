@@ -46,7 +46,7 @@ import {
 import { humanize, relativeTime, shortDate } from "@/lib/format";
 import { usePersistedState } from "@/hooks/usePersistedState";
 import { cn } from "@/lib/utils";
-import { PRODUCTION_STAGES, type Production, type ProductionStage } from "@/types";
+import { PRODUCTION_STAGES, type Production, type ProductionStage, type VideoFormat } from "@/types";
 import { SPEED_STACK, STARTER_STACK } from "./speedStack";
 import { getThumbnail } from "./thumbnail";
 
@@ -81,6 +81,11 @@ function ProductionCard({ production }: { production: Production }) {
         <CardContent className="space-y-2 p-3.5">
           <div className="text-sm font-medium leading-snug">{production.title}</div>
           <div className="flex flex-wrap items-center gap-1.5">
+            {production.format === "short" && (
+              <Badge variant="outline" className="border-primary/40 text-primary">
+                Short
+              </Badge>
+            )}
             {channel && <Badge variant="outline">{channel.name}</Badge>}
             {production.dueDate && (
               <Badge variant={overdue ? "destructive" : "secondary"}>
@@ -330,16 +335,21 @@ export function ProductionPage() {
   const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [aiDraft, setAiDraft] = useState(true);
+  const [formatFilter, setFormatFilter] = useState<"all" | "long_form" | "short">("all");
   const [form, setForm, clearForm] = usePersistedState("draft.video", {
     title: "", channelId: "", topic: "", assigneeId: "", dueDate: "",
+    format: "long_form" as VideoFormat,
   });
 
   const byStage = useMemo(() => {
     const map = new Map<ProductionStage, Production[]>();
     for (const stage of PRODUCTION_STAGES) map.set(stage, []);
-    for (const p of productions ?? []) map.get(p.stage)?.push(p);
+    for (const p of productions ?? []) {
+      if (formatFilter !== "all" && (p.format ?? "long_form") !== formatFilter) continue;
+      map.get(p.stage)?.push(p);
+    }
     return map;
-  }, [productions]);
+  }, [productions, formatFilter]);
 
   const submit = async () => {
     if (!form.title.trim() || !form.channelId) {
@@ -349,6 +359,7 @@ export function ProductionPage() {
     const created = await createProduction.mutateAsync({
       title: form.title.trim(),
       channelId: form.channelId,
+      format: form.format ?? "long_form",
       topic: form.topic.trim() || undefined,
       assigneeId: form.assigneeId || undefined,
       dueDate: form.dueDate || undefined,
@@ -426,6 +437,28 @@ export function ProductionPage() {
           </TabsList>
 
           <TabsContent value="board">
+            {(productions ?? []).some((p) => p.format === "short") && (
+              <div className="mb-3 flex gap-1.5">
+                {([
+                  ["all", "All"],
+                  ["long_form", "Long-form"],
+                  ["short", "Shorts"],
+                ] as const).map(([value, label]) => (
+                  <button
+                    key={value}
+                    onClick={() => setFormatFilter(value)}
+                    className={cn(
+                      "rounded-full border px-3 py-1 text-xs transition-colors",
+                      formatFilter === value
+                        ? "border-primary/50 bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-muted",
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
               {PRODUCTION_STAGES.map((stage) => (
                 <Card key={stage} className="bg-transparent">
@@ -496,6 +529,29 @@ export function ProductionPage() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Format</Label>
+              <div className="flex gap-1.5">
+                {([
+                  ["long_form", "Long-form"],
+                  ["short", "Short (vertical, <60s)"],
+                ] as const).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setForm({ ...form, format: value })}
+                    className={cn(
+                      "flex-1 rounded-md border px-3 py-1.5 text-xs transition-colors",
+                      (form.format ?? "long_form") === value
+                        ? "border-primary/50 bg-primary/10 font-medium text-primary"
+                        : "text-muted-foreground hover:bg-muted",
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label>Topic</Label>

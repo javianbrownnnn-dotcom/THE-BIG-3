@@ -1,6 +1,6 @@
 # AI pipeline
 
-Three Claude-powered surfaces share one grounding layer
+The Claude-powered surfaces share one grounding layer
 (`supabase/functions/_shared/context.ts`): channels, recent videos with their
 latest metrics, active SOPs, competitor outliers, recent insights, and open
 recommendations. Same facts everywhere → consistent strategy.
@@ -51,6 +51,20 @@ On demand from the Reports page (and schedulable). Fixed markdown skeleton
 (Summary / What worked / What didn't / Competitor landscape / Experiments &
 SOP changes / Recommended focus), filled by Claude from the shared context,
 stored in `reports.content_md`, exportable as-is.
+
+## 4. Writing & Shorts (`functions/ai-write`, `functions/ai-shorts`)
+
+`ai-write` drafts a first pass for a production doc (hook, script outline,
+description, five title candidates) grounded in the org's SOPs and data; the
+app only fills empty fields with it. It reads `productions.format` and switches
+to short-form guidance (full 110–160 word script, 2-second hook) for Shorts.
+
+`ai-shorts` cuts a long-form script into N self-contained Shorts (cold claim →
+one proof → twist → loop back). The client turns each into its own production
+doc (`format = 'short'`, stage scripting) so Shorts run the normal pipeline
+and their published videos carry `videos.format = 'short'` for like-with-like
+analytics. Both run with the caller's JWT; demo mode mirrors them with local
+template engines so the flow works without a backend.
 
 ## Configuration
 

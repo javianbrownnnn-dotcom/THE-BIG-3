@@ -75,7 +75,7 @@ the Google OAuth secrets and follow `docs/YOUTUBE_UPLOAD.md`:
 - `OAUTH_REDIRECT_URL` — the deployed URL of the `youtube-oauth` function's callback
 
 Deploy the edge functions once (Supabase CLI):
-`supabase functions deploy ai-coach ai-ideas ai-write learning-loop generate-report youtube-sync youtube-oauth youtube-upload competitor-scan`
+`supabase functions deploy ai-coach ai-ideas ai-write ai-shorts learning-loop generate-report youtube-sync youtube-oauth youtube-upload competitor-scan`
 
 For the **nightly learning loop** (GitHub Action), also add repo secrets
 (GitHub → Settings → Secrets → Actions): `SUPABASE_URL` and
