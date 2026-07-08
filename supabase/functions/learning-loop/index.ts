@@ -160,6 +160,130 @@ async function scoreRecommendations(db: any, organizationId: string) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Teardown synthesis: every 20 banked competitor teardowns, distill the
+// winning mechanisms into (a) a playbook insight that grounds every AI
+// surface (it flows into the shared context) and (b) SOP change proposals
+// that land in the approval queue — a human still closes the loop.
+// ---------------------------------------------------------------------------
+
+const SYNTHESIS_BATCH = 20;
+
+const SYNTHESIS_SYSTEM = `You distill competitor video teardowns into the winning playbook for a YouTube media company.
+You receive the teardowns (why each outlier worked + transferable moves) and the company's active SOPs.
+Find the mechanisms that REPEAT across teardowns — hooks, packaging promises, structures. Ignore one-offs.
+Return STRICT JSON, no prose:
+{
+  "playbook": { "title": string, "body": string, "confidence": number },
+  "recommendations": [{
+    "title": string, "rationale": string, "sopId": string|null,
+    "proposedVersion": { "purpose": string, "whenToUse": string, "steps": string[], "examples": string, "changeSummary": string }
+  }]
+}
+Rules: only claim a pattern if it appears in at least a quarter of the teardowns, and cite the count (e.g. "12 of 20 teardowns").
+Target an existing SOP by its id when one fits; otherwise sopId null proposes a new SOP.
+Keep the playbook body under 150 words — it is injected into every AI prompt. Never invent data.`;
+
+async function synthesizeTeardowns(db: any, organizationId: string) {
+  const { data: torn } = await db.from("competitor_videos")
+    .select("title,topic,hook,story_structure,outlier_score,teardown,teardown_at,competitor_channels!inner(name,organization_id)")
+    .eq("competitor_channels.organization_id", organizationId)
+    .not("teardown", "is", null)
+    .order("teardown_at", { ascending: false });
+  const count = torn?.length ?? 0;
+  if (count < SYNTHESIS_BATCH) return null;
+
+  // Gate: run once per batch of 20 (20, 40, 60…), tracked on the last
+  // synthesis insight so scheduled reruns don't re-synthesize.
+  const { data: lastRuns } = await db.from("ai_insights")
+    .select("data")
+    .eq("organization_id", organizationId)
+    .eq("data->>source", "teardown_synthesis")
+    .order("created_at", { ascending: false })
+    .limit(1);
+  const lastCount = Number(lastRuns?.[0]?.data?.teardownCount ?? 0);
+  if (Math.floor(count / SYNTHESIS_BATCH) <= Math.floor(lastCount / SYNTHESIS_BATCH)) {
+    return null;
+  }
+
+  const { data: sops } = await db.from("sops")
+    .select("id,title,category").eq("organization_id", organizationId)
+    .eq("status", "active");
+
+  const input = (torn ?? []).slice(0, 60).map((v: any) => ({
+    channel: v.competitor_channels?.name,
+    title: v.title,
+    hook: v.hook,
+    structure: v.story_structure,
+    z: v.outlier_score,
+    whyItWorked: v.teardown?.whyItWorked,
+    moves: v.teardown?.transferableMoves,
+  }));
+
+  const result = await askClaudeJson<{
+    playbook: { title: string; body: string; confidence: number };
+    recommendations: any[];
+  }>([{
+    role: "user",
+    content:
+      `Synthesize the winning playbook from these ${count} competitor teardowns.\n\n` +
+      `<teardowns>\n${JSON.stringify(input)}\n</teardowns>\n\n` +
+      `<active_sops>\n${JSON.stringify(sops ?? [])}\n</active_sops>`,
+  }], { system: SYNTHESIS_SYSTEM });
+
+  await db.from("ai_insights").insert({
+    organization_id: organizationId,
+    kind: "competitor",
+    title: result.playbook?.title ?? `Competitor playbook (from ${count} teardowns)`,
+    body: result.playbook?.body ?? "",
+    confidence: result.playbook?.confidence ?? 0.7,
+    data: { source: "teardown_synthesis", teardownCount: count },
+  });
+
+  let recs = 0;
+  for (const rec of result.recommendations ?? []) {
+    if (!rec?.proposedVersion) continue;
+    let sopTitle = rec.title;
+    let category: string | null = null;
+    if (rec.sopId) {
+      const match = (sops ?? []).find((s: any) => s.id === rec.sopId);
+      if (!match) rec.sopId = null; // model pointed at a nonexistent SOP — propose new
+      else {
+        sopTitle = match.title;
+        category = match.category ?? null;
+      }
+    }
+    await db.from("ai_recommendations").insert({
+      organization_id: organizationId,
+      sop_id: rec.sopId ?? null,
+      title: rec.title,
+      rationale: rec.rationale,
+      proposed_change: {
+        ...(rec.sopId ? { sop_id: rec.sopId } : {}),
+        sop_title: sopTitle,
+        category,
+        purpose: rec.proposedVersion.purpose,
+        when_to_use: rec.proposedVersion.whenToUse,
+        steps: rec.proposedVersion.steps,
+        examples: rec.proposedVersion.examples,
+        change_summary: rec.proposedVersion.changeSummary,
+      },
+    });
+    recs++;
+  }
+
+  await db.from("notifications").insert({
+    organization_id: organizationId,
+    type: "ai_recommendation",
+    title: "Competitor playbook synthesized",
+    body: `${count} teardowns distilled into the winning playbook — ` +
+      `${recs} SOP update${recs === 1 ? "" : "s"} waiting for approval. ` +
+      `Every AI surface now trains on it.`,
+  });
+
+  return { teardowns: count, recommendations: recs };
+}
+
 const ANALYST_SYSTEM = `You are the analysis engine of The Big 3 OS, an operating system for YouTube media companies.
 You receive (a) statistically detected changes and (b) the company's full performance context.
 Return STRICT JSON, no prose, matching:
@@ -195,6 +319,14 @@ Deno.serve(async (req) => {
         newOutliers: await detectCompetitorOutliers(db, org.id),
       };
       await scoreRecommendations(db, org.id);
+      // Independent of metric shifts: distill the competitor playbook once
+      // every 20 banked teardowns.
+      let synthesis: { teardowns: number; recommendations: number } | null = null;
+      try {
+        synthesis = await synthesizeTeardowns(db, org.id);
+      } catch (err) {
+        console.error("teardown synthesis failed", err);
+      }
 
       // Notify on outliers regardless of whether Claude runs.
       for (const o of findings.newOutliers) {
@@ -227,7 +359,7 @@ Deno.serve(async (req) => {
       const nothingNew =
         findings.metricShifts.length === 0 && findings.newOutliers.length === 0;
       if (nothingNew) {
-        results.push({ org: org.name, skipped: true });
+        results.push({ org: org.name, skipped: true, synthesis });
         continue;
       }
 
@@ -308,6 +440,7 @@ Deno.serve(async (req) => {
         outliers: findings.newOutliers.length,
         insights: analysis.insights?.length ?? 0,
         recommendations: analysis.recommendations?.length ?? 0,
+        synthesis,
       });
     }
 

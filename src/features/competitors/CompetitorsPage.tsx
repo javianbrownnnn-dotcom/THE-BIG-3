@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { Flame, Plus, Radar, Swords, Trash2, Users } from "lucide-react";
+import { Brain, Flame, Plus, Radar, Swords, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { EmptyState } from "@/components/layout/EmptyState";
@@ -52,6 +52,7 @@ export function CompetitorsPage() {
   const [onlyOutliers, setOnlyOutliers] = useState(false);
   const [channelFilter, setChannelFilter] = useState<string | null>(null);
   const { data: videos, isLoading } = useCompetitorVideos(onlyOutliers);
+  const { data: allVideos } = useCompetitorVideos(false);
   const { data: compChannels } = useCompetitorChannels();
   const createVideo = useCreateCompetitorVideo();
   const createChannel = useCreateCompetitorChannel();
@@ -192,6 +193,30 @@ export function CompetitorsPage() {
           pull real uploads and stats.
         </p>
       )}
+
+      {/* Playbook engine: every 20 teardowns the learning loop distills the
+          winners into SOP proposals and grounds every AI in them. */}
+      {(() => {
+        const banked = (allVideos ?? []).filter((v) => v.teardownAt || v.teardown).length;
+        const remainder = banked % 20;
+        return (
+          <div className="mb-5 flex items-start gap-2.5 rounded-md border border-primary/20 bg-primary/5 p-3 text-xs">
+            <Brain className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <div>
+              <span className="font-medium">
+                {banked} teardown{banked === 1 ? "" : "s"} banked
+                {banked > 0 && remainder !== 0 && ` — ${20 - remainder} more until the next playbook synthesis`}
+                {banked > 0 && remainder === 0 && " — synthesis runs with the next learning loop"}
+              </span>
+              <p className="mt-0.5 text-muted-foreground">
+                Every 20 teardowns, the learning loop distills the winning mechanisms into SOP
+                updates (you approve them) and every AI — coach, drafts, ideas, shorts — trains
+                on the playbook.
+              </p>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Tracked channels, sectioned by niche — the landscape at a glance. */}
       {nicheGroups.map(([niche, channelsInNiche]) => (

@@ -493,6 +493,8 @@ export class SupabaseProvider implements DataProvider {
         storyStructure: row.story_structure ?? undefined,
         whyItWorked: row.why_it_worked ?? undefined,
         aiObservations: row.ai_observations ?? undefined,
+        teardown: row.teardown ?? undefined,
+        teardownAt: row.teardown_at ?? undefined,
         isOutlier: row.is_outlier,
         outlierScore: row.outlier_score ?? undefined,
         views: snap?.views ?? undefined,
@@ -589,10 +591,13 @@ export class SupabaseProvider implements DataProvider {
     const teardown = await this.invokeFn<CompetitorTeardown>("competitor-teardown", {
       organizationId, competitorVideoId, targetChannelId,
     });
-    // Persist the analysis onto the video so it sticks in the table.
+    // Persist the analysis onto the video so it sticks in the table — and the
+    // full teardown, which the learning loop synthesizes every 20 teardowns.
     await this.db.from("competitor_videos").update({
       why_it_worked: teardown.whyItWorked,
       ai_observations: teardown.observations,
+      teardown,
+      teardown_at: new Date().toISOString(),
     }).eq("id", competitorVideoId);
     return teardown;
   }

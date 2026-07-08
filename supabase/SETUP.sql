@@ -991,3 +991,13 @@ alter table channels add column if not exists youtube_connected_at timestamptz;
 
 alter table productions
   add column if not exists format video_format not null default 'long_form';
+
+-- ============================================================================
+-- ---- 0013_teardown_synthesis.sql --------------------------------------------
+-- Bank full competitor teardowns; the learning loop distills every 20 into
+-- SOP change proposals and grounds all AI surfaces in the playbook.
+-- ============================================================================
+
+alter table competitor_videos
+  add column if not exists teardown    jsonb,
+  add column if not exists teardown_at timestamptz;
