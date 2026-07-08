@@ -6,6 +6,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { askClaudeJson, corsHeaders, jsonResponse } from "../_shared/claude.ts";
+import { loadOrgContext } from "../_shared/context.ts";
 
 const SYSTEM = `You cut long-form YouTube scripts into Shorts for a documentary media company.
 Each Short must stand alone: one idea, one beat of the source script, nothing that needs the full video for context.
@@ -15,6 +16,8 @@ Rules:
 - Pull concrete facts and lines FROM THE PROVIDED SCRIPT. Never invent facts that aren't in it; if the script is an outline, keep bracketed [placeholders] where the human must drop in the real detail.
 - Titles <= 80 chars, curiosity-first, no clickbait lies.
 - onScreenText = 3-6 words shown as the opening text overlay.
+- Follow the Script Bible rules provided — they are writing law distilled from the creator's own feedback.
+- Prefer the winning mechanisms from the competitor playbook provided; those hooks are proven in this niche.
 Return STRICT JSON, no prose:
 { "shorts": [{ "title": string, "hook": string, "script": string, "onScreenText": string }] }`;
 
@@ -45,13 +48,19 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Not enough script yet — write or AI-draft the long-form script first" }, 400);
     }
 
+    // Ground the cuts in everything the system has learned: the Script Bible
+    // (creator feedback → rules) and the competitor playbook (proven hooks).
+    const ctx = await loadOrgContext(db, organizationId, { videoLimit: 10 });
+
     const result = await askClaudeJson<any>([
       {
         role: "user",
         content:
           `Cut this long-form script into ${n} Shorts.\n` +
           `Video title: ${prod.title}\nTopic: ${prod.topic ?? ""}\n\n` +
-          `<script>\n${script}\n</script>`,
+          `<script>\n${script}\n</script>\n\n` +
+          `<script_bible>\n${JSON.stringify(ctx.scriptBible)}\n</script_bible>\n\n` +
+          `<competitor_playbook>\n${JSON.stringify(ctx.competitorPlaybook)}\n</competitor_playbook>`,
       },
     ], { system: SYSTEM, maxTokens: 3000 });
 

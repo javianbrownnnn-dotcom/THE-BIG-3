@@ -129,6 +129,34 @@ export function StudioProjectPage() {
     }
   }, [project]);
 
+  // The video is on the Production board from the moment work starts: if the
+  // linked doc doesn't exist yet (e.g. dashboard created the project before
+  // channels loaded), create it as soon as both are available.
+  const ensuredDocFor = useRef<string>();
+  useEffect(() => {
+    if (!project || project.linkedProductionId || project.status === "done") return;
+    const channelId = project.channelId ?? channels?.[0]?.id;
+    if (!channelId || ensuredDocFor.current === project.id) return;
+    ensuredDocFor.current = project.id;
+    (async () => {
+      try {
+        const doc = await createProduction.mutateAsync({
+          title: project.selectedTitle ?? project.topic,
+          channelId,
+          topic: project.topic,
+        });
+        await updateProduction.mutateAsync({
+          id: doc.id,
+          patch: { notes: `Being written in Content Studio — project: ${project.topic}` },
+        });
+        await update.mutateAsync({ id: project.id, patch: { linkedProductionId: doc.id } });
+      } catch {
+        // Non-fatal — the doc is created at the next sync milestone instead.
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project, channels]);
+
   if (isLoading || !project) return <Skeleton className="h-96" />;
 
   const current = view ?? project.status;
@@ -149,6 +177,8 @@ export function StudioProjectPage() {
       { onError: (err) => toast.error(err instanceof Error ? err.message : String(err)) },
     );
     setView(to);
+    // Keep the linked production doc current as milestones pass.
+    if (to === "critique" || to === "feedback") void syncToProduction(false);
   };
 
   const RunButton = ({ step, has, label }: { step: StudioStep; has: boolean; label: string }) => (
@@ -167,8 +197,13 @@ export function StudioProjectPage() {
     </div>
   );
 
-  const selectTitle = (v: TitleVariant) =>
+  const selectTitle = (v: TitleVariant) => {
     update.mutate({ id: project.id, patch: { selectedTitle: v.title } });
+    // The linked production doc follows the chosen title.
+    if (project.linkedProductionId) {
+      updateProduction.mutate({ id: project.linkedProductionId, patch: { title: v.title } });
+    }
+  };
 
   const selectConcept = (c: ThumbnailConcept) =>
     update.mutate({ id: project.id, patch: { selectedThumbnail: c } });
@@ -213,40 +248,60 @@ export function StudioProjectPage() {
       },
     });
 
-  const sendToProduction = async () => {
+  /**
+   * The production doc is created the moment a Studio project starts, and
+   * kept in sync as steps complete. `finalize` moves it to Editing with the
+   * script, title candidates, and picked thumbnail — the finished handoff.
+   */
+  const syncToProduction = async (finalize: boolean) => {
     const channelId = project.channelId ?? channels?.[0]?.id;
-    if (!channelId) return toast.error("Add a channel first (Channels page)");
+    if (!channelId) {
+      if (finalize) toast.error("Add a channel first (Channels page)");
+      return;
+    }
     try {
-      const doc = await createProduction.mutateAsync({
-        title: project.selectedTitle ?? project.topic,
-        channelId,
-        topic: project.topic,
-      });
+      let docId = project.linkedProductionId;
+      if (!docId) {
+        const doc = await createProduction.mutateAsync({
+          title: project.selectedTitle ?? project.topic,
+          channelId,
+          topic: project.topic,
+        });
+        docId = doc.id;
+        await update.mutateAsync({ id: project.id, patch: { linkedProductionId: docId } });
+      }
       const pickedThumb = project.thumbnailVariants.find((v) => v.selected)?.imageUrl;
       await updateProduction.mutateAsync({
-        id: doc.id,
+        id: docId,
         patch: {
-          // The script is written and critiqued — the doc starts in Editing,
-          // not Scripting. Studio writes it; Production ships it.
-          stage: "editing",
-          scriptBody: project.script,
-          titleCandidates: (project.titleLab?.strongest ?? []).map((t) => ({
-            text: t,
-            starred: t === project.selectedTitle,
-          })),
+          title: project.selectedTitle ?? project.topic,
+          ...(project.script ? { scriptBody: project.script } : {}),
+          ...(project.titleLab
+            ? {
+                titleCandidates: (project.titleLab.strongest ?? []).map((t) => ({
+                  text: t,
+                  starred: t === project.selectedTitle,
+                })),
+              }
+            : {}),
           thumbnailConcept: project.selectedThumbnail
             ? `${project.selectedThumbnail.conceptName}: ${project.selectedThumbnail.visualDescription}`
             : undefined,
-          // Carry the picked thumbnail image onto the doc so the board shows it.
           ...(pickedThumb ? { assetLinks: withThumbnail([], pickedThumb) } : {}),
-          notes: `Written in Content Studio — project: ${project.topic}`,
+          notes: finalize
+            ? `Written in Content Studio — project: ${project.topic}`
+            : `Being written in Content Studio — project: ${project.topic}`,
+          // Script done and reviewed → the team takes over in Editing.
+          ...(finalize ? { stage: "editing" as const } : {}),
         },
       });
-      await update.mutateAsync({ id: project.id, patch: { linkedProductionId: doc.id } });
-      toast.success("Sent to Production — the doc starts in Editing, script and thumbnail inside");
-      navigate(`/production/${doc.id}`);
+      if (finalize) {
+        toast.success("Production doc moved to Editing — script and thumbnail inside");
+      }
+      return docId;
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      if (finalize) toast.error(err instanceof Error ? err.message : String(err));
+      return undefined;
     }
   };
 
@@ -887,6 +942,7 @@ export function StudioProjectPage() {
                             : "Project finished",
                         );
                         setView("done");
+                        void syncToProduction(true);
                       },
                       onError: (err) =>
                         toast.error(err instanceof Error ? err.message : String(err)),
@@ -916,11 +972,18 @@ export function StudioProjectPage() {
             {project.linkedProductionId ? (
               <Button size="sm" variant="outline" asChild>
                 <Link to={`/production/${project.linkedProductionId}`}>
-                  <Clapperboard /> Open production doc
+                  <Clapperboard /> Open production doc (in Editing)
                 </Link>
               </Button>
             ) : (
-              <Button size="sm" onClick={sendToProduction} disabled={createProduction.isPending}>
+              <Button
+                size="sm"
+                onClick={async () => {
+                  const docId = await syncToProduction(true);
+                  if (docId) navigate(`/production/${docId}`);
+                }}
+                disabled={createProduction.isPending}
+              >
                 <Clapperboard /> Send to Production board
               </Button>
             )}

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Clapperboard, Lightbulb, MessageCircleQuestion, Plus, Sparkles } from "lucide-react";
+import { Clapperboard, Film, Lightbulb, MessageCircleQuestion, Plus, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { EmptyState } from "@/components/layout/EmptyState";
@@ -26,7 +26,14 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { useNavigate } from "react-router-dom";
-import { useChannels, useCreateIdea, useCreateProduction, useIdeas, useUpdateIdea } from "@/hooks/queries";
+import {
+  useChannels,
+  useCreateContentProject,
+  useCreateIdea,
+  useCreateProduction,
+  useIdeas,
+  useUpdateIdea,
+} from "@/hooks/queries";
 import type { Idea, IdeaPriority, IdeaStatus } from "@/types";
 import { usePersistedState } from "@/hooks/usePersistedState";
 import { GenerateIdeasDialog } from "./GenerateIdeasDialog";
@@ -43,6 +50,7 @@ function IdeaCard({ idea }: { idea: Idea }) {
   const { data: channels } = useChannels();
   const updateIdea = useUpdateIdea();
   const createProduction = useCreateProduction();
+  const createStudioProject = useCreateContentProject();
   const navigate = useNavigate();
   const channel = channels?.find((c) => c.id === idea.channelId);
 
@@ -67,6 +75,22 @@ function IdeaCard({ idea }: { idea: Idea }) {
     }
   };
 
+  // Idea → Studio: the full gated pipeline (relevance, research, titles,
+  // script) picks up exactly where the idea left off.
+  const develop = async () => {
+    try {
+      const project = await createStudioProject.mutateAsync({
+        topic: idea.description ? `${idea.title} — ${idea.description}` : idea.title,
+        channelId: idea.channelId ?? channels?.[0]?.id,
+      });
+      updateIdea.mutate({ id: idea.id, patch: { status: "researching" } });
+      toast.success("Studio project started from this idea");
+      navigate(`/studio/${project.id}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    }
+  };
+
   return (
     <Card>
       <CardContent className="space-y-2 p-3.5">
@@ -86,14 +110,25 @@ function IdeaCard({ idea }: { idea: Idea }) {
         ))}
       </div>
       {idea.status !== "in_production" && idea.status !== "published" && idea.status !== "archived" && (
-        <Button
-          size="sm"
-          className="h-7 w-full text-xs"
-          onClick={produce}
-          disabled={createProduction.isPending}
-        >
-          <Clapperboard className="h-3.5 w-3.5" /> Produce this
-        </Button>
+        <div className="flex gap-1.5">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 flex-1 text-xs"
+            onClick={develop}
+            disabled={createStudioProject.isPending}
+          >
+            <Film className="h-3.5 w-3.5" /> Develop in Studio
+          </Button>
+          <Button
+            size="sm"
+            className="h-7 flex-1 text-xs"
+            onClick={produce}
+            disabled={createProduction.isPending}
+          >
+            <Clapperboard className="h-3.5 w-3.5" /> Produce this
+          </Button>
+        </div>
       )}
       <Select
         value={idea.status}
