@@ -74,8 +74,13 @@ the Google OAuth secrets and follow `docs/YOUTUBE_UPLOAD.md`:
 - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` — your Google Cloud OAuth client
 - `OAUTH_REDIRECT_URL` — the deployed URL of the `youtube-oauth` function's callback
 
+For **AI thumbnail images** (Content Studio → Generate with Gemini), add the
+edge-function secret `GEMINI_API_KEY` (free key at aistudio.google.com/apikey).
+Without it, the studio still works — Canva prompts and manual upload cover
+thumbnails.
+
 Deploy the edge functions once (Supabase CLI):
-`supabase functions deploy ai-coach ai-ideas ai-write ai-shorts learning-loop generate-report youtube-sync youtube-oauth youtube-upload competitor-scan`
+`supabase functions deploy ai-coach ai-ideas ai-write ai-shorts content-studio thumbnail-image learning-loop generate-report youtube-sync youtube-oauth youtube-upload competitor-scan`
 
 For the **nightly learning loop** (GitHub Action), also add repo secrets
 (GitHub → Settings → Secrets → Actions): `SUPABASE_URL` and

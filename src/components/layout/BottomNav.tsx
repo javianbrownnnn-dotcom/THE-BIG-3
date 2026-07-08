@@ -5,6 +5,7 @@ import {
   Archive,
   Bot,
   Clapperboard,
+  Film,
   ListTodo,
   LayoutDashboard,
   Lightbulb,
@@ -25,6 +26,7 @@ const TABS = [
 ] as const;
 
 const MORE = [
+  { to: "/studio", label: "Content Studio", icon: Film },
   { to: "/competitors", label: "Competitors", icon: Swords },
   { to: "/vault", label: "Vault", icon: Archive },
   { to: "/channels", label: "Channels", icon: Tv },

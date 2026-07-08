@@ -525,6 +525,231 @@ export interface VideoMetricsInput {
   subscribersGained?: number;
 }
 
+// ---------------------------------------------------------------------------
+// Modern Ambition Content Studio — the gated documentary pipeline.
+// Relevance comes before generation: each step's artifact is stored whole so
+// the next step (and the human) can react to it.
+// ---------------------------------------------------------------------------
+
+export type StudioStatus =
+  | "relevance"
+  | "research"
+  | "titles"
+  | "thumbnail"
+  | "outline"
+  | "script"
+  | "critique"
+  | "feedback"
+  | "done";
+
+export const STUDIO_STEPS: StudioStatus[] = [
+  "relevance",
+  "research",
+  "titles",
+  "thumbnail",
+  "outline",
+  "script",
+  "critique",
+  "feedback",
+  "done",
+];
+
+export type StudioVideoLength = 15 | 18 | 20 | 25;
+
+export interface StudioPersona {
+  id: string;
+  name: string;
+  ageRange?: string;
+  description: string;
+  respondsTo: string[];
+  /** 'builtin' ships in code; 'ai' personas unlock at 30/100 completed videos. */
+  source: "builtin" | "ai";
+  active: boolean;
+}
+
+export interface RelevanceReport {
+  relevant: "yes" | "no" | "maybe";
+  score: number; // 1–10
+  bestPersona: string;
+  whyViewerCares: string;
+  emotionalHook: string;
+  businessHook: string;
+  psychologyHook: string;
+  weakness: string;
+  clickabilityFix: string;
+  recommendedLengthMinutes: StudioVideoLength;
+  videoPromise: string;
+}
+
+export interface ResearchPacket {
+  mainSubject: string;
+  timeline: string[];
+  keyEvents: string[];
+  keyConflicts: string[];
+  turningPoints: string[];
+  businessContext: string;
+  psychologicalContext: string;
+  culturalContext: string;
+  controversies: string[];
+  /** Claims the human MUST fact-check — the system never invents facts. */
+  unverifiedClaims: string[];
+  bestAngle: string;
+  emotionalQuestion: string;
+  endingIdea: string;
+}
+
+export interface TitleVariant {
+  title: string;
+  angle: string;
+  curiosityScore: number;
+  clarityScore: number;
+  emotionScore: number;
+  specificityScore: number;
+  accuracyScore: number;
+  documentaryFeelScore: number;
+  personaFitScore: number;
+  clickPotentialScore: number;
+  reasoning: string;
+  thumbnailMatch: string;
+}
+
+export interface TitleLab {
+  variants: TitleVariant[];
+  angleCategories: string[];
+  strongest: string[]; // 3 titles
+  recommended: string;
+  whyRecommended: string;
+}
+
+export interface ThumbnailConcept {
+  conceptName: string;
+  visualDescription: string;
+  textOverlayOptions: string[];
+  mainEmotion: string;
+  composition: string;
+  background: string;
+  style: string;
+  mobileReadabilityScore: number;
+  relevanceScore: number;
+  providerPromptGemini: string;
+  providerPromptCanva: string;
+  negativePrompt: string;
+  whyItWorks: string;
+  shouldNot: string;
+}
+
+export interface ThumbnailLab {
+  concepts: ThumbnailConcept[];
+  recommendedConcept: string;
+}
+
+/** A saved thumbnail image/prompt pairing (Gemini, Canva, or manual upload). */
+export interface ThumbnailVariant {
+  id: string;
+  provider: "gemini" | "canva" | "upload";
+  conceptName: string;
+  /** data: URL or external URL of the produced image (absent for prompt-only). */
+  imageUrl?: string;
+  prompt?: string;
+  pairedTitle?: string;
+  relevanceScore?: number;
+  selected: boolean;
+  createdAt: string;
+}
+
+export interface OutlineSection {
+  timestamp: string; // "0:00–0:45"
+  title: string;
+  purpose: string;
+  beats: string[];
+  emotionalJob: string;
+  brollIdeas: string[];
+  retentionDevice: string;
+  transition: string;
+}
+
+export interface StudioCritique {
+  scores: Record<string, number>; // hook, titleAlignment, tension, pacing, clarity, originality, retention, ending, voiceover, channelFit, personaFit, thumbnailAlignment
+  boringSections: string[];
+  clickOffRisks: string[];
+  needsMoreTension: string[];
+  genericLines: string[];
+  essayLikeParts: string[];
+  cut: string[];
+  expand: string[];
+  factCheck: string[];
+  proposedRules: Array<{ category: FeedbackRuleCategory; rule: string }>;
+  warnings: string[]; // safety: living people, speculation, overpromise…
+}
+
+export type FeedbackRuleCategory =
+  | "title"
+  | "script"
+  | "thumbnail"
+  | "hook"
+  | "ending"
+  | "general";
+
+/** One Script Bible entry — a reusable writing rule distilled from feedback. */
+export interface FeedbackRule {
+  id: string;
+  category: FeedbackRuleCategory;
+  rule: string;
+  sourceFeedback?: string;
+  active: boolean;
+  createdAt: string;
+}
+
+export interface StudioFeedback {
+  ratings: Partial<
+    Record<"title" | "script" | "thumbnail" | "hook" | "ending" | "idea", number>
+  >;
+  notes: string;
+}
+
+export interface ContentProject {
+  id: string;
+  organizationId: string;
+  channelId?: string;
+  topic: string;
+  status: StudioStatus;
+  primaryPersona?: string;
+  secondaryPersona?: string;
+  videoLengthMinutes: StudioVideoLength;
+  relevance?: RelevanceReport;
+  research?: ResearchPacket;
+  titleLab?: TitleLab;
+  selectedTitle?: string;
+  thumbnailLab?: ThumbnailLab;
+  selectedThumbnail?: ThumbnailConcept;
+  thumbnailVariants: ThumbnailVariant[];
+  outline?: OutlineSection[];
+  script?: string;
+  critique?: StudioCritique;
+  feedback?: StudioFeedback;
+  linkedProductionId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ContentProjectInput {
+  topic: string;
+  channelId?: string;
+  primaryPersona?: string;
+  secondaryPersona?: string;
+  videoLengthMinutes?: StudioVideoLength;
+}
+
+export type StudioStep =
+  | "relevance"
+  | "research"
+  | "titles"
+  | "thumbnails"
+  | "outline"
+  | "script"
+  | "critique"
+  | "personaReview";
+
 export interface DraftResult {
   hookText: string;
   scriptBody: string;

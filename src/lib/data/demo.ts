@@ -53,8 +53,29 @@ import type {
   VideoMetricsInput,
   VideoWithHistory,
 } from "@/types";
+import type {
+  ContentProject,
+  ContentProjectInput,
+  FeedbackRule,
+  FeedbackRuleCategory,
+  StudioFeedback,
+  StudioPersona,
+  StudioStep,
+  ThumbnailVariant,
+} from "@/types";
 import type { DataProvider } from "./provider";
 import { draftFromTemplates, shortsFromScript } from "@/features/production/draft";
+import { BUILTIN_PERSONAS, MAX_PERSONAS, PERSONA_UNLOCKS } from "@/features/studio/personas";
+import {
+  templateCritique,
+  templateFeedbackRule,
+  templateOutline,
+  templateRelevance,
+  templateResearch,
+  templateScript,
+  templateThumbnails,
+  templateTitles,
+} from "@/features/studio/templates";
 import { aggregateChannelStats, simulateChannelScan } from "@/features/competitors/scan";
 
 // ---------------------------------------------------------------------------
@@ -940,6 +961,11 @@ const tasks: Task[] = [
   },
 ];
 
+// Content Studio state — starts empty; everything the user makes persists.
+const contentProjects: ContentProject[] = [];
+const feedbackRules: FeedbackRule[] = [];
+const aiPersonas: StudioPersona[] = [];
+
 // Seed a short discussion on the first production doc so the collaboration
 // surface isn't empty in the demo.
 const comments: Comment[] = [
@@ -969,6 +995,7 @@ function persist() {
       JSON.stringify({
         channels, videos, competitorChannels, competitorVideos, ideas, sops, insights,
         recommendations, reports, notifications, activity, productions, invites, comments, tasks,
+        contentProjects, feedbackRules, aiPersonas,
       }),
     );
   } catch {
@@ -1004,6 +1031,9 @@ function replaceInPlace<T>(target: T[], source: T[] | undefined) {
     replaceInPlace(invites, s.invites);
     replaceInPlace(comments, s.comments);
     replaceInPlace(tasks, s.tasks);
+    replaceInPlace(contentProjects, s.contentProjects);
+    replaceInPlace(feedbackRules, s.feedbackRules);
+    replaceInPlace(aiPersonas, s.aiPersonas);
   } catch {
     // Corrupt state — fall back to the fresh seed.
     localStorage.removeItem(STORAGE_KEY);
@@ -2018,6 +2048,224 @@ export class DemoProvider implements DataProvider {
     });
     persist();
     return counts;
+  }
+
+  // ------------------------------------------------------------------
+  // Modern Ambition Content Studio (demo: honest template scaffolds)
+  // ------------------------------------------------------------------
+
+  async listContentProjects() {
+    await delay();
+    return clone(contentProjects);
+  }
+
+  async getContentProject(id: string) {
+    return clone(contentProjects.find((c) => c.id === id) ?? null);
+  }
+
+  async createContentProject(input: ContentProjectInput) {
+    const now = new Date().toISOString();
+    const row: ContentProject = {
+      id: runtimeId("cnt"),
+      organizationId: org.id,
+      channelId: input.channelId,
+      topic: input.topic,
+      status: "relevance",
+      primaryPersona: input.primaryPersona,
+      secondaryPersona: input.secondaryPersona,
+      videoLengthMinutes: input.videoLengthMinutes ?? 15,
+      thumbnailVariants: [],
+      createdAt: now,
+      updatedAt: now,
+    };
+    contentProjects.unshift(row);
+    persist();
+    return clone(row);
+  }
+
+  async updateContentProject(id: string, patch: Partial<ContentProject>) {
+    const row = contentProjects.find((c) => c.id === id);
+    if (!row) throw new Error("project not found");
+    Object.assign(row, patch, { updatedAt: new Date().toISOString() });
+    persist();
+    return clone(row);
+  }
+
+  async deleteContentProject(id: string) {
+    const i = contentProjects.findIndex((c) => c.id === id);
+    if (i >= 0) contentProjects.splice(i, 1);
+    persist();
+  }
+
+  async runStudioStep(projectId: string, step: StudioStep): Promise<ContentProject> {
+    await delay(900);
+    const row = contentProjects.find((c) => c.id === projectId);
+    if (!row) throw new Error("project not found");
+    switch (step) {
+      case "relevance": {
+        row.relevance = templateRelevance(row.topic);
+        if (!row.primaryPersona) row.primaryPersona = row.relevance.bestPersona;
+        row.videoLengthMinutes = row.relevance.recommendedLengthMinutes;
+        break;
+      }
+      case "research":
+        row.research = templateResearch(row);
+        break;
+      case "titles":
+        row.titleLab = templateTitles(row);
+        break;
+      case "thumbnails":
+        row.thumbnailLab = templateThumbnails(row);
+        break;
+      case "outline":
+        row.outline = templateOutline(row);
+        break;
+      case "script":
+        row.script = templateScript(row);
+        break;
+      case "critique":
+        row.critique = templateCritique(row);
+        break;
+      case "personaReview": {
+        const done = contentProjects.filter((c) => c.status === "done").length;
+        const total = BUILTIN_PERSONAS.length + aiPersonas.length;
+        const unlocked = PERSONA_UNLOCKS.filter((n) => done >= n).length;
+        if (total < Math.min(MAX_PERSONAS, BUILTIN_PERSONAS.length + unlocked)) {
+          aiPersonas.push({
+            id: runtimeId("per"),
+            name: total === 3 ? "The Comeback Architect" : "The Legacy Watcher",
+            description:
+              "[Demo persona proposal — live mode derives it from your accumulated feedback and best-performing videos.]",
+            respondsTo: ["Reinvention", "Second acts", "Proving people wrong"],
+            source: "ai",
+            active: true,
+          });
+        }
+        break;
+      }
+    }
+    row.updatedAt = new Date().toISOString();
+    persist();
+    return clone(row);
+  }
+
+  async listStudioPersonas(): Promise<StudioPersona[]> {
+    return clone([...BUILTIN_PERSONAS, ...aiPersonas]);
+  }
+
+  async listFeedbackRules() {
+    await delay();
+    return clone(feedbackRules);
+  }
+
+  async addFeedbackRule(input: {
+    category: FeedbackRuleCategory;
+    rule: string;
+    sourceFeedback?: string;
+  }) {
+    const row: FeedbackRule = {
+      id: runtimeId("rule"),
+      category: input.category,
+      rule: input.rule,
+      sourceFeedback: input.sourceFeedback,
+      active: true,
+      createdAt: new Date().toISOString(),
+    };
+    feedbackRules.unshift(row);
+    persist();
+    return clone(row);
+  }
+
+  async setFeedbackRuleActive(id: string, active: boolean) {
+    const row = feedbackRules.find((r) => r.id === id);
+    if (row) {
+      row.active = active;
+      persist();
+    }
+  }
+
+  async deleteFeedbackRule(id: string) {
+    const i = feedbackRules.findIndex((r) => r.id === id);
+    if (i >= 0) feedbackRules.splice(i, 1);
+    persist();
+  }
+
+  async submitStudioFeedback(projectId: string, feedback: StudioFeedback) {
+    await delay(700);
+    const row = contentProjects.find((c) => c.id === projectId);
+    if (!row) throw new Error("project not found");
+    row.feedback = feedback;
+    row.status = "done";
+    row.updatedAt = new Date().toISOString();
+
+    // Distill each distinct note into a reusable Script Bible rule.
+    const notes = feedback.notes
+      .split(/\n|;/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const created: FeedbackRule[] = [];
+    for (const note of notes) {
+      const distilled = templateFeedbackRule(note);
+      if (feedbackRules.some((r) => r.rule === distilled.rule)) continue;
+      const rule: FeedbackRule = {
+        id: runtimeId("rule"),
+        ...distilled,
+        sourceFeedback: note,
+        active: true,
+        createdAt: new Date().toISOString(),
+      };
+      feedbackRules.unshift(rule);
+      created.push(rule);
+    }
+    persist();
+    // Persona evolution check happens on completion milestones.
+    const done = contentProjects.filter((c) => c.status === "done").length;
+    if (PERSONA_UNLOCKS.includes(done)) await this.runStudioStep(projectId, "personaReview");
+    return { project: clone(row), rules: clone(created) };
+  }
+
+  async saveThumbnailVariant(
+    projectId: string,
+    variant: Omit<ThumbnailVariant, "id" | "createdAt">,
+  ) {
+    const row = contentProjects.find((c) => c.id === projectId);
+    if (!row) throw new Error("project not found");
+    if (variant.selected) {
+      for (const v of row.thumbnailVariants) v.selected = false;
+    }
+    row.thumbnailVariants.push({
+      ...variant,
+      id: runtimeId("thv"),
+      createdAt: new Date().toISOString(),
+    });
+    row.updatedAt = new Date().toISOString();
+    persist();
+    return clone(row);
+  }
+
+  async generateThumbnailImage(projectId: string, conceptName: string) {
+    await delay(1200);
+    const row = contentProjects.find((c) => c.id === projectId);
+    if (!row) throw new Error("project not found");
+    const concept = row.thumbnailLab?.concepts.find((c) => c.conceptName === conceptName);
+    if (!concept) throw new Error("concept not found — run the Thumbnail Studio first");
+    // Demo: a labeled placeholder so the save/select flow is fully explorable.
+    const svg =
+      `<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720">` +
+      `<rect width="1280" height="720" fill="#0b0d12"/>` +
+      `<rect x="40" y="40" width="1200" height="640" fill="none" stroke="#3b82f6" stroke-width="4"/>` +
+      `<text x="640" y="330" fill="#e5e7eb" font-size="52" font-family="sans-serif" text-anchor="middle">${concept.conceptName.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</text>` +
+      `<text x="640" y="410" fill="#9ca3af" font-size="30" font-family="sans-serif" text-anchor="middle">demo placeholder — Gemini renders this live</text>` +
+      `</svg>`;
+    return this.saveThumbnailVariant(projectId, {
+      provider: "gemini",
+      conceptName,
+      imageUrl: `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`,
+      prompt: concept.providerPromptGemini,
+      pairedTitle: row.selectedTitle,
+      relevanceScore: concept.relevanceScore,
+      selected: row.thumbnailVariants.length === 0,
+    });
   }
 
   resetLocalData() {
