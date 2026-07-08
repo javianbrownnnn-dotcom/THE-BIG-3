@@ -44,6 +44,7 @@ import {
 } from "@/hooks/queries";
 import { usePersistedState } from "@/hooks/usePersistedState";
 import { compressImage } from "@/lib/image";
+import { withThumbnail } from "@/features/production/thumbnail";
 import { cn } from "@/lib/utils";
 import {
   STUDIO_STEPS,
@@ -221,9 +222,13 @@ export function StudioProjectPage() {
         channelId,
         topic: project.topic,
       });
+      const pickedThumb = project.thumbnailVariants.find((v) => v.selected)?.imageUrl;
       await updateProduction.mutateAsync({
         id: doc.id,
         patch: {
+          // The script is written and critiqued — the doc starts in Editing,
+          // not Scripting. Studio writes it; Production ships it.
+          stage: "editing",
           scriptBody: project.script,
           titleCandidates: (project.titleLab?.strongest ?? []).map((t) => ({
             text: t,
@@ -232,11 +237,13 @@ export function StudioProjectPage() {
           thumbnailConcept: project.selectedThumbnail
             ? `${project.selectedThumbnail.conceptName}: ${project.selectedThumbnail.visualDescription}`
             : undefined,
-          notes: `From Content Studio project: ${project.topic}`,
+          // Carry the picked thumbnail image onto the doc so the board shows it.
+          ...(pickedThumb ? { assetLinks: withThumbnail([], pickedThumb) } : {}),
+          notes: `Written in Content Studio — project: ${project.topic}`,
         },
       });
       await update.mutateAsync({ id: project.id, patch: { linkedProductionId: doc.id } });
-      toast.success("Production doc created with the script inside");
+      toast.success("Sent to Production — the doc starts in Editing, script and thumbnail inside");
       navigate(`/production/${doc.id}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : String(err));

@@ -44,6 +44,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import {
   useChannels,
+  useContentProjects,
   useDeriveShorts,
   useDraftProduction,
   useMe,
@@ -112,6 +113,7 @@ export function ProductionDetailPage() {
   const { data: members } = useMembers();
   const { data: me } = useMe();
   const { data: sops } = useSops();
+  const { data: studioProjects } = useContentProjects();
   const updateProduction = useUpdateProduction();
   const publishProduction = usePublishProduction();
   const deleteProduction = useDeleteProduction();
@@ -181,6 +183,7 @@ export function ProductionDetailPage() {
 
   const myRole = members?.find((m) => m.id === me?.id)?.role;
   const canPost = myRole === "owner" || myRole === "admin";
+  const studioProject = studioProjects?.find((s) => s.linkedProductionId === id);
 
   if (isLoading || !form) return <Skeleton className="h-96" />;
   if (!production) {
@@ -339,6 +342,13 @@ export function ProductionDetailPage() {
               <Badge variant="outline" className="border-primary/40 text-primary">
                 Short
               </Badge>
+            )}
+            {studioProject && (
+              <Link to={`/studio/${studioProject.id}`}>
+                <Badge variant="outline" className="border-primary/40 text-primary hover:bg-primary/10">
+                  Written in Studio →
+                </Badge>
+              </Link>
             )}
             <GoalScore production={form} />
             {canPost && form.stage !== "published" && (

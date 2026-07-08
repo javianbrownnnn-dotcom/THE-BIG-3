@@ -185,6 +185,7 @@ export function StudioPage() {
                             relevance {p.relevance.score}/10
                           </Badge>
                         )}
+                        {p.linkedProductionId && <Badge variant="success">in production</Badge>}
                       </div>
                       <div className="flex items-center justify-between">
                         <StepDots project={p} />
