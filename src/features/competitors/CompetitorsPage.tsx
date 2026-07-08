@@ -92,6 +92,18 @@ export function CompetitorsPage() {
     [filteredVideos],
   );
 
+  // Channels sectioned by niche — named niches alphabetical, un-niched last.
+  const nicheGroups = useMemo(() => {
+    const groups = new Map<string, CompetitorChannel[]>();
+    for (const c of compChannels ?? []) {
+      const key = c.niche?.trim() || "No niche set";
+      groups.set(key, [...(groups.get(key) ?? []), c]);
+    }
+    return [...groups.entries()].sort(([a], [b]) =>
+      a === "No niche set" ? 1 : b === "No niche set" ? -1 : a.localeCompare(b),
+    );
+  }, [compChannels]);
+
   const addChannel = async () => {
     if (!channelForm.name.trim()) {
       toast.error("Give the channel a name");
@@ -181,9 +193,15 @@ export function CompetitorsPage() {
         </p>
       )}
 
-      {/* Channel cards — the niche at a glance. */}
-      <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {(compChannels ?? []).map((c) => {
+      {/* Tracked channels, sectioned by niche — the landscape at a glance. */}
+      {nicheGroups.map(([niche, channelsInNiche]) => (
+        <div key={niche} className="mb-5">
+          <h3 className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            {niche}
+            <Badge variant="secondary">{channelsInNiche.length}</Badge>
+          </h3>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {channelsInNiche.map((c) => {
           const active = channelFilter === c.id;
           return (
             <Card
@@ -196,9 +214,6 @@ export function CompetitorsPage() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="truncate font-medium">{c.name}</p>
-                    {c.niche && (
-                      <p className="truncate text-xs text-muted-foreground">{c.niche}</p>
-                    )}
                   </div>
                   <div className="flex shrink-0 items-center gap-1">
                     <Button
@@ -249,7 +264,9 @@ export function CompetitorsPage() {
             </Card>
           );
         })}
-      </div>
+          </div>
+        </div>
+      ))}
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
