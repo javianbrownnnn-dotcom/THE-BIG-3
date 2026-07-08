@@ -38,10 +38,17 @@ export async function scanCompetitorFromYouTube(
   // Recompute channel-level headline stats over the full tracked set.
   const all = [...mine, ...mapped];
   const stats = aggregateChannelStats(all);
+  // No niche set by hand? Take YouTube's own categorization of the channel so
+  // it lands in the right niche section automatically.
+  const autoNiche =
+    !channel.niche?.trim() && yt.topics?.length
+      ? yt.topics.slice(0, 2).join(" · ")
+      : undefined;
   await data.updateCompetitorChannel(channel.id, {
     ...stats,
     youtubeChannelId: yt.id,
     subscriberCount: yt.subscriberCount,
+    ...(autoNiche ? { niche: autoNiche } : {}),
     lastScannedAt: new Date().toISOString(),
   });
 

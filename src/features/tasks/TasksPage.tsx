@@ -4,6 +4,8 @@ import {
   Bell,
   CalendarDays,
   Check,
+  ChevronLeft,
+  ChevronRight,
   Clapperboard,
   KanbanSquare,
   ListTodo,
@@ -145,63 +147,194 @@ function TaskCard({ task }: { task: Task }) {
   );
 }
 
-/** One schedule: tasks + production due dates, grouped by week. */
+/**
+ * One schedule, visual: a month grid of tasks + production due dates.
+ * Tap a day to see its items; dots mark what kind of work lands there.
+ */
 function TasksCalendar({ tasks }: { tasks: Task[] }) {
   const { data: productions } = useProductions();
+  const [month, setMonth] = useState(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  });
+  const [selected, setSelected] = useState(() => dayKey(new Date()));
 
   type Item = { when: Date; label: string; kind: "task" | "video"; done: boolean; to?: string };
-  const items: Item[] = [
-    ...tasks
-      .filter((t) => t.dueAt)
-      .map((t) => ({
-        when: new Date(t.dueAt!),
-        label: t.assigneeName ? `${t.title} · ${t.assigneeName}` : t.title,
-        kind: "task" as const,
-        done: t.status === "done",
-      })),
-    ...(productions ?? [])
-      .filter((p) => (p.dueDate || p.scheduledAt) && p.stage !== "published")
-      .map((p) => ({
-        when: new Date(p.scheduledAt ?? p.dueDate!),
-        label: p.title,
-        kind: "video" as const,
-        done: false,
-        to: `/production/${p.id}`,
-      })),
-  ].sort((a, b) => a.when.getTime() - b.when.getTime());
+  const items: Item[] = useMemo(
+    () =>
+      [
+        ...tasks
+          .filter((t) => t.dueAt)
+          .map((t) => ({
+            when: new Date(t.dueAt!),
+            label: t.assigneeName ? `${t.title} · ${t.assigneeName}` : t.title,
+            kind: "task" as const,
+            done: t.status === "done",
+          })),
+        ...(productions ?? [])
+          .filter((p) => (p.dueDate || p.scheduledAt) && p.stage !== "published")
+          .map((p) => ({
+            when: new Date(p.scheduledAt ?? p.dueDate!),
+            label: p.title,
+            kind: "video" as const,
+            done: false,
+            to: `/production/${p.id}`,
+          })),
+      ].sort((a, b) => a.when.getTime() - b.when.getTime()),
+    [tasks, productions],
+  );
 
-  if (!items.length) {
-    return (
-      <p className="py-10 text-center text-sm text-muted-foreground">
-        Nothing scheduled. Give a task a due date — video due dates from Production show here too.
-      </p>
-    );
-  }
+  const byDay = useMemo(() => {
+    const map = new Map<string, Item[]>();
+    for (const item of items) {
+      const key = dayKey(item.when);
+      map.set(key, [...(map.get(key) ?? []), item]);
+    }
+    return map;
+  }, [items]);
 
-  const weekOf = (d: Date) => {
-    const monday = new Date(d);
-    monday.setDate(d.getDate() - ((d.getDay() + 6) % 7));
-    monday.setHours(0, 0, 0, 0);
-    return monday;
-  };
-  const groups = new Map<string, Item[]>();
-  for (const item of items) {
-    const key = weekOf(item.when).toISOString();
-    groups.set(key, [...(groups.get(key) ?? []), item]);
-  }
-  const now = Date.now();
+  // Build the month grid, Monday-first, padded to full weeks.
+  const cells = useMemo(() => {
+    const first = new Date(month.getFullYear(), month.getMonth(), 1);
+    const lead = (first.getDay() + 6) % 7;
+    const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+    const out: Array<Date | null> = [];
+    for (let i = 0; i < lead; i++) out.push(null);
+    for (let d = 1; d <= daysInMonth; d++) {
+      out.push(new Date(month.getFullYear(), month.getMonth(), d));
+    }
+    while (out.length % 7 !== 0) out.push(null);
+    return out;
+  }, [month]);
+
+  const now = new Date();
+  const todayKey = dayKey(now);
+  const selectedItems = byDay.get(selected) ?? [];
+  const selectedDate = new Date(selected + "T12:00:00");
+  const shift = (delta: number) =>
+    setMonth(new Date(month.getFullYear(), month.getMonth() + delta, 1));
 
   return (
     <div className="space-y-4">
-      {[...groups.entries()].map(([week, rows]) => (
-        <div key={week}>
-          <div className="mb-1.5 text-xs font-medium text-muted-foreground">
-            Week of{" "}
-            {new Date(week).toLocaleDateString("en", { month: "long", day: "numeric" })}
+      <Card>
+        <CardContent className="p-3 sm:p-4">
+          {/* Month header */}
+          <div className="mb-2 flex items-center justify-between">
+            <Button size="icon" variant="ghost" aria-label="Previous month" onClick={() => shift(-1)}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold">
+                {month.toLocaleDateString("en", { month: "long", year: "numeric" })}
+              </span>
+              {dayKey(new Date(month.getFullYear(), month.getMonth(), 15)) .slice(0, 7) !==
+                todayKey.slice(0, 7) && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-6 px-2 text-xs"
+                  onClick={() => {
+                    const d = new Date();
+                    setMonth(new Date(d.getFullYear(), d.getMonth(), 1));
+                    setSelected(todayKey);
+                  }}
+                >
+                  Today
+                </Button>
+              )}
+            </div>
+            <Button size="icon" variant="ghost" aria-label="Next month" onClick={() => shift(1)}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
           </div>
+
+          {/* Weekday labels */}
+          <div className="grid grid-cols-7 text-center text-[10px] font-medium uppercase text-muted-foreground">
+            {["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map((d) => (
+              <div key={d} className="py-1">
+                {d}
+              </div>
+            ))}
+          </div>
+
+          {/* Day grid */}
+          <div className="grid grid-cols-7 gap-1">
+            {cells.map((date, i) => {
+              if (!date) return <div key={i} />;
+              const key = dayKey(date);
+              const dayItems = byDay.get(key) ?? [];
+              const isToday = key === todayKey;
+              const isSelected = key === selected;
+              const hasOverdue = dayItems.some((it) => !it.done && it.when.getTime() < now.getTime());
+              return (
+                <button
+                  key={i}
+                  onClick={() => setSelected(key)}
+                  aria-label={date.toDateString()}
+                  className={cn(
+                    "flex aspect-square flex-col items-center justify-center gap-0.5 rounded-md text-xs tabular-nums transition-colors",
+                    isSelected
+                      ? "bg-primary/15 font-semibold text-primary"
+                      : "hover:bg-muted",
+                    isToday && !isSelected && "font-semibold text-primary",
+                    isToday && "ring-1 ring-inset ring-primary/50",
+                  )}
+                >
+                  {date.getDate()}
+                  <span className="flex h-1.5 items-center gap-0.5">
+                    {dayItems.slice(0, 3).map((it, j) => (
+                      <span
+                        key={j}
+                        className={cn(
+                          "h-1.5 w-1.5 rounded-full",
+                          hasOverdue && !it.done
+                            ? "bg-destructive"
+                            : it.kind === "video"
+                              ? "bg-warning"
+                              : "bg-primary",
+                          it.done && "opacity-40",
+                        )}
+                      />
+                    ))}
+                    {dayItems.length > 3 && (
+                      <span className="text-[8px] leading-none text-muted-foreground">
+                        +{dayItems.length - 3}
+                      </span>
+                    )}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Legend */}
+          <div className="mt-2 flex items-center gap-3 text-[10px] text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary" /> task
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-warning" /> video
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-destructive" /> overdue
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Selected day */}
+      <div>
+        <div className="mb-1.5 text-xs font-medium text-muted-foreground">
+          {selectedDate.toLocaleDateString("en", { weekday: "long", month: "long", day: "numeric" })}
+        </div>
+        {selectedItems.length === 0 ? (
+          <p className="rounded-lg border border-dashed py-6 text-center text-xs text-muted-foreground">
+            Nothing scheduled this day.
+          </p>
+        ) : (
           <div className="space-y-1.5">
-            {rows.map((item, i) => {
-              const overdue = !item.done && item.when.getTime() < now;
+            {selectedItems.map((item, i) => {
+              const overdue = !item.done && item.when.getTime() < now.getTime();
               const row = (
                 <div
                   className={cn(
@@ -209,13 +342,10 @@ function TasksCalendar({ tasks }: { tasks: Task[] }) {
                     item.done && "opacity-60",
                   )}
                 >
-                  <span className="w-14 shrink-0 text-xs tabular-nums text-muted-foreground">
-                    {item.when.toLocaleDateString("en", { weekday: "short", day: "numeric" })}
-                  </span>
                   {item.kind === "video" ? (
-                    <Clapperboard className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    <Clapperboard className="h-3.5 w-3.5 shrink-0 text-warning" />
                   ) : (
-                    <ListTodo className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    <ListTodo className="h-3.5 w-3.5 shrink-0 text-primary" />
                   )}
                   <span className={cn("min-w-0 flex-1 truncate", item.done && "line-through")}>
                     {item.label}
@@ -233,10 +363,15 @@ function TasksCalendar({ tasks }: { tasks: Task[] }) {
               );
             })}
           </div>
-        </div>
-      ))}
+        )}
+      </div>
     </div>
   );
+}
+
+/** Local-time YYYY-MM-DD (never UTC — due dates are what the team sees). */
+function dayKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function DiscordDialog({
