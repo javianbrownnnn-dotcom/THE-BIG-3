@@ -283,7 +283,7 @@ export function useGenerateTeardown() {
   return useMutation({
     mutationFn: (args: { competitorVideoId: string; targetChannelId?: string }) =>
       data.generateTeardown(args.competitorVideoId, args.targetChannelId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["competitorVideos"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["competitor-videos"] }),
   });
 }
 
