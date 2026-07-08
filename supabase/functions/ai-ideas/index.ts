@@ -9,15 +9,22 @@ import { askOpenAiJson } from "../_shared/openai.ts";
 import { loadOrgContext } from "../_shared/context.ts";
 
 const SYSTEM = `You are an idea strategist for a YouTube media company using The Big 3 OS.
-Generate fresh, specific video ideas that fit the channel's niche and what's already working.
+Relevance comes before generation. Work in two passes:
+PASS 1 — generate twice as many candidate ideas as requested. Each is a concrete angle with tension, not a broad topic. "How Rolex manufactures scarcity", not "a video about Rolex".
+PASS 2 — score every candidate 1-10 on this relevance rubric, then return ONLY the requested number, best first, discarding anything under 7:
+  * demand evidence: is the mechanism proven by a competitor outlier or the channel's own best videos?
+  * niche fit: does it belong on THIS channel, for its actual viewer?
+  * emotional pull: is there a human stake, cost, or contradiction — not just information?
+  * specificity: one person / one company / one decision, never a survey of a theme
+  * freshness: clearly distinct from covered topics AND from everything currently in the works
 Rules:
-- Each idea is a concrete angle with tension, not a broad topic. "How Rolex manufactures scarcity", not "a video about Rolex".
 - Ground ideas in the demand evidence: lean toward mechanisms proven by the competitor outliers provided.
 - Do NOT repeat topics the channel has already covered (a list is provided).
 - Do NOT duplicate anything the team is currently working on (in-flight productions and Content Studio projects are provided) — propose ideas that complement the current slate instead.
 - Follow the Script Bible rules (writing law distilled from the creator's own feedback).
 - Favor the channel's best-performing hook types and story structures.
-Return STRICT JSON: { "ideas": [{ "title": string, "description": string, "rationale": string, "suggestedHook": string, "tags": string[] }] }`;
+- Never inflate scores: a 9 must be an idea you would bet a production budget on.
+Return STRICT JSON: { "ideas": [{ "title": string, "description": string, "rationale": string, "suggestedHook": string, "tags": string[], "relevanceScore": number, "whyRelevant": string, "personaFit": string }] }`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -44,7 +51,7 @@ Deno.serve(async (req) => {
       {
         role: "user",
         content:
-          `Generate ${count} video ideas` +
+          `Generate ${count * 2} candidates, score them, and return the ${count} most relevant video ideas` +
           (channel ? ` for the channel "${channel.name}" (niche: ${channel.niche}).` : " across the channels below.") +
           `\n\nAlready covered (avoid these): ${JSON.stringify(coveredTopics)}` +
           `\n\nChannels: ${JSON.stringify(ctx.channels)}` +
@@ -55,7 +62,11 @@ Deno.serve(async (req) => {
       },
     ]);
 
-    return jsonResponse({ ideas: ideas ?? [] });
+    // Server-side floor: whatever the model claims, nothing under 7 ships.
+    const vetted = (ideas ?? [])
+      .filter((i: any) => (i.relevanceScore ?? 0) >= 7)
+      .sort((a: any, b: any) => (b.relevanceScore ?? 0) - (a.relevanceScore ?? 0));
+    return jsonResponse({ ideas: vetted.length ? vetted : (ideas ?? []).slice(0, count) });
   } catch (err) {
     console.error(err);
     return jsonResponse({ error: String(err) }, 500);

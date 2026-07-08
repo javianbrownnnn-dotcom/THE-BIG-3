@@ -763,6 +763,10 @@ export interface GeneratedIdea {
   rationale: string;
   suggestedHook?: string;
   tags: string[];
+  /** 1–10, scored on the relevance rubric before the idea is shown. */
+  relevanceScore?: number;
+  whyRelevant?: string;
+  personaFit?: string;
 }
 
 export interface IdeaInput {

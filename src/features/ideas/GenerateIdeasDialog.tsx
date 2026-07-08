@@ -54,8 +54,16 @@ export function GenerateIdeasDialog({
         toast.error("No ideas came back — try again or pick a specific channel.");
         return;
       }
-      setResults(ideas);
-      setPicked(new Set(ideas.map((_, i) => i))); // pre-select all
+      const sorted = [...ideas].sort(
+        (a, b) => (b.relevanceScore ?? 0) - (a.relevanceScore ?? 0),
+      );
+      setResults(sorted);
+      // Pre-select only what cleared the relevance bar (or everything when
+      // the provider didn't score — old deployments).
+      const strong = sorted
+        .map((idea, i) => ((idea.relevanceScore ?? 10) >= 7 ? i : -1))
+        .filter((i) => i >= 0);
+      setPicked(new Set(strong.length ? strong : sorted.map((_, i) => i)));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : String(err));
     }
@@ -78,7 +86,9 @@ export function GenerateIdeasDialog({
       for (const idea of chosen) {
         await createIdea.mutateAsync({
           title: idea.title,
-          description: `${idea.description}\n\nWhy: ${idea.rationale}`,
+          description:
+            `${idea.description}\n\nWhy: ${idea.rationale}` +
+            (idea.whyRelevant ? `\n\nRelevance ${idea.relevanceScore}/10: ${idea.whyRelevant}` : ""),
           channelId: channelId === ALL ? undefined : channelId,
           priority: "medium",
           status: "inbox",
@@ -104,8 +114,9 @@ export function GenerateIdeasDialog({
             <Sparkles className="h-4 w-4" /> Generate ideas
           </DialogTitle>
           <DialogDescription>
-            Fresh angles grounded in what's working in your niche and your competitor outliers —
-            skipping topics you've already covered. Pick the keepers; they land in your inbox.
+            Every idea is scored on the relevance rubric before you see it — demand evidence,
+            niche fit, emotional pull, specificity — and anything weak is cut. Low scorers
+            arrive unchecked.
           </DialogDescription>
         </DialogHeader>
 
@@ -156,9 +167,22 @@ export function GenerateIdeasDialog({
                   <span className="min-w-0">
                     <span className="block text-sm font-medium">{idea.title}</span>
                     <span className="mt-0.5 block text-xs text-muted-foreground">
-                      {idea.rationale}
+                      {idea.whyRelevant ?? idea.rationale}
                     </span>
                     <span className="mt-1.5 flex flex-wrap gap-1">
+                      {idea.relevanceScore != null && (
+                        <Badge
+                          variant={
+                            idea.relevanceScore >= 8
+                              ? "success"
+                              : idea.relevanceScore >= 7
+                                ? "warning"
+                                : "destructive"
+                          }
+                        >
+                          relevance {idea.relevanceScore}/10
+                        </Badge>
+                      )}
                       {idea.suggestedHook && (
                         <Badge variant="secondary">{humanize(idea.suggestedHook)}</Badge>
                       )}

@@ -1475,17 +1475,29 @@ export class DemoProvider implements DataProvider {
       for (let k = 0; k < perChannel && k < angles.length; k++) {
         const seed = outliers[oi++ % Math.max(outliers.length, 1)];
         const mechanism = seed?.whyItWorked ?? "a proven curiosity mechanism";
+        // Demo relevance: outlier-backed angles score higher; z-score adds
+        // confidence. Mirrors the live rubric's "demand evidence first".
+        const relevanceScore = Math.min(
+          9,
+          (seed ? 7 : 6) + (seed?.outlierScore && seed.outlierScore >= 3 ? 1 : 0) + (k === 0 ? 1 : 0),
+        );
         out.push({
           title: angles[k],
           description: `An angle for ${ch.name} built on a mechanism that's working right now in your niche.`,
           rationale: `Modeled on a competitor outlier${seed ? ` ("${seed.title}")` : ""}: ${mechanism} Open with a ${bestHook.replace(/_/g, " ")} — your highest-CTR hook type.`,
           suggestedHook: bestHook,
           tags: [nicheWord.toLowerCase(), "competitor_validated"],
+          relevanceScore,
+          whyRelevant: seed
+            ? `Demand is proven: "${seed.title}" is a statistical outlier (z=${seed.outlierScore ?? "high"}) in your tracked niche.`
+            : "Fits the channel niche and your best hook type, but no outlier backs it yet — validate before producing.",
+          personaFit: `${ch.name}'s core viewer`,
         });
         if (out.length >= count) break;
       }
       if (out.length >= count) break;
     }
+    out.sort((a, b) => (b.relevanceScore ?? 0) - (a.relevanceScore ?? 0));
     return clone(out.slice(0, count));
   }
 
