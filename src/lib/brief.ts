@@ -1,5 +1,6 @@
 import type { Channel, CompetitorVideo, Sop, Video } from "@/types";
 import { humanize, percent } from "@/lib/format";
+import { CHANNEL_IDENTITY } from "@/features/studio/personas";
 
 function mean(nums: number[]): number | undefined {
   if (!nums.length) return undefined;
@@ -38,21 +39,24 @@ export function buildIdeaBrief(input: {
   const { orgName, channels, videos, competitorVideos, sops } = input;
   const lines: string[] = [];
 
-  lines.push(`# ${orgName} — idea brief`);
+  lines.push(`# ${orgName} — Modern Ambition Documentary idea brief`);
   lines.push("");
   lines.push(
-    "You are helping a small YouTube media company brainstorm video ideas. " +
-      "Everything below is their real performance data. Suggest specific video ideas, " +
-      "lean on the mechanisms that are proven below, and avoid topics already covered.",
+    "You are the idea strategist for this channel. The full channel identity is below — " +
+      "follow it exactly. After the identity comes the channel's REAL performance data; " +
+      "ground every suggestion in it and avoid topics already covered.",
+    "",
+    "## Channel identity (follow this exactly)",
+    CHANNEL_IDENTITY,
     "",
     "HARD RULES for every idea:",
     "1. It must be about a REAL, NAMED subject — an actual founder, company, brand, " +
-      "or documented event. \"How Howard Schultz lost Starbucks twice\" is valid; " +
-      "\"a founder who lost his company\" is NOT. No template angles, no hypotheticals.",
+      "or documented event. \"How Tai Lopez Invented the Modern Online Guru\" is valid; " +
+      "\"a guru who sold courses\" is NOT. No template angles, no hypotheticals.",
     "2. Only real, widely documented stories — never invent people, events, or numbers. " +
       "If you are not confident the story is real, do not pitch it.",
-    "3. Each idea needs tension: a cost, a contradiction, a downfall, or a hidden mechanism " +
-      "in that specific story.",
+    "3. Each idea needs the winning formula: specific subject + emotional tension + " +
+      "hidden money machine.",
   );
 
   lines.push("", "## Channels");
@@ -130,12 +134,21 @@ export function buildIdeaBrief(input: {
   lines.push(
     "",
     "## What to give back",
-    "8-12 specific video ideas, every one about a real named founder, company, or event " +
-      "(hard rule 1 above). For each: a working title that NAMES the subject, the channel " +
-      "it's for, the hook type and structure to use (from the proven lists above), the real " +
-      "story beat the video hangs on (a documented decision, scandal, collapse, or turning " +
-      "point), and one sentence on why it should work given the data. Reject your own idea " +
-      "and replace it if it could apply to more than one company or person.",
+    "8-12 documentary angles (not broad topics), rotating buckets so consecutive ideas " +
+      "never share a bucket or subject archetype. For EACH idea give:",
+    "1. Working title (must NAME the subject; use the title styles from the identity)",
+    "2. Specific subject/person/company",
+    "3. Content bucket (Guru Economy / Status Economy / Creator CEOs / Ambition Anxiety / Dream Sellers)",
+    "4. Core tension",
+    "5. Hidden machine or business model",
+    "6. The documented story beat the video hangs on (a real decision, scandal, collapse, or turning point)",
+    "7. Suggested hook structure (one of the five from the identity)",
+    "8. Thumbnail concept (visualizable immediately, premium documentary feel)",
+    "9. Why it should work for this channel given the data above",
+    "10. Priority: high (would bet a production budget), medium, or low",
+    "Reject and replace your own idea if it could apply to more than one company or person, " +
+      "if it reads like a school report, or if a strong-idea checklist score (from the " +
+      "identity) lands under 4.",
   );
 
   return lines.join("\n");

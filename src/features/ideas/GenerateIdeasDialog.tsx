@@ -183,6 +183,7 @@ export function GenerateIdeasDialog({
                           relevance {idea.relevanceScore}/10
                         </Badge>
                       )}
+                      {idea.bucket && <Badge variant="outline">{idea.bucket}</Badge>}
                       {idea.suggestedHook && (
                         <Badge variant="secondary">{humanize(idea.suggestedHook)}</Badge>
                       )}

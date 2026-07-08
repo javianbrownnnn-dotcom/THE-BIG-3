@@ -767,6 +767,9 @@ export interface GeneratedIdea {
   relevanceScore?: number;
   whyRelevant?: string;
   personaFit?: string;
+  /** Which Modern Ambition content bucket the idea belongs to. */
+  bucket?: string;
+  hookStructure?: string;
 }
 
 export interface IdeaInput {

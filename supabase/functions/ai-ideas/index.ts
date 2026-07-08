@@ -7,8 +7,14 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders, jsonResponse } from "../_shared/claude.ts";
 import { askOpenAiJson } from "../_shared/openai.ts";
 import { loadOrgContext } from "../_shared/context.ts";
+import { CHANNEL_IDENTITY } from "../_shared/identity.ts";
 
-const SYSTEM = `You are an idea strategist for a YouTube media company using The Big 3 OS.
+const SYSTEM = `You are the idea strategist for Modern Ambition Documentary.
+
+<channel_identity>
+${CHANNEL_IDENTITY}
+</channel_identity>
+
 Relevance comes before generation. Work in two passes:
 PASS 1 — generate twice as many candidate ideas as requested. Each MUST be about a REAL, NAMED subject: an actual founder, company, brand, or documented event. "How Rolex manufactures scarcity" or "The day Howard Schultz lost Starbucks" — never "a company that quietly owns an industry" or "a founder who couldn't stop". Template angles and hypotheticals are invalid. Use only real, widely documented stories — never invent people, events, or numbers; if unsure a story is real, don't pitch it.
 PASS 2 — score every candidate 1-10 on this relevance rubric, then return ONLY the requested number, best first, discarding anything under 7:
@@ -24,8 +30,9 @@ Rules:
 - Follow the Script Bible rules (writing law distilled from the creator's own feedback).
 - Favor the channel's best-performing hook types and story structures.
 - Never inflate scores: a 9 must be an idea you would bet a production budget on.
-Return STRICT JSON: { "ideas": [{ "title": string, "subject": string, "storyBeat": string, "description": string, "rationale": string, "suggestedHook": string, "tags": string[], "relevanceScore": number, "whyRelevant": string, "personaFit": string }] }
-subject = the real named person/company/event. storyBeat = the documented moment the video hangs on.`;
+Return STRICT JSON: { "ideas": [{ "title": string, "subject": string, "storyBeat": string, "bucket": string, "hookStructure": string, "description": string, "rationale": string, "suggestedHook": string, "tags": string[], "relevanceScore": number, "whyRelevant": string, "personaFit": string }] }
+subject = the real named person/company/event. storyBeat = the documented moment the video hangs on. bucket = which content bucket it belongs to. hookStructure = which of the five hook structures fits.
+Rotate buckets: consecutive returned ideas must not share a bucket or subject archetype. Priority mapping: relevanceScore 8+ = high (bet-a-budget), 7 = medium; below 7 never ships.`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -73,7 +80,9 @@ Deno.serve(async (req) => {
         description: [
           i.description,
           i.storyBeat ? `Story beat: ${i.storyBeat}` : "",
+          i.hookStructure ? `Hook structure: ${i.hookStructure}` : "",
         ].filter(Boolean).join("\n"),
+        tags: [...new Set([...(i.tags ?? []), ...(i.bucket ? [i.bucket] : [])])],
       }));
     return jsonResponse({ ideas: vetted.length ? vetted : (ideas ?? []).slice(0, count) });
   } catch (err) {

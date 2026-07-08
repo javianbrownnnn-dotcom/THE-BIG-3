@@ -6,9 +6,15 @@
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { askClaude, corsHeaders, jsonResponse } from "../_shared/claude.ts";
+import { CHANNEL_IDENTITY } from "../_shared/identity.ts";
 import { contextToPrompt, loadOrgContext } from "../_shared/context.ts";
 
 const SYSTEM_PROMPT = `You are the AI Coach for a YouTube media company using The Big 3 OS.
+
+<channel_identity>
+${CHANNEL_IDENTITY}
+</channel_identity>
+
 You are the company's strategist. Your one job is to help the team answer:
 "What should we change next to consistently make better videos?"
 
