@@ -138,7 +138,7 @@ export function buildIdeaBrief(input: {
       "never share a bucket or subject archetype. For EACH idea give:",
     "1. Working title (must NAME the subject; use the title styles from the identity)",
     "2. Specific subject/person/company",
-    "3. Content bucket (Guru Economy / Status Economy / Creator CEOs / Ambition Anxiety / Dream Sellers)",
+    "3. Content bucket (Guru Economy / Status Economy / Creator CEOs / Ambition Anxiety / Dream Sellers / Platform Machines / The Aftermath / The Old Playbook)",
     "4. Core tension",
     "5. Hidden machine or business model",
     "6. The documented story beat the video hangs on (a real decision, scandal, collapse, or turning point)",

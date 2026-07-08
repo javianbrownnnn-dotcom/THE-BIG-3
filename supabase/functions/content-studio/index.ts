@@ -32,6 +32,16 @@ const BUILTIN_PERSONAS = [
     description: "Ex-motivational-content viewer who now finds it corny. Wants sharper, honest storytelling: real people, real consequences, real tradeoffs.",
     respondsTo: ["The cost of success", "The dark side of ambition", "Winning but losing yourself", "Fame", "Pressure", "Loneliness", "Moral conflict"],
   },
+  {
+    name: "The Culture Watcher",
+    description: "Not trying to get rich — finds internet money culture fascinating as anthropology. Watches to understand why gurus, flex culture, and online empires exist and why people fall for them.",
+    respondsTo: ["Status theater", "Virality mechanics", "Subculture deep-dives", "Internet history", "Why things blow up", "The psychology of audiences"],
+  },
+  {
+    name: "The Quiet Builder", ageRange: "22-35",
+    description: "Actually building something — a job plus a side project — and allergic to hype. Watches to extract real mechanics and dodge traps: what they actually did versus what they sell.",
+    respondsTo: ["Real numbers", "Business-model breakdowns", "What they did vs what they sell", "Avoiding traps", "Unit economics", "Execution details"],
+  },
 ];
 
 const PERSONA_UNLOCKS = [30, 100];
