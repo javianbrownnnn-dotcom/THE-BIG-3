@@ -11,6 +11,17 @@ export interface YtChannel {
   title: string;
   uploadsPlaylistId: string;
   subscriberCount?: number;
+  /** Human-readable topic labels from YouTube's own categorization. */
+  topics?: string[];
+}
+
+/** "https://en.wikipedia.org/wiki/Society_(disambiguation)" → "Society" */
+export function topicLabel(url: string): string {
+  const raw = url.split("/").pop() ?? "";
+  return decodeURIComponent(raw)
+    .replace(/_\(.*\)$/, "")
+    .replace(/_/g, " ")
+    .trim();
 }
 
 export interface YtVideo {
@@ -88,12 +99,19 @@ export async function resolveChannel(ref: string, apiKey: string): Promise<YtCha
     throw new YouTubeApiError(`Couldn't understand "${ref}" — paste the channel URL or @handle.`);
   }
   const params: Record<string, string> = {
-    part: "snippet,contentDetails,statistics",
+    part: "snippet,contentDetails,statistics,topicDetails",
     ...(parsed.channelId ? { id: parsed.channelId } : { forHandle: `@${parsed.handle}` }),
   };
   const data = await ytGet("channels", params, apiKey);
   const item = data.items?.[0];
   if (!item) throw new YouTubeApiError(`No YouTube channel found for "${ref}".`);
+  const topics = [
+    ...new Set(
+      (item.topicDetails?.topicCategories ?? [])
+        .map((u: string) => topicLabel(u))
+        .filter(Boolean),
+    ),
+  ] as string[];
   return {
     id: item.id,
     title: item.snippet?.title ?? ref,
@@ -101,6 +119,7 @@ export async function resolveChannel(ref: string, apiKey: string): Promise<YtCha
     subscriberCount: item.statistics?.subscriberCount
       ? Number(item.statistics.subscriberCount)
       : undefined,
+    topics: topics.length ? topics : undefined,
   };
 }
 

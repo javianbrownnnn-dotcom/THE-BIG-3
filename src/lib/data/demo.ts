@@ -1277,8 +1277,16 @@ export class DemoProvider implements DataProvider {
       });
     }
     const all = competitorVideos.filter((v) => v.competitorChannelId === channelId);
+    // Live scans pull the niche from YouTube's own channel categorization when
+    // none was set by hand; the demo mirrors that with a plausible topic.
+    const simulatedNiche = !chan.niche?.trim()
+      ? ["Society · Knowledge", "Entertainment", "Lifestyle · Knowledge"][
+          chan.name.length % 3
+        ]
+      : undefined;
     Object.assign(chan, aggregateChannelStats(all), {
       subscriberCount: chan.subscriberCount ?? Math.round(between(80_000, 2_400_000)),
+      ...(simulatedNiche ? { niche: simulatedNiche } : {}),
       lastScannedAt: new Date().toISOString(),
     });
     persist();

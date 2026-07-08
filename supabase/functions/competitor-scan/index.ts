@@ -30,15 +30,28 @@ function parseRef(input: string): { id?: string; handle?: string } {
   return {};
 }
 
+/** "https://en.wikipedia.org/wiki/Society_(disambiguation)" → "Society" */
+function topicLabel(url: string): string {
+  const raw = url.split("/").pop() ?? "";
+  return decodeURIComponent(raw).replace(/_\(.*\)$/, "").replace(/_/g, " ").trim();
+}
+
 async function resolveChannel(ref: string, key: string) {
   const p = parseRef(ref);
   const params: Record<string, string> = {
-    part: "snippet,contentDetails,statistics",
+    part: "snippet,contentDetails,statistics,topicDetails",
     ...(p.id ? { id: p.id } : p.handle ? { forHandle: `@${p.handle}` } : { q: ref }),
   };
   const data = await ytGet("channels", params, key);
   const item = data.items?.[0];
   if (!item) throw new Error(`No YouTube channel found for "${ref}"`);
+  const topics = [
+    ...new Set(
+      (item.topicDetails?.topicCategories ?? [])
+        .map((u: string) => topicLabel(u))
+        .filter(Boolean),
+    ),
+  ] as string[];
   return {
     id: item.id,
     title: item.snippet?.title ?? ref,
@@ -46,6 +59,7 @@ async function resolveChannel(ref: string, key: string) {
     subscriberCount: item.statistics?.subscriberCount
       ? Number(item.statistics.subscriberCount)
       : null,
+    topics,
   };
 }
 
@@ -174,9 +188,16 @@ Deno.serve(async (req) => {
     }
 
     const totalTracked = (existing?.length ?? 0) + created;
+    // No niche set by hand? Take YouTube's own categorization so the channel
+    // lands in the right niche section automatically.
+    const autoNiche =
+      !chan.niche?.trim() && yt.topics.length
+        ? yt.topics.slice(0, 2).join(" · ")
+        : null;
     await svc.from("competitor_channels").update({
       youtube_channel_id: yt.id,
       subscriber_count: yt.subscriberCount,
+      ...(autoNiche ? { niche: autoNiche } : {}),
       tracked_video_count: totalTracked,
       outlier_count: mapped.filter((m) => sd > 0 && (m.viewsPerDay - mean) / sd >= 2).length,
       median_views_per_day: median(vpds),
