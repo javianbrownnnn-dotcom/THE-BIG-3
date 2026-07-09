@@ -1,22 +1,31 @@
+import { lazy } from "react";
 import { createBrowserRouter, createHashRouter } from "react-router-dom";
 import { AppShell } from "@/components/layout/AppShell";
-import { DashboardPage } from "@/features/dashboard/DashboardPage";
-import { ChannelsPage } from "@/features/channels/ChannelsPage";
-import { ChannelDetailPage } from "@/features/channels/ChannelDetailPage";
-import { ProductionPage } from "@/features/production/ProductionPage";
-import { ProductionDetailPage } from "@/features/production/ProductionDetailPage";
-import { StudioPage } from "@/features/studio/StudioPage";
-import { StudioProjectPage } from "@/features/studio/StudioProjectPage";
-import { VaultPage } from "@/features/vault/VaultPage";
-import { VideosPage } from "@/features/videos/VideosPage";
-import { VideoDetailPage } from "@/features/videos/VideoDetailPage";
-import { CompetitorsPage } from "@/features/competitors/CompetitorsPage";
-import { IdeasPage } from "@/features/ideas/IdeasPage";
-import { SopsPage } from "@/features/sops/SopsPage";
-import { SopDetailPage } from "@/features/sops/SopDetailPage";
-import { TasksPage } from "@/features/tasks/TasksPage";
-import { CoachPage } from "@/features/coach/CoachPage";
-import { SettingsPage } from "@/features/settings/SettingsPage";
+
+// Every page is its own chunk so first paint only ships the shell + the
+// page being opened (recharts alone is ~390K and most pages never use it).
+const page = <T extends Record<string, unknown>, K extends keyof T>(
+  load: () => Promise<T>,
+  name: K,
+) => lazy(() => load().then((m) => ({ default: m[name] as React.ComponentType })));
+
+const DashboardPage = page(() => import("@/features/dashboard/DashboardPage"), "DashboardPage");
+const ChannelsPage = page(() => import("@/features/channels/ChannelsPage"), "ChannelsPage");
+const ChannelDetailPage = page(() => import("@/features/channels/ChannelDetailPage"), "ChannelDetailPage");
+const ProductionPage = page(() => import("@/features/production/ProductionPage"), "ProductionPage");
+const ProductionDetailPage = page(() => import("@/features/production/ProductionDetailPage"), "ProductionDetailPage");
+const StudioPage = page(() => import("@/features/studio/StudioPage"), "StudioPage");
+const StudioProjectPage = page(() => import("@/features/studio/StudioProjectPage"), "StudioProjectPage");
+const VaultPage = page(() => import("@/features/vault/VaultPage"), "VaultPage");
+const VideosPage = page(() => import("@/features/videos/VideosPage"), "VideosPage");
+const VideoDetailPage = page(() => import("@/features/videos/VideoDetailPage"), "VideoDetailPage");
+const CompetitorsPage = page(() => import("@/features/competitors/CompetitorsPage"), "CompetitorsPage");
+const IdeasPage = page(() => import("@/features/ideas/IdeasPage"), "IdeasPage");
+const SopsPage = page(() => import("@/features/sops/SopsPage"), "SopsPage");
+const SopDetailPage = page(() => import("@/features/sops/SopDetailPage"), "SopDetailPage");
+const TasksPage = page(() => import("@/features/tasks/TasksPage"), "TasksPage");
+const CoachPage = page(() => import("@/features/coach/CoachPage"), "CoachPage");
+const SettingsPage = page(() => import("@/features/settings/SettingsPage"), "SettingsPage");
 
 // Hash routing for hosts without SPA fallback (single-file builds).
 const createRouter = import.meta.env.VITE_HASH_ROUTER
