@@ -627,6 +627,23 @@ export function StudioProjectPage() {
                           </Button>
                           <Button
                             size="sm"
+                            variant="outline"
+                            className="h-7 text-xs"
+                            onClick={() => {
+                              // Midjourney has no official API — this is the
+                              // sanctioned path: MJ-formatted prompt + their
+                              // imagine page; the result comes back via Upload.
+                              copyText(
+                                `${c.providerPromptGemini} --ar 16:9 --style raw`,
+                                "Midjourney prompt",
+                              );
+                              window.open("https://www.midjourney.com/imagine", "_blank", "noopener");
+                            }}
+                          >
+                            <ImageIcon className="h-3 w-3" /> Midjourney
+                          </Button>
+                          <Button
+                            size="sm"
                             variant="ghost"
                             className="h-7 text-xs"
                             onClick={() => copyText(c.providerPromptGemini, "Image prompt")}
