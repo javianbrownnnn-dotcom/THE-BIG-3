@@ -462,6 +462,8 @@ export interface Production {
   checklists: Partial<Record<ProductionStage, boolean[]>>;
   notes?: string;
 
+  builder?: VideoBuilderState;
+
   linkedVideoId?: string;
   createdAt: string;
   updatedAt: string;
@@ -474,6 +476,36 @@ export interface ProductionInput {
   topic?: string;
   assigneeId?: string;
   dueDate?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Video Builder: narration recorded by a human, b-roll per section, and an
+// in-browser renderer for Shorts. Lives on the production doc as jsonb.
+// ---------------------------------------------------------------------------
+
+export interface BuilderBrollItem {
+  url: string;
+  /** Preview/canvas image (for video clips this is the poster frame). */
+  thumb?: string;
+  kind: "video" | "image";
+  source: "pexels" | "upload" | "link";
+  credit?: string;
+}
+
+export interface BuilderSection {
+  id: string;
+  heading: string;
+  /** Narration text — what gets read on mic and becomes captions. */
+  text: string;
+  /** Recorded/uploaded narration as a data URL (audio/webm or similar). */
+  voDataUrl?: string;
+  voDurationSec?: number;
+  broll: BuilderBrollItem[];
+}
+
+export interface VideoBuilderState {
+  sections: BuilderSection[];
+  updatedAt: string;
 }
 
 /** One Short derived from a long-form script by AI (or the demo engine). */

@@ -17,6 +17,7 @@ const ProductionDetailPage = page(() => import("@/features/production/Production
 const StudioPage = page(() => import("@/features/studio/StudioPage"), "StudioPage");
 const StudioProjectPage = page(() => import("@/features/studio/StudioProjectPage"), "StudioProjectPage");
 const VaultPage = page(() => import("@/features/vault/VaultPage"), "VaultPage");
+const VideoBuilderPage = page(() => import("@/features/builder/VideoBuilderPage"), "VideoBuilderPage");
 const VideosPage = page(() => import("@/features/videos/VideosPage"), "VideosPage");
 const VideoDetailPage = page(() => import("@/features/videos/VideoDetailPage"), "VideoDetailPage");
 const CompetitorsPage = page(() => import("@/features/competitors/CompetitorsPage"), "CompetitorsPage");
@@ -42,6 +43,7 @@ export const router = createRouter(
       { path: "/channels/:id", element: <ChannelDetailPage /> },
       { path: "/production", element: <ProductionPage /> },
       { path: "/production/:id", element: <ProductionDetailPage /> },
+      { path: "/production/:id/build", element: <VideoBuilderPage /> },
       { path: "/studio", element: <StudioPage /> },
       { path: "/studio/:id", element: <StudioProjectPage /> },
       { path: "/vault", element: <VaultPage /> },

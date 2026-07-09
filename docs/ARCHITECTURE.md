@@ -95,6 +95,20 @@ can't resolve `var()`) and re-reads on theme change. Series hues are assigned
 in fixed order, never cycled; status colors are reserved and never reused as
 series colors.
 
+### Video Builder (the video gets made in-app)
+
+`/production/:id/build` turns a doc's script into recordable sections. The
+narration is a human voice by explicit design decision — recorded on the
+device mic (MediaRecorder) with a teleprompter, or uploaded; no AI narration.
+B-roll comes from Pexels through the `broll-search` edge function (key stays
+server-side; demo simulates results). Captions (SRT) take their timing from
+the actual recorded durations. Shorts render to a real 1080×1920 WebM in the
+browser (canvas + AudioContext + MediaRecorder — realtime, so a 45s Short
+takes 45s); long-form exports an edit kit (narration files, captions.srt,
+timed shot list) for CapCut/DaVinci. Builder state is `productions.builder`
+jsonb (migration 0016). Live b-roll needs the `PEXELS_API_KEY` secret
+(free key from pexels.com/api).
+
 ## UX systems
 
 - **Command palette** (⌘K): navigation + global search over videos and SOPs.

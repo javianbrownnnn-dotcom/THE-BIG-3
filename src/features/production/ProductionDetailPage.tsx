@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   ArrowRight as ArrowRightIcon,
   CheckCircle2,
+  Clapperboard,
   ImageIcon,
   Palette,
   Plus,
@@ -355,6 +356,13 @@ export function ProductionDetailPage() {
               </Link>
             )}
             <GoalScore production={form} />
+            {form.stage !== "published" && (
+              <Button size="sm" variant="outline" asChild>
+                <Link to={`/production/${form.id}/build`}>
+                  <Clapperboard /> Build video
+                </Link>
+              </Button>
+            )}
             {canPost && form.stage !== "published" && (
               <Button size="sm" onClick={publishYouTube} disabled={publishToYouTube.isPending}>
                 <Youtube className={publishToYouTube.isPending ? "animate-pulse" : ""} />
