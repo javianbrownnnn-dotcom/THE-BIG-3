@@ -72,6 +72,15 @@ Deno.serve(async (req) => {
     });
     if (!res.ok) {
       const body = await res.text();
+      if (res.status === 429) {
+        return jsonResponse({
+          error:
+            "Gemini's free tier ran out of image quota for now. Options: " +
+            "(1) wait — free quota resets daily; " +
+            "(2) enable billing on your key at aistudio.google.com (images cost ~$0.04 each); " +
+            "(3) use the Canva button or Copy prompt + any image tool, then upload the result here.",
+        }, 429);
+      }
       return jsonResponse({ error: `Gemini API ${res.status}: ${body.slice(0, 400)}` }, 502);
     }
     const data = await res.json();
