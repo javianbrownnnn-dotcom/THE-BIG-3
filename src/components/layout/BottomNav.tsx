@@ -20,13 +20,13 @@ import { cn } from "@/lib/utils";
 
 const TABS = [
   { to: "/", label: "Home", icon: LayoutDashboard, end: true },
+  { to: "/studio", label: "Studio", icon: Film },
   { to: "/production", label: "Production", icon: Clapperboard },
   { to: "/ideas", label: "Ideas", icon: Lightbulb },
-  { to: "/videos", label: "Videos", icon: Video },
 ] as const;
 
 const MORE = [
-  { to: "/studio", label: "Content Studio", icon: Film },
+  { to: "/videos", label: "Videos", icon: Video },
   { to: "/competitors", label: "Competitors", icon: Swords },
   { to: "/vault", label: "Vault", icon: Archive },
   { to: "/channels", label: "Channels", icon: Tv },
