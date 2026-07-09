@@ -78,6 +78,36 @@ function grounding(project: any, personas: any[], rules: any[]): string {
   ].filter(Boolean).join("\n\n");
 }
 
+// Fact-check collection — mirrors src/features/studio/factChecks.ts.
+function extractScriptClaims(script: string | undefined): string[] {
+  if (!script) return [];
+  const out: string[] = [];
+  const re = /\[FACT-CHECK:?\s*([^\]]+)\]/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(script))) {
+    const claim = m[1].trim();
+    if (claim) out.push(claim);
+  }
+  return out;
+}
+const normClaim = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ");
+function mergeFactChecks(existing: any[] | null, claims: string[], origin: string): any[] {
+  const items = [...(existing ?? [])];
+  const seen = new Set(items.map((i: any) => normClaim(i.claim)));
+  for (const claim of claims) {
+    const key = normClaim(claim);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    items.push({
+      id: `fc_${Date.now().toString(36)}${Math.floor(Math.random() * 1e6).toString(36)}`,
+      claim: claim.trim(),
+      origin,
+      status: "pending",
+    });
+  }
+  return items;
+}
+
 const relevanceGatePrompt = `You are the relevance gate of the Modern Ambition Content Studio. Evaluate the topic BEFORE anything is generated. Be honest — reject or warn against topics that are too broad, too boring, too generic, disconnected from ambition, or impossible to make emotionally engaging.
 Return STRICT JSON:
 { "relevant": "yes"|"no"|"maybe", "score": 1-10, "bestPersona": string, "whyViewerCares": string, "emotionalHook": string, "businessHook": string, "psychologyHook": string, "weakness": string, "clickabilityFix": string, "recommendedLengthMinutes": 15|18|20|25, "videoPromise": string }
@@ -193,6 +223,9 @@ Deno.serve(async (req) => {
           content: `${ground}\n\n<relevance_report>\n${JSON.stringify(project.relevance)}\n</relevance_report>\n\nBuild the research packet.`,
         }], { system: researchPacketPrompt });
         patch.research = r;
+        patch.fact_checks = mergeFactChecks(
+          project.fact_checks, r.unverifiedClaims ?? [], "research",
+        );
         break;
       }
       case "titles": {
@@ -229,6 +262,9 @@ Deno.serve(async (req) => {
           content: `${ground}\n\n<research_packet>\n${JSON.stringify(project.research)}\n</research_packet>\n\n<approved_outline>\n${JSON.stringify(project.outline)}\n</approved_outline>\n\nWrite the full script.`,
         }], { system: scriptPrompt(project.video_length_minutes), maxTokens: 16000 });
         patch.script = r.script;
+        patch.fact_checks = mergeFactChecks(
+          project.fact_checks, extractScriptClaims(r.script), "script",
+        );
         break;
       }
       case "critique": {
@@ -238,6 +274,9 @@ Deno.serve(async (req) => {
           content: `${ground}\n\n<script>\n${project.script}\n</script>\n\nCritique it.`,
         }], { system: critiquePrompt, maxTokens: 6000 });
         patch.critique = r;
+        patch.fact_checks = mergeFactChecks(
+          project.fact_checks, r.factCheck ?? [], "critique",
+        );
         break;
       }
       case "feedbackRules": {

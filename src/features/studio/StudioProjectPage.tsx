@@ -30,6 +30,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import { useAutoStageTasks } from "@/features/tasks/autoTasks";
 import {
   useAddFeedbackRule,
   useChannels,
@@ -48,11 +49,14 @@ import { withThumbnail } from "@/features/production/thumbnail";
 import { cn } from "@/lib/utils";
 import {
   STUDIO_STEPS,
+  type FactCheckItem,
+  type Production,
   type StudioStatus,
   type StudioStep,
   type ThumbnailConcept,
   type TitleVariant,
 } from "@/types";
+import { pendingFactChecks } from "./factChecks";
 import { STEP_LABELS, WORD_RANGES } from "./personas";
 
 const wordCount = (t?: string) => (t?.trim() ? t.trim().split(/\s+/).length : 0);
@@ -100,6 +104,110 @@ function ListBlock({ k, items }: { k: string; items?: string[] }) {
   );
 }
 
+function FactCheckRow({
+  item,
+  onChange,
+}: {
+  item: FactCheckItem;
+  onChange: (next: FactCheckItem) => void;
+}) {
+  const [mode, setMode] = useState<"idle" | "verify" | "waive">("idle");
+  const [text, setText] = useState("");
+  return (
+    <div className="rounded-md border p-2.5">
+      <div className="flex items-start gap-2">
+        <Badge
+          variant={
+            item.status === "verified"
+              ? "success"
+              : item.status === "waived"
+                ? "secondary"
+                : "warning"
+          }
+          className="mt-0.5 shrink-0"
+        >
+          {item.status}
+        </Badge>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm">{item.claim}</p>
+          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            from {item.origin}
+          </p>
+          {item.status === "verified" && item.sourceUrl && (
+            <a
+              href={item.sourceUrl.startsWith("http") ? item.sourceUrl : undefined}
+              target="_blank"
+              rel="noreferrer"
+              className="break-all text-xs text-primary underline-offset-2 hover:underline"
+            >
+              {item.sourceUrl}
+            </a>
+          )}
+          {item.status === "waived" && item.note && (
+            <p className="text-xs text-muted-foreground">waived: {item.note}</p>
+          )}
+        </div>
+      </div>
+      {item.status === "pending" && mode === "idle" && (
+        <div className="mt-2 flex gap-1.5">
+          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setMode("verify")}>
+            <Check className="h-3 w-3" /> Verified
+          </Button>
+          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setMode("waive")}>
+            Waive
+          </Button>
+        </div>
+      )}
+      {mode !== "idle" && (
+        <div className="mt-2 space-y-1.5">
+          <Textarea
+            rows={1}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder={
+              mode === "verify"
+                ? "Source URL or citation (where you verified it)"
+                : "Why is this OK to skip? (cut from script, framed as a question…)"
+            }
+            className="text-xs"
+          />
+          <div className="flex justify-end gap-1.5">
+            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setMode("idle")}>
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              className="h-7 text-xs"
+              disabled={!text.trim()}
+              onClick={() => {
+                onChange(
+                  mode === "verify"
+                    ? { ...item, status: "verified", sourceUrl: text.trim() }
+                    : { ...item, status: "waived", note: text.trim() },
+                );
+                setMode("idle");
+                setText("");
+              }}
+            >
+              Save
+            </Button>
+          </div>
+        </div>
+      )}
+      {item.status !== "pending" && (
+        <div className="mt-1.5 flex justify-end">
+          <button
+            className="text-[11px] text-muted-foreground underline-offset-2 hover:underline"
+            onClick={() => onChange({ ...item, status: "pending", sourceUrl: undefined, note: undefined })}
+          >
+            Reopen
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function StudioProjectPage() {
   const { id = "" } = useParams();
   const { data: project, isLoading } = useContentProject(id);
@@ -112,6 +220,7 @@ export function StudioProjectPage() {
   const { data: channels } = useChannels();
   const createProduction = useCreateProduction();
   const updateProduction = useUpdateProduction();
+  const autoStageTasks = useAutoStageTasks();
   const navigate = useNavigate();
 
   const [view, setView] = useState<StudioStatus | null>(null);
@@ -208,6 +317,39 @@ export function StudioProjectPage() {
   const selectConcept = (c: ThumbnailConcept) =>
     update.mutate({ id: project.id, patch: { selectedThumbnail: c } });
 
+  const pendingFacts = pendingFactChecks(project);
+  const setFactCheck = (next: FactCheckItem) =>
+    update.mutate({
+      id: project.id,
+      patch: {
+        factChecks: (project.factChecks ?? []).map((f) => (f.id === next.id ? next : f)),
+      },
+    });
+
+  const FactCheckPanel = () =>
+    (project.factChecks ?? []).length === 0 ? null : (
+      <Card className={cn(pendingFacts > 0 && "border-warning/50")}>
+        <CardHeader className="flex-row items-center justify-between space-y-0">
+          <CardTitle className="flex items-center gap-2 text-sm">
+            <AlertTriangle className={cn("h-4 w-4", pendingFacts ? "text-warning" : "text-success")} />
+            Fact checks
+            <Badge variant={pendingFacts ? "warning" : "success"}>
+              {pendingFacts ? `${pendingFacts} pending` : "all resolved"}
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-xs text-muted-foreground">
+            Every claim below must be verified with a source or consciously waived before the
+            project can finish — this channel is about living people.
+          </p>
+          {(project.factChecks ?? []).map((f) => (
+            <FactCheckRow key={f.id} item={f} onChange={setFactCheck} />
+          ))}
+        </CardContent>
+      </Card>
+    );
+
   const copyText = async (text: string, what: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -297,6 +439,10 @@ export function StudioProjectPage() {
       });
       if (finalize) {
         toast.success("Production doc moved to Editing — script and thumbnail inside");
+        void autoStageTasks(
+          { title: project.selectedTitle ?? project.topic } as Production,
+          "editing",
+        );
       }
       return docId;
     } catch (err) {
@@ -330,6 +476,9 @@ export function StudioProjectPage() {
             <Badge variant={project.relevance.score >= 7 ? "success" : project.relevance.score >= 5 ? "warning" : "destructive"}>
               relevance {project.relevance.score}/10
             </Badge>
+          )}
+          {pendingFacts > 0 && (
+            <Badge variant="warning">{pendingFacts} fact-check{pendingFacts > 1 ? "s" : ""}</Badge>
           )}
         </div>
       </div>
@@ -456,6 +605,7 @@ export function StudioProjectPage() {
                 <KV k="Best angle" v={project.research.bestAngle} />
                 <KV k="Emotional question" v={project.research.emotionalQuestion} />
                 <KV k="Ending idea" v={project.research.endingIdea} />
+                <FactCheckPanel />
                 <ContinueButton to="titles" />
               </>
             )}
@@ -822,6 +972,7 @@ export function StudioProjectPage() {
                     Save edits
                   </Button>
                 )}
+                <FactCheckPanel />
                 <ContinueButton to="critique" />
               </>
             )}
@@ -892,6 +1043,7 @@ export function StudioProjectPage() {
                     ))}
                   </div>
                 )}
+                <FactCheckPanel />
                 <ContinueButton to="feedback" />
               </>
             )}
@@ -906,6 +1058,7 @@ export function StudioProjectPage() {
             <CardTitle>Your verdict</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <FactCheckPanel />
             <p className="text-sm text-muted-foreground">
               Rate the parts, then say what bothered you in plain words — every note becomes a
               reusable rule the next script must follow.
@@ -944,9 +1097,14 @@ export function StudioProjectPage() {
                 placeholder={"Too generic in the middle\nHook could be more cinematic\nTitle overpromises slightly"}
               />
             </div>
-            <div className="flex justify-end">
+            <div className="flex items-center justify-end gap-2">
+              {pendingFacts > 0 && (
+                <span className="text-xs text-warning">
+                  Resolve {pendingFacts} fact-check{pendingFacts > 1 ? "s" : ""} first
+                </span>
+              )}
               <Button
-                disabled={submitFeedback.isPending}
+                disabled={submitFeedback.isPending || pendingFacts > 0}
                 onClick={() =>
                   submitFeedback.mutate(
                     { projectId: project.id, feedback: { ratings, notes } },

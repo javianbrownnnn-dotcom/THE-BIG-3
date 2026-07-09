@@ -1080,3 +1080,11 @@ begin
        using (has_org_role(organization_id, ''editor''))', t, t);
   end loop;
 end $$;
+
+-- ============================================================================
+-- ---- 0015_fact_checks.sql ---------------------------------------------------
+-- Tracked fact-check items on studio projects (verify with source, or waive).
+-- ============================================================================
+
+alter table content_projects
+  add column if not exists fact_checks jsonb;
