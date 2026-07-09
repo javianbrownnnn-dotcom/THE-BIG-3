@@ -79,7 +79,10 @@ export function MetricCard({
               {isUp ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
               {Math.abs(delta).toFixed(1)}%
             </span>
-            <span className="truncate whitespace-nowrap text-muted-foreground">{deltaLabel}</span>
+            <span className="truncate whitespace-nowrap text-muted-foreground" title={deltaLabel}>
+              <span className="sm:hidden">{deltaLabel === "vs prior period" ? "vs prior" : deltaLabel}</span>
+              <span className="hidden sm:inline">{deltaLabel}</span>
+            </span>
           </div>
         )}
       </CardContent>

@@ -101,13 +101,15 @@ export function VideoDetailPage() {
       />
 
       <div className="mb-4 flex flex-wrap gap-1.5">
-        {video.topic && <Badge variant="secondary">{video.topic}</Badge>}
+        {video.topic && video.topic.toLowerCase() !== video.title.toLowerCase() && (
+          <Badge variant="secondary">{video.topic}</Badge>
+        )}
         {video.hookType && <Badge>{humanize(video.hookType)}</Badge>}
         {video.storyStructure && <Badge variant="outline">{humanize(video.storyStructure)}</Badge>}
         <Badge variant="outline">{humanize(video.format)}</Badge>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <MetricCard label="Views" value={compactNumber(m?.views)} />
         <MetricCard label="CTR" value={percent(m?.ctr)} />
         <MetricCard label="Percent viewed" value={percent(m?.avgPercentViewed)} />
