@@ -235,9 +235,32 @@ export function StudioProjectPage() {
     if (project && viewedId.current !== project.id) {
       viewedId.current = project.id;
       setView(project.status);
-      setScriptDraft(null);
+      // Restore unsaved script edits — leaving the page mid-edit (or iOS
+      // killing the backgrounded PWA) must never lose work.
+      try {
+        const saved = localStorage.getItem(`draft.studio.script.${project.id}`);
+        setScriptDraft(saved != null ? (JSON.parse(saved) as string) : null);
+      } catch {
+        setScriptDraft(null);
+      }
     }
   }, [project]);
+
+  // Mirror in-progress script edits to localStorage; drop the copy once the
+  // draft is saved (or reverted to match the stored script).
+  useEffect(() => {
+    if (!project) return;
+    const key = `draft.studio.script.${project.id}`;
+    try {
+      if (scriptDraft === null || scriptDraft === project.script) {
+        localStorage.removeItem(key);
+      } else {
+        localStorage.setItem(key, JSON.stringify(scriptDraft));
+      }
+    } catch {
+      /* storage full/blocked — editing still works for this session */
+    }
+  }, [scriptDraft, project]);
 
   // The video is on the Production board from the moment work starts: if the
   // linked doc doesn't exist yet (e.g. dashboard created the project before

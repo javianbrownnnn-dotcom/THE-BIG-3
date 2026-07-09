@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  Bot, Check, FileEdit, FlaskConical, Lightbulb, RefreshCw, Send, ThumbsDown, X,
+  Bot, Check, Copy, FileEdit, FlaskConical, Lightbulb, RefreshCw, Send, ThumbsDown, X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -243,7 +243,22 @@ export function CoachPage() {
                       )}
                     >
                       {m.role === "assistant" ? (
-                        <Markdown content={m.content} />
+                        <>
+                          <Markdown content={m.content} />
+                          <button
+                            className="mt-2 flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                            onClick={async () => {
+                              try {
+                                await navigator.clipboard.writeText(m.content);
+                                toast.success("Answer copied");
+                              } catch {
+                                toast.error("Clipboard blocked — long-press to copy manually");
+                              }
+                            }}
+                          >
+                            <Copy className="h-3 w-3" /> Copy
+                          </button>
+                        </>
                       ) : (
                         <p className="text-sm">{m.content}</p>
                       )}
