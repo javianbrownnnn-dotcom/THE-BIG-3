@@ -562,10 +562,25 @@ export function TasksPage() {
                     {(byStatus.get(status) ?? []).map((t) => (
                       <TaskCard key={t.id} task={t} />
                     ))}
-                    {(byStatus.get(status) ?? []).length === 0 && (
+                    {(byStatus.get(status) ?? []).length === 0 && status !== "todo" && (
                       <div className="rounded-lg border border-dashed py-6 text-center text-xs text-muted-foreground">
                         Empty
                       </div>
+                    )}
+                    {status === "todo" && (
+                      <Input
+                        placeholder="Add a task — press Enter"
+                        className="h-9 border-dashed text-sm"
+                        onKeyDown={(e) => {
+                          const title = e.currentTarget.value.trim();
+                          if (e.key !== "Enter" || !title) return;
+                          const input = e.currentTarget;
+                          createTask.mutate(
+                            { title },
+                            { onSuccess: () => { input.value = ""; } },
+                          );
+                        }}
+                      />
                     )}
                   </div>
                 </div>
