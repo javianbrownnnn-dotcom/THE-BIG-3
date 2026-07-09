@@ -58,6 +58,7 @@ import {
   useVideo,
 } from "@/hooks/queries";
 import { useRecordRecent } from "@/hooks/useRecents";
+import { useAutoStageTasks } from "@/features/tasks/autoTasks";
 import { compactNumber, humanize, percent } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { compressImage } from "@/lib/image";
@@ -134,6 +135,7 @@ export function ProductionDetailPage() {
   const publishToYouTube = usePublishToYouTube();
   const draftProduction = useDraftProduction();
   const deriveShorts = useDeriveShorts();
+  const autoStageTasks = useAutoStageTasks();
 
   const [form, setForm] = useState<Production | null>(null);
   const [shortsOpen, setShortsOpen] = useState(false);
@@ -232,6 +234,8 @@ export function ProductionDetailPage() {
       return;
     }
     patch({ stage });
+    // The board runs itself: entering a stage spawns its standard tasks.
+    void autoStageTasks(form, stage);
   };
 
   const publishYouTube = async () => {

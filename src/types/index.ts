@@ -700,6 +700,22 @@ export interface FeedbackRule {
   createdAt: string;
 }
 
+/**
+ * One tracked fact-check item. Collected automatically from the research
+ * packet's unverifiedClaims, [FACT-CHECK: …] marks in scripts, and the
+ * critique's factCheck list. A project cannot finish while any are pending.
+ */
+export interface FactCheckItem {
+  id: string;
+  claim: string;
+  origin: "research" | "script" | "critique";
+  status: "pending" | "verified" | "waived";
+  /** Where the claim was verified (URL or citation). */
+  sourceUrl?: string;
+  /** Why it was waived (cut from script, framed as question, etc.). */
+  note?: string;
+}
+
 export interface StudioFeedback {
   ratings: Partial<
     Record<"title" | "script" | "thumbnail" | "hook" | "ending" | "idea", number>
@@ -726,6 +742,7 @@ export interface ContentProject {
   outline?: OutlineSection[];
   script?: string;
   critique?: StudioCritique;
+  factChecks?: FactCheckItem[];
   feedback?: StudioFeedback;
   linkedProductionId?: string;
   createdAt: string;

@@ -66,6 +66,7 @@ import type {
 import type { DataProvider } from "./provider";
 import { draftFromTemplates, shortsFromScript } from "@/features/production/draft";
 import { BUILTIN_PERSONAS, MAX_PERSONAS, PERSONA_UNLOCKS } from "@/features/studio/personas";
+import { extractScriptClaims, mergeFactChecks } from "@/features/studio/factChecks";
 import {
   templateCritique,
   templateFeedbackRule,
@@ -2151,6 +2152,7 @@ export class DemoProvider implements DataProvider {
       }
       case "research":
         row.research = templateResearch(row);
+        row.factChecks = mergeFactChecks(row.factChecks, row.research.unverifiedClaims, "research");
         break;
       case "titles":
         row.titleLab = templateTitles(row);
@@ -2163,9 +2165,11 @@ export class DemoProvider implements DataProvider {
         break;
       case "script":
         row.script = templateScript(row);
+        row.factChecks = mergeFactChecks(row.factChecks, extractScriptClaims(row.script), "script");
         break;
       case "critique":
         row.critique = templateCritique(row);
+        row.factChecks = mergeFactChecks(row.factChecks, row.critique.factCheck, "critique");
         break;
       case "personaReview": {
         const done = contentProjects.filter((c) => c.status === "done").length;

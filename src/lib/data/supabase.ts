@@ -1282,6 +1282,7 @@ export class SupabaseProvider implements DataProvider {
       outline: row.outline ?? undefined,
       script: row.script ?? undefined,
       critique: row.critique ?? undefined,
+      factChecks: Array.isArray(row.fact_checks) ? row.fact_checks : undefined,
       feedback: row.feedback ?? undefined,
       linkedProductionId: row.linked_production_id ?? undefined,
       createdAt: row.created_at,
@@ -1298,6 +1299,7 @@ export class SupabaseProvider implements DataProvider {
       ["selectedTitle", "selected_title"], ["thumbnailLab", "thumbnail_lab"],
       ["selectedThumbnail", "selected_thumbnail"], ["thumbnailVariants", "thumbnail_variants"],
       ["outline", "outline"], ["script", "script"], ["critique", "critique"],
+      ["factChecks", "fact_checks"],
       ["feedback", "feedback"], ["linkedProductionId", "linked_production_id"],
     ];
     const row: Record<string, unknown> = {};
