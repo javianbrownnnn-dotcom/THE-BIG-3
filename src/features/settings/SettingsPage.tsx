@@ -66,7 +66,7 @@ export function SettingsPage() {
               {[
                 "Create a free project at supabase.com (~3 min)",
                 "Copy the Project URL + anon key from Settings → API",
-                "Run the 3 files in supabase/migrations/ in the SQL Editor",
+                "Paste supabase/SETUP.sql into the SQL Editor and run it once",
                 "Send me the two values (or set VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY) — the app flips to live automatically",
               ].map((step, i) => (
                 <div key={i} className="flex items-start gap-2 text-sm">

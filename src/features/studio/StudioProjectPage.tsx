@@ -957,18 +957,18 @@ export function StudioProjectPage() {
       {current === "script" && (
         <Card>
           <CardHeader className="flex-row items-center justify-between space-y-0">
-            <CardTitle>Script</CardTitle>
-            <div className="flex items-center gap-2">
-              <span
+            <div>
+              <CardTitle>Script</CardTitle>
+              <p
                 className={cn(
-                  "text-xs tabular-nums",
+                  "mt-0.5 text-xs tabular-nums",
                   scriptWords >= wLo && scriptWords <= wHi ? "text-success" : "text-muted-foreground",
                 )}
               >
-                {scriptWords} words (target {wLo}–{wHi})
-              </span>
-              <RunButton step="script" has={!!project.script} label="Write script" />
+                {scriptWords} words · target {wLo}–{wHi}
+              </p>
             </div>
+            <RunButton step="script" has={!!project.script} label="Write script" />
           </CardHeader>
           <CardContent className="space-y-3">
             {!project.script ? (

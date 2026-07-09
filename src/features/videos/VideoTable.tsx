@@ -75,7 +75,7 @@ export function VideoTable({ videos, hideChannel }: { videos: Video[]; hideChann
       <TableHeader>
         <TableRow>
           <TableHead className="w-8" aria-label="Favorite" />
-          <TableHead>Title</TableHead>
+          <TableHead className="min-w-[220px]">Title</TableHead>
           {!hideChannel && <TableHead>Channel</TableHead>}
           <TableHead>Published</TableHead>
           <TableHead>Hook</TableHead>

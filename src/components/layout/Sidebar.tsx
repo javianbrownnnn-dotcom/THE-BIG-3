@@ -18,13 +18,13 @@ import { useOrg } from "@/hooks/queries";
 
 export const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
-  { to: "/production", label: "Production", icon: Clapperboard },
   { to: "/studio", label: "Content Studio", icon: Film },
+  { to: "/production", label: "Production", icon: Clapperboard },
+  { to: "/ideas", label: "Ideas", icon: Lightbulb },
   { to: "/vault", label: "Vault", icon: Archive },
   { to: "/channels", label: "Channels", icon: Tv },
   { to: "/videos", label: "Videos", icon: Video },
   { to: "/competitors", label: "Competitors", icon: Swords },
-  { to: "/ideas", label: "Ideas", icon: Lightbulb },
   { to: "/sops", label: "SOPs", icon: ListChecks },
   { to: "/tasks", label: "Tasks", icon: ListTodo },
   { to: "/coach", label: "AI Coach", icon: Bot },
