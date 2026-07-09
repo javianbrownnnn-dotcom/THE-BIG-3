@@ -224,6 +224,7 @@ export function StudioProjectPage() {
   const navigate = useNavigate();
 
   const [view, setView] = useState<StudioStatus | null>(null);
+  const [titleExpanded, setTitleExpanded] = useState(false);
   const [scriptDraft, setScriptDraft] = useState<string | null>(null);
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [notes, setNotes, clearNotes] = usePersistedState(`draft.studio.feedback.${id}`, "");
@@ -463,7 +464,23 @@ export function StudioProjectPage() {
       </Button>
 
       <div className="mb-3">
-        <h1 className="text-lg font-semibold leading-snug">{project.selectedTitle ?? project.topic}</h1>
+        <button
+          className="block text-left"
+          onClick={() => setTitleExpanded((v) => !v)}
+          aria-expanded={titleExpanded}
+        >
+          <h1
+            className={cn(
+              "text-lg font-semibold leading-snug",
+              !titleExpanded && "line-clamp-2",
+            )}
+          >
+            {project.selectedTitle ?? project.topic}
+          </h1>
+          {!titleExpanded && (project.selectedTitle ?? project.topic).length > 90 && (
+            <span className="text-xs text-muted-foreground">tap to expand</span>
+          )}
+        </button>
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
           <Badge variant="outline">{project.videoLengthMinutes} min</Badge>
           {project.primaryPersona && <Badge variant="secondary">{project.primaryPersona}</Badge>}
@@ -510,6 +527,21 @@ export function StudioProjectPage() {
         })}
       </div>
 
+      {/* Visible progress while any step generates — the runs take a while. */}
+      {run.isPending && (
+        <Card className="mb-4 border-primary/30">
+          <CardContent className="space-y-2.5 p-4">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Wand2 className="h-4 w-4 animate-pulse text-primary" />
+              Generating {STEP_LABELS[current]?.toLowerCase()}…
+            </div>
+            <Skeleton className="h-3 w-3/4" />
+            <Skeleton className="h-3 w-full" />
+            <Skeleton className="h-3 w-5/6" />
+          </CardContent>
+        </Card>
+      )}
+
       {/* ------------------------------------------------ Relevance */}
       {current === "relevance" && (
         <Card>
@@ -520,8 +552,8 @@ export function StudioProjectPage() {
           <CardContent className="space-y-3">
             {!project.relevance ? (
               <p className="text-sm text-muted-foreground">
-                Before anything is generated, the gate judges whether “{project.topic}” can carry
-                a Modern Ambition documentary — and how.
+                Before anything is generated, the gate judges whether this topic can carry a
+                Modern Ambition documentary — and how.
               </p>
             ) : (
               <>
