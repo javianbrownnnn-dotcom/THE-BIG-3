@@ -223,13 +223,26 @@ function CalendarView({ productions }: { productions: Production[] }) {
                     </div>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <Link
-                      to={`/production/${p.id}`}
-                      className="truncate text-sm font-medium underline-offset-2 hover:underline"
-                    >
-                      {p.title}
-                    </Link>
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <div className="flex items-center justify-between gap-2">
+                      <Link
+                        to={`/production/${p.id}`}
+                        className="block truncate text-sm font-medium underline-offset-2 hover:underline"
+                      >
+                        {p.title}
+                      </Link>
+                      {ready ? (
+                        <Badge variant="warning" className="shrink-0">ready</Badge>
+                      ) : overdue ? (
+                        <Badge variant="destructive" className="shrink-0">overdue</Badge>
+                      ) : (
+                        <Badge variant="secondary" className="shrink-0">
+                          {scheduled
+                            ? relativeTime(when.toISOString())
+                            : "due " + relativeTime(when.toISOString())}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
                       <span>{STAGE_LABELS[p.stage]}</span>
                       <span>·</span>
                       {/* Inline reschedule of the publish time */}
@@ -247,19 +260,10 @@ function CalendarView({ productions }: { productions: Production[] }) {
                             },
                           })
                         }
-                        className="rounded border border-input bg-transparent px-1.5 py-0.5 text-xs"
+                        className="min-w-0 rounded border border-input bg-transparent px-1.5 py-0.5 text-xs"
                       />
                     </div>
                   </div>
-                  {ready ? (
-                    <Badge variant="warning">ready</Badge>
-                  ) : overdue ? (
-                    <Badge variant="destructive">overdue</Badge>
-                  ) : (
-                    <Badge variant="secondary">
-                      {scheduled ? relativeTime(when.toISOString()) : "due " + relativeTime(when.toISOString())}
-                    </Badge>
-                  )}
                 </div>
               );
             })}
