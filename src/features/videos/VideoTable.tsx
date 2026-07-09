@@ -21,7 +21,57 @@ export function VideoTable({ videos, hideChannel }: { videos: Video[]; hideChann
   const channelName = (id: string) => channels?.find((c) => c.id === id)?.name ?? "—";
 
   return (
-    <Table>
+    <>
+      {/* Phone: a card list — the table's 11 columns crush titles to one word. */}
+      <div className="divide-y divide-border md:hidden">
+        {videos.map((v) => (
+          <div key={v.id} className="flex gap-3 p-3">
+            <button
+              onClick={() => toggle(v.id)}
+              aria-label={favorites.has(v.id) ? "Remove from favorites" : "Add to favorites"}
+              className="mt-0.5 shrink-0 self-start text-muted-foreground/50 transition-colors hover:text-warning"
+            >
+              <Star
+                className={cn("h-4 w-4", favorites.has(v.id) && "fill-warning text-warning")}
+              />
+            </button>
+            <div className="min-w-0 flex-1">
+              <Link
+                to={`/videos/${v.id}`}
+                className="line-clamp-2 text-sm font-medium leading-snug underline-offset-2 hover:underline"
+              >
+                {v.title}
+              </Link>
+              <div className="mt-0.5 text-xs text-muted-foreground">
+                {!hideChannel && <>{channelName(v.channelId)} · </>}
+                {shortDate(v.publishedAt)}
+                {v.hookType && <> · {humanize(v.hookType)}</>}
+              </div>
+              <div className="mt-1.5 flex gap-4 text-xs tabular-nums text-muted-foreground">
+                <span>
+                  <span className="font-medium text-foreground">
+                    {compactNumber(v.metrics?.views)}
+                  </span>{" "}
+                  views
+                </span>
+                <span>
+                  <span className="font-medium text-foreground">{percent(v.metrics?.ctr)}</span>{" "}
+                  CTR
+                </span>
+                <span>
+                  <span className="font-medium text-foreground">
+                    {percent(v.metrics?.avgPercentViewed, 0)}
+                  </span>{" "}
+                  viewed
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="hidden md:block">
+        <Table>
       <TableHeader>
         <TableRow>
           <TableHead className="w-8" aria-label="Favorite" />
@@ -89,7 +139,9 @@ export function VideoTable({ videos, hideChannel }: { videos: Video[]; hideChann
             </TableCell>
           </TableRow>
         ))}
-      </TableBody>
-    </Table>
+        </TableBody>
+        </Table>
+      </div>
+    </>
   );
 }
