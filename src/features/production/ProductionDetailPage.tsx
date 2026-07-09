@@ -723,7 +723,25 @@ export function ProductionDetailPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label>YouTube description</Label>
+                <div className="flex items-center justify-between">
+                  <Label>YouTube description</Label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(
+                          `${form.title ?? ""}\n\n${form.description ?? ""}`.trim(),
+                        );
+                        toast.success("Title + description copied — paste into YouTube Studio");
+                      } catch {
+                        toast.error("Clipboard blocked — long-press to copy manually");
+                      }
+                    }}
+                  >
+                    Copy for upload
+                  </Button>
+                </div>
                 <Textarea
                   rows={5}
                   value={form.description ?? ""}

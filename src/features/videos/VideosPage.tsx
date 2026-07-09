@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { useChannels, useVideos } from "@/hooks/queries";
 import { useFavorites } from "@/hooks/useFavorites";
+import { usePersistentState } from "@/hooks/usePersistentState";
 import { humanize } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { Video } from "@/types";
@@ -50,9 +51,11 @@ export function VideosPage() {
   const { data: videos, isLoading } = useVideos();
   const { data: channels } = useChannels();
   const [search, setSearch] = useState("");
-  const [channelId, setChannelId] = useState(ALL);
-  const [hook, setHook] = useState(ALL);
-  const [favOnly, setFavOnly] = useState(false);
+  // Filters survive reloads — checking one channel's videos repeatedly
+  // shouldn't mean re-picking the filter every visit.
+  const [channelId, setChannelId] = usePersistentState("videos.channel", ALL);
+  const [hook, setHook] = usePersistentState("videos.hook", ALL);
+  const [favOnly, setFavOnly] = usePersistentState("videos.favOnly", false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const { favorites } = useFavorites();

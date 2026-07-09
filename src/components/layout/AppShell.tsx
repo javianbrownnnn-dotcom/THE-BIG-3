@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useState } from "react";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -12,6 +12,13 @@ export function AppShell() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { pathname } = useLocation();
+
+  // A new page starts at the top — otherwise the SPA keeps the previous
+  // page's scroll position and detail pages open mid-scroll.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
 
   // Landing back from the Google consent flow: confirm loudly, then clean the URL.
   useEffect(() => {
