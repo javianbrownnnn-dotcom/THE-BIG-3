@@ -251,7 +251,7 @@ Deno.serve(async (req) => {
         const r = await askClaudeJson<any>([{
           role: "user",
           content: `${ground}\n\n<research_packet>\n${JSON.stringify(project.research)}\n</research_packet>\n\nBuild the ${project.video_length_minutes}-minute outline.`,
-        }], { system: outlinePrompt, maxTokens: 6000 });
+        }], { system: outlinePrompt, maxTokens: 10000 });
         patch.outline = r.sections ?? r;
         break;
       }
@@ -272,7 +272,7 @@ Deno.serve(async (req) => {
         const r = await askClaudeJson<any>([{
           role: "user",
           content: `${ground}\n\n<script>\n${project.script}\n</script>\n\nCritique it.`,
-        }], { system: critiquePrompt, maxTokens: 6000 });
+        }], { system: critiquePrompt, maxTokens: 8000 });
         patch.critique = r;
         patch.fact_checks = mergeFactChecks(
           project.fact_checks, r.factCheck ?? [], "critique",
