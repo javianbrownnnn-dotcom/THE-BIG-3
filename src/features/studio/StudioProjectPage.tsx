@@ -966,9 +966,21 @@ export function StudioProjectPage() {
                 )}
               >
                 {scriptWords} words · target {wLo}–{wHi}
+                {scriptWords > 0 && <> · ≈{Math.round(scriptWords / 150)} min spoken</>}
               </p>
             </div>
-            <RunButton step="script" has={!!project.script} label="Write script" />
+            <div className="flex items-center gap-1.5">
+              {project.script && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => copyText(scriptDraft ?? project.script ?? "", "Script")}
+                >
+                  <Copy /> Copy
+                </Button>
+              )}
+              <RunButton step="script" has={!!project.script} label="Write script" />
+            </div>
           </CardHeader>
           <CardContent className="space-y-3">
             {!project.script ? (
