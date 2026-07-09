@@ -482,11 +482,12 @@ export function ProductionDetailPage() {
               </div>
               <div className="space-y-1.5 sm:col-span-2">
                 <Label>Goal of video</Label>
-                <div className="grid grid-cols-[1fr_150px_110px] gap-2">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_150px_110px]">
                   <Input
                     value={form.goal ?? ""}
                     onChange={(e) => patch({ goal: e.target.value })}
                     placeholder='e.g. "Beat channel CTR baseline"'
+                    className="col-span-2 sm:col-span-1"
                   />
                   <Select
                     value={form.goalMetric ?? ""}

@@ -108,43 +108,39 @@ export function VaultPage() {
       ) : (
         <>
           {/* The learning payoff at a glance */}
-          <div className="mb-4 grid gap-3 sm:grid-cols-3">
-            <Card>
-              <CardContent className="flex items-center gap-3 p-4">
+          <Card className="mb-4">
+            <CardContent className="grid divide-y divide-border p-0 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+              <div className="flex items-center gap-3 p-3">
                 <Archive className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <div>
-                  <div className="text-lg font-semibold leading-none">{filtered.length}</div>
-                  <div className="text-xs text-muted-foreground">videos in the vault</div>
+                  <div className="text-base font-semibold leading-none">{filtered.length}</div>
+                  <div className="mt-0.5 text-xs text-muted-foreground">videos in the vault</div>
                 </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="flex items-center gap-3 p-4">
+              </div>
+              <div className="flex items-center gap-3 p-3">
                 <TrendingUp className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <div className="min-w-0">
-                  <div className="truncate text-lg font-semibold leading-none">
+                  <div className="truncate text-base font-semibold leading-none">
                     {bestHook ? humanize(bestHook.label) : "—"}
                   </div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="mt-0.5 text-xs text-muted-foreground">
                     top hook{bestHook ? ` · ${percent(bestHook.value)} CTR` : ""}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="flex items-center gap-3 p-4">
+              </div>
+              <div className="flex items-center gap-3 p-3">
                 <TrendingUp className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <div className="min-w-0">
-                  <div className="truncate text-lg font-semibold leading-none">
+                  <div className="truncate text-base font-semibold leading-none">
                     {bestStructure ? humanize(bestStructure.label) : "—"}
                   </div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="mt-0.5 text-xs text-muted-foreground">
                     top structure{bestStructure ? ` · ${percent(bestStructure.value)} viewed` : ""}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Filters */}
           <div className="mb-4 flex flex-wrap items-center gap-2">
@@ -232,7 +228,9 @@ export function VaultPage() {
 
                     {/* Parts */}
                     <div className="mt-2 flex flex-wrap gap-1.5">
-                      {v.topic && <Badge variant="secondary">{v.topic}</Badge>}
+                      {v.topic && v.topic.toLowerCase() !== v.title.toLowerCase() && (
+                        <Badge variant="secondary">{v.topic}</Badge>
+                      )}
                       {v.hookType && <Badge>{humanize(v.hookType)}</Badge>}
                       {v.storyStructure && (
                         <Badge variant="outline">{humanize(v.storyStructure)}</Badge>
