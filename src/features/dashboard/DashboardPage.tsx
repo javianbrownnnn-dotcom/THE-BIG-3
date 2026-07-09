@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import {
   ArrowRight,
   Bot,
+  Film,
   Flame,
   Lightbulb,
   ListChecks,
@@ -20,11 +21,14 @@ import {
   useActivity,
   useChannels,
   useCompetitorVideos,
+  useContentProjects,
   useIdeas,
+  useProductions,
   useRecommendations,
   useSops,
   useVideos,
 } from "@/hooks/queries";
+import { STEP_LABELS } from "@/features/studio/personas";
 import { compactNumber, duration, humanize, percent, relativeTime } from "@/lib/format";
 import {
   THIRTY_DAYS,
@@ -93,6 +97,56 @@ function NextBestAction({
         <Button size="sm" asChild className="shrink-0">
           <Link to={action.to}>
             {action.cta} <ArrowRight />
+          </Link>
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+/** One tap back into whatever was being worked on last. */
+function ResumeWork() {
+  const { data: projects } = useContentProjects();
+  const { data: productions } = useProductions();
+
+  const candidates = [
+    ...(projects ?? [])
+      .filter((p) => p.status !== "done")
+      .map((p) => ({
+        to: `/studio/${p.id}`,
+        title: p.selectedTitle ?? p.topic,
+        where: `Studio · ${STEP_LABELS[p.status] ?? p.status}`,
+        at: p.updatedAt,
+      })),
+    ...(productions ?? [])
+      .filter((p) => p.stage !== "published")
+      .map((p) => ({
+        to: `/production/${p.id}`,
+        title: p.title,
+        where: `Production · ${humanize(p.stage)}`,
+        at: p.updatedAt,
+      })),
+  ].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
+
+  const latest = candidates[0];
+  if (!latest) return null;
+
+  return (
+    <Card className="mt-3 md:mt-4">
+      <CardContent className="flex items-center gap-3 p-3.5 md:p-4">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+          <Film className="h-[18px] w-[18px] text-muted-foreground" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-[11px] font-medium text-muted-foreground">
+            Pick up where you left off · {relativeTime(latest.at)}
+          </div>
+          <div className="truncate text-sm font-medium">{latest.title}</div>
+          <div className="text-xs text-muted-foreground">{latest.where}</div>
+        </div>
+        <Button size="sm" variant="outline" asChild className="shrink-0">
+          <Link to={latest.to}>
+            Resume <ArrowRight />
           </Link>
         </Button>
       </CardContent>
@@ -201,6 +255,9 @@ export function DashboardPage() {
         sopDue={sopsDue[0]}
         ideaWaiting={ideasWaiting[0]}
       />
+
+      {/* One tap back into the video being made right now */}
+      <ResumeWork />
 
       {/* The loop, as a checklist */}
       <div className="mt-3 md:mt-4">

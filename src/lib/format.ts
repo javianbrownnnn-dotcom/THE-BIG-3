@@ -21,7 +21,9 @@ export function duration(seconds: number | undefined | null): string {
 
 export function relativeTime(iso: string | undefined | null): string {
   if (!iso) return "—";
-  return formatDistanceToNowStrict(new Date(iso), { addSuffix: true });
+  const date = new Date(iso);
+  if (Math.abs(Date.now() - date.getTime()) < 60_000) return "just now";
+  return formatDistanceToNowStrict(date, { addSuffix: true });
 }
 
 export function shortDate(iso: string | undefined | null): string {
