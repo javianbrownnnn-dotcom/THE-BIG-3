@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Sidebar } from "./Sidebar";
@@ -75,7 +76,15 @@ export function AppShell() {
         <Topbar onOpenPalette={() => setPaletteOpen(true)} />
         {/* pb clears the phone tab bar; md+ has the sidebar instead */}
         <main className="mx-auto max-w-6xl px-4 pb-24 pt-5 md:px-8 md:py-8">
-          <Outlet />
+          <Suspense
+            fallback={
+              <div className="flex justify-center pt-24" aria-label="Loading page">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            }
+          >
+            <Outlet />
+          </Suspense>
         </main>
       </div>
       <BottomNav />
