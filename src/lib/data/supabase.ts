@@ -5,6 +5,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type {
+  BuilderBrollItem,
   ActivityItem,
   AiInsight,
   AiRecommendation,
@@ -721,6 +722,7 @@ export class SupabaseProvider implements DataProvider {
       assetLinks: Array.isArray(row.asset_links) ? row.asset_links : [],
       checklists: row.checklists ?? {},
       notes: row.notes ?? undefined,
+      builder: row.builder ?? undefined,
       linkedVideoId: row.linked_video_id ?? undefined,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
@@ -739,7 +741,7 @@ export class SupabaseProvider implements DataProvider {
       ["description", "description"], ["titleCandidates", "title_candidates"],
       ["thumbnailConcept", "thumbnail_concept"], ["referenceLinks", "reference_links"],
       ["voStatus", "vo_status"], ["assetLinks", "asset_links"],
-      ["checklists", "checklists"], ["notes", "notes"],
+      ["checklists", "checklists"], ["notes", "notes"], ["builder", "builder"],
     ];
     const row: Record<string, unknown> = {};
     for (const [from, to] of map) {
@@ -836,6 +838,13 @@ export class SupabaseProvider implements DataProvider {
       organizationId: orgId, productionId,
     });
     return { videoUrl: data.videoUrl, simulated: false };
+  }
+
+  async searchBroll(query: string): Promise<BuilderBrollItem[]> {
+    const data = await this.invokeFn<{ items?: BuilderBrollItem[] }>("broll-search", {
+      query,
+    });
+    return data?.items ?? [];
   }
 
   async publishProduction(id: string): Promise<Production> {

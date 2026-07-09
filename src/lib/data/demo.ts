@@ -5,6 +5,7 @@
 // true to find.
 
 import type {
+  BuilderBrollItem,
   ActivityItem,
   AiInsight,
   AiRecommendation,
@@ -1598,6 +1599,20 @@ export class DemoProvider implements DataProvider {
     });
     persist();
     return clone(created);
+  }
+
+  async searchBroll(query: string): Promise<BuilderBrollItem[]> {
+    await delay(700); // simulate the search
+    // Demo mode has no Pexels key — deterministic placeholder footage keyed to
+    // the query so the builder workflow is fully explorable with zero setup.
+    const slug = query.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 32) || "broll";
+    return Array.from({ length: 6 }, (_, i) => ({
+      url: `https://picsum.photos/seed/${slug}-${i}/1280/720`,
+      thumb: `https://picsum.photos/seed/${slug}-${i}/320/180`,
+      kind: "image" as const,
+      source: "pexels" as const,
+      credit: "Simulated (demo) — live mode searches Pexels",
+    }));
   }
 
   async publishToYouTube(productionId: string) {

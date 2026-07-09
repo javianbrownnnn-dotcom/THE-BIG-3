@@ -379,6 +379,12 @@ export function useDeriveShorts() {
   });
 }
 
+export function useSearchBroll() {
+  return useMutation({
+    mutationFn: (query: string) => data.searchBroll(query),
+  });
+}
+
 export function usePublishToYouTube() {
   const qc = useQueryClient();
   return useMutation({

@@ -1,4 +1,5 @@
 import type {
+  BuilderBrollItem,
   ActivityItem,
   AiInsight,
   AiRecommendation,
@@ -170,6 +171,13 @@ export interface DataProvider {
    * demo mode simulates the upload so the full workflow is explorable.
    */
   publishToYouTube(productionId: string): Promise<{ videoUrl: string; simulated: boolean }>;
+  /**
+   * Search stock b-roll (clips + photos) for a script section. Live mode
+   * proxies Pexels through the broll-search edge function (key stays server
+   * side); demo mode returns simulated placeholder footage so the builder
+   * works with zero setup.
+   */
+  searchBroll(query: string): Promise<BuilderBrollItem[]>;
 
   listSops(): Promise<Sop[]>;
   getSop(id: string): Promise<SopWithHistory | null>;
