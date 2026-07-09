@@ -15,10 +15,10 @@ export interface ClaudeOptions {
   model?: string;
 }
 
-export async function askClaude(
+async function callClaude(
   messages: ClaudeMessage[],
   options: ClaudeOptions = {},
-): Promise<string> {
+): Promise<{ text: string; stopReason: string }> {
   const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not configured");
 
@@ -44,10 +44,18 @@ export async function askClaude(
   }
 
   const data = await res.json();
-  return data.content
+  const text = data.content
     .filter((block: { type: string }) => block.type === "text")
     .map((block: { text: string }) => block.text)
     .join("\n");
+  return { text, stopReason: data.stop_reason ?? "end_turn" };
+}
+
+export async function askClaude(
+  messages: ClaudeMessage[],
+  options: ClaudeOptions = {},
+): Promise<string> {
+  return (await callClaude(messages, options)).text;
 }
 
 /**
@@ -75,35 +83,65 @@ function parseModelJson<T>(raw: string): T {
   throw new SyntaxError("model output contained no JSON object");
 }
 
+const JSON_RULES =
+  "\n\nJSON OUTPUT RULES: emit one strict, valid JSON object and nothing else — " +
+  "double-quoted property names, no trailing commas, no code fences, no prose; " +
+  "never use unescaped double quotes inside string values (use single quotes for " +
+  "quoted phrases); keep string values tight so the response never gets cut off.";
+
 /**
- * Ask Claude for strict JSON. If the first response doesn't parse (usually an
- * unescaped quote inside a string), show the model its own broken output and
- * make it re-emit valid JSON once before giving up.
+ * Ask Claude for strict JSON. Two distinct failure modes are handled:
+ *   1. Truncation (stop_reason max_tokens): the JSON is cut mid-structure —
+ *      retry once with double the budget and a be-more-concise instruction.
+ *   2. Malformed output (usually an unescaped quote): show the model its own
+ *      broken output and make it re-emit valid JSON once.
  */
 export async function askClaudeJson<T>(
   messages: ClaudeMessage[],
   options: ClaudeOptions = {},
 ): Promise<T> {
-  const raw = await askClaude(messages, options);
+  const opts = { ...options, system: (options.system ?? "") + JSON_RULES };
+  const first = await callClaude(messages, opts);
   try {
-    return parseModelJson<T>(raw);
+    return parseModelJson<T>(first.text);
   } catch {
-    const retry = await askClaude(
+    /* fall through to the recovery paths */
+  }
+
+  if (first.stopReason === "max_tokens") {
+    // The response was cut off — a re-emit at the same budget would be cut
+    // off again. Double the budget (capped) and demand a tighter response.
+    const retry = await callClaude(
       [
         ...messages,
-        { role: "assistant", content: raw.slice(0, 8000) },
         {
           role: "user",
           content:
-            "That output was INVALID JSON (it failed to parse). Re-emit the COMPLETE response as strict, valid JSON only: " +
-            "double-quoted property names, no trailing commas, no code fences, no prose, and never use unescaped double quotes " +
-            "inside string values (use single quotes for quoted phrases instead).",
+            "IMPORTANT: your previous attempt was CUT OFF because it was too long. " +
+            "Emit the COMPLETE JSON response again, tighter: shorter string values, " +
+            "no repetition — completeness beats verbosity.",
         },
       ],
-      options,
+      { ...opts, maxTokens: Math.min((options.maxTokens ?? 4096) * 2, 16000) },
     );
-    return parseModelJson<T>(retry);
+    return parseModelJson<T>(retry.text);
   }
+
+  const retry = await callClaude(
+    [
+      ...messages,
+      { role: "assistant", content: first.text.slice(0, 8000) },
+      {
+        role: "user",
+        content:
+          "That output was INVALID JSON (it failed to parse). Re-emit the COMPLETE response as strict, valid JSON only: " +
+          "double-quoted property names, no trailing commas, no code fences, no prose, and never use unescaped double quotes " +
+          "inside string values (use single quotes for quoted phrases instead).",
+      },
+    ],
+    opts,
+  );
+  return parseModelJson<T>(retry.text);
 }
 
 export const corsHeaders = {
