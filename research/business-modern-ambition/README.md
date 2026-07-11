@@ -26,7 +26,7 @@ The dataset is loaded into the demo seed (`src/lib/data/ciBusinessSeed.ts`):
   in a "what we do differently" line)
 - "Founder Reality" positioning + 12-month projection → **Channels**
 
-**Next cycle:** Q4 2026 (October). Re-run the CI agent per
-[`docs/media-os/04-competitive-intelligence-agent.md`](../../docs/media-os/04-competitive-intelligence-agent.md);
+**Next cycle:** Q4 2026 (October). Re-run the CI agent per the brief in the
+[notion repo](https://github.com/javianbrownnnn-dotcom/notion/blob/claude/youtube-media-os-notion-kovjm5/docs/04-competitive-intelligence-agent.md);
 deep-dive the watchlist channels and refresh sponsor CPMs + emerging channels.
 Future niches get sibling folders here (e.g. `research/christianity/`).

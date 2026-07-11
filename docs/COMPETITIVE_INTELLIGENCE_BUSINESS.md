@@ -293,7 +293,7 @@ The dataset is seeded into the demo company via `src/lib/data/ciBusinessSeed.ts`
 | §9 positioning + projection | → | **Channels** | the "Founder Reality" channel: strategy in the description, growth targets as channel goals |
 | §6 threats + §8 experiments | → | *(this doc)* | reference material — consult before greenlighting formats or schedules |
 
-Raw research: [`research/business-modern-ambition/`](../research/business-modern-ambition/) · CI agent brief: [`docs/media-os/04-competitive-intelligence-agent.md`](media-os/04-competitive-intelligence-agent.md)
+Raw research: [`research/business-modern-ambition/`](../research/business-modern-ambition/) · CI agent brief (the repeatable research framework): [notion repo](https://github.com/javianbrownnnn-dotcom/notion/blob/claude/youtube-media-os-notion-kovjm5/docs/04-competitive-intelligence-agent.md)
 
 **Keep it live:** re-run the CI agent quarterly (Q4 2026 next). Every recommendation here links back to evidence; every idea references the pattern or competitor that inspired it — preserve that chain when updating so the workspace stays a reasoning system, not a data dump.
 
