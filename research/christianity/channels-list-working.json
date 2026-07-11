@@ -1,0 +1,391 @@
+{
+  "research_metadata": {
+    "research_date": "2026-07-11",
+    "phase": "Phase 1-2 (Channels identified + metrics gathering)",
+    "total_channels_identified": 40,
+    "deep_dive_target": 25,
+    "niche": "Christianity & Religious History Documentaries"
+  },
+  "channels": [
+    {
+      "rank": 1,
+      "name": "ReligionForBreakfast",
+      "subscribers_millions": 1.23,
+      "tier": "Direct Competitor",
+      "category": "Academic religious studies/Explainer documentaries",
+      "notes": "Andrew Mark Henry (PhD); the closest analog to our format - academic, non-devotional religion explainers; crossed 1M Jan 2026 (already tracked)",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 2,
+      "name": "Esoterica",
+      "subscribers_millions": 1.0,
+      "tier": "Direct Competitor",
+      "category": "Academic esotericism/Kabbalah/Early Christianity/Occult history",
+      "notes": "Dr. Justin Sledge; lecture-style academic deep dives, hit 1M end of 2025; proves talking-head scholarship scales (already tracked)",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 3,
+      "name": "Let's Talk Religion",
+      "subscribers_millions": 1.05,
+      "tier": "Direct Competitor",
+      "category": "Comparative religion/Religious history documentaries",
+      "notes": "Filip Holm (MA religious studies); calm academic long-form on world religions incl. Christianity and Sufism; 1.05M as of May 2026",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 4,
+      "name": "Hochelaga",
+      "subscribers_millions": 1.0,
+      "tier": "Direct Competitor",
+      "category": "Religious mysteries/Biblical lore/Atmospheric storytelling",
+      "notes": "Tommie Trelawny; cinematic curiosity-driven storytelling about religion and the strange; hit 1M subs the week of July 7 2026",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 5,
+      "name": "UsefulCharts",
+      "subscribers_millions": 2.0,
+      "tier": "Direct Competitor",
+      "category": "Religion/History explained via charts and timelines",
+      "notes": "Dr. Matt Baker (PhD Religious Studies); chart-driven biblical genealogies and religion family trees; strong product/merch flywheel",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 6,
+      "name": "Voices of the Past",
+      "subscribers_millions": 0.93,
+      "tier": "Direct Competitor",
+      "category": "Primary-source history storytelling/Narrated documentaries",
+      "notes": "History told through firsthand written accounts incl. early Christian and ancient religious texts; premium narration model",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 7,
+      "name": "Dan McClellan",
+      "subscribers_millions": 0.17,
+      "tier": "Direct Competitor",
+      "category": "Biblical scholarship/Data-over-dogma short-form rebuttals",
+      "notes": "Scholar with 1M+ on TikTok; YouTube is smaller but fast-growing shorts engine; subs approximate (Social Blade ~167K, undated)",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 8,
+      "name": "MythVision Podcast",
+      "subscribers_millions": 0.35,
+      "tier": "Direct Competitor",
+      "category": "Critical biblical scholarship interviews/Long-form podcast",
+      "notes": "Derek Lambert; books every major critical scholar (Ehrman, Tabor); owns the secular-scholarship interview lane; subs approximate",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 9,
+      "name": "Bart D. Ehrman",
+      "subscribers_millions": 0.22,
+      "tier": "Direct Competitor",
+      "category": "Critical New Testament scholarship/Lectures and courses",
+      "notes": "The most famous NT scholar alive running his own channel + paid courses; 200K+ as of April 2026; funnel model worth studying",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 10,
+      "name": "Alex O'Connor (CosmicSkeptic)",
+      "subscribers_millions": 1.99,
+      "tier": "Direct Competitor",
+      "category": "Philosophy of religion/Interviews and debates",
+      "notes": "Within Reason podcast; secular but scholarship-literate audience overlaps heavily with ours; 1.99M as of June 2026",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 11,
+      "name": "Fall of Civilizations",
+      "subscribers_millions": 1.4,
+      "tier": "North Star",
+      "category": "Epic long-form history documentaries/Ancient civilizations",
+      "notes": "Paul Cooper; gold standard for 3-4 hour narrative documentary craft and production values we aspire to",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 12,
+      "name": "toldinstone",
+      "subscribers_millions": 0.64,
+      "tier": "Direct Competitor",
+      "category": "Greco-Roman antiquity/Everyday life/Early Christianity context",
+      "notes": "Dr. Garrett Ryan; scholarly antiquity explainers that frequently cover the Roman world of early Christianity",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 13,
+      "name": "History Time",
+      "subscribers_millions": 1.3,
+      "tier": "Direct Competitor",
+      "category": "Long-form ancient history documentaries",
+      "notes": "Pete Kelly; feature-length ancient world docs incl. religious history; 1.25M in April 2025, subs approximate for 2026",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 14,
+      "name": "Cogito",
+      "subscribers_millions": 0.9,
+      "tier": "Direct Competitor",
+      "category": "Animated history of religions/Explainer documentaries",
+      "notes": "History-of-religion series (History of Christianity, Judaism, Zoroastrianism) is a direct format competitor; subs approximate",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 15,
+      "name": "Overly Sarcastic Productions",
+      "subscribers_millions": 2.53,
+      "tier": "North Star",
+      "category": "Mythology and legends storytelling/Animated summaries",
+      "notes": "Red's mythology series proves comparative myth has a huge young audience; pacing and personality lessons for us",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 16,
+      "name": "InspiringPhilosophy",
+      "subscribers_millions": 0.53,
+      "tier": "Direct Competitor",
+      "category": "Christian apologetics/Philosophy/Animated arguments",
+      "notes": "Michael Jones; scholarship-flavored apologetics with animations; competes for the same 'thinking viewer' search traffic",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 17,
+      "name": "Redeemed Zoomer",
+      "subscribers_millions": 0.69,
+      "tier": "Direct Competitor",
+      "category": "Denominational history/Theology explained for Gen Z",
+      "notes": "Richard Ackerman; maps, denomination explainers and church-history storytelling; 685K as of April 2026, growing steadily",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 18,
+      "name": "Wes Huff",
+      "subscribers_millions": 0.99,
+      "tier": "Direct Competitor",
+      "category": "Manuscripts/Textual criticism/Apologetics",
+      "notes": "Exploded after Joe Rogan appearance Jan 2025; makes manuscript scholarship mainstream; 986K as of July 2026",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 19,
+      "name": "BibleProject",
+      "subscribers_millions": 5.4,
+      "tier": "North Star",
+      "category": "Animated biblical literacy/Nonprofit media studio",
+      "notes": "The giant of Bible education on YouTube; nonprofit crowdfunded studio model and visual language worth studying",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 20,
+      "name": "The Chosen",
+      "subscribers_millions": 1.7,
+      "tier": "North Star",
+      "category": "Biblical drama series/Streaming-first storytelling",
+      "notes": "Largest crowdfunded media project ever; narrative Jesus content at scale; subs approximate (sources vary 1.2-1.7M)",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 21,
+      "name": "Crecganford",
+      "subscribers_millions": 0.22,
+      "tier": "Emerging",
+      "category": "Comparative mythology/Origins of religion",
+      "notes": "Jon White; data-driven mythology phylogenetics (world's oldest myths); 220K as of Feb 2026 and growing in our exact lane",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 22,
+      "name": "Gnostic Informant",
+      "subscribers_millions": 0.24,
+      "tier": "Emerging",
+      "category": "Gnosticism/Comparative religion/On-location history",
+      "notes": "Neal Sendlak; edgy comparative-religion deep dives plus on-location filming; ~235-239K subs",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 23,
+      "name": "Centre Place",
+      "subscribers_millions": 0.19,
+      "tier": "Emerging",
+      "category": "Academic lectures/Church history/Second Temple Judaism",
+      "notes": "John Hamer's Toronto lecture series; long-form academic lectures with loyal audience; subs approximate",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 24,
+      "name": "Kipp Davis",
+      "subscribers_millions": 0.12,
+      "tier": "Emerging",
+      "category": "Dead Sea Scrolls scholarship/Scholar reaction-critique",
+      "notes": "DSS scholar who grew fast via viral critiques of pop-apologetics claims; subs approximate",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 25,
+      "name": "Mike Winger (BibleThinker)",
+      "subscribers_millions": 1.0,
+      "tier": "Direct Competitor",
+      "category": "In-depth Bible teaching/Apologetics marathons",
+      "notes": "Passed 1M in 2026; ultra-long-form single-host Bible study model; announced 3-month hiatus May 2026",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 26,
+      "name": "Kings and Generals",
+      "subscribers_millions": 4.16,
+      "tier": "North Star",
+      "category": "Animated history documentaries/Military and religious history",
+      "notes": "4.16M as of June 2026; factory production model; frequent series on Crusades, early Islam, Christianization",
+      "research_status": "reference_only"
+    },
+    {
+      "rank": 27,
+      "name": "Bishop Robert Barron",
+      "subscribers_millions": 3.1,
+      "tier": "North Star",
+      "category": "Catholic commentary/Word on Fire media empire",
+      "notes": "Largest single-cleric channel; authority-driven talking head at scale; subs approximate (2026 trackers say 3.1M, passed 1M Feb 2024)",
+      "research_status": "reference_only"
+    },
+    {
+      "rank": 28,
+      "name": "Ascension Presents",
+      "subscribers_millions": 1.3,
+      "tier": "North Star",
+      "category": "Catholic media/Fr. Mike Schmitz/Bible in a Year",
+      "notes": "Publisher-backed creator network; Bible in a Year podcast crossover shows power of daily-habit formats",
+      "research_status": "reference_only"
+    },
+    {
+      "rank": 29,
+      "name": "CrashCourse",
+      "subscribers_millions": 16.5,
+      "tier": "North Star",
+      "category": "Educational series/Religions curriculum",
+      "notes": "2024 Religions series with John Green mainstreamed academic religious studies; curriculum-series playbook; subs approximate",
+      "research_status": "reference_only"
+    },
+    {
+      "rank": 30,
+      "name": "Cliffe Knechtle (Give Me An Answer)",
+      "subscribers_millions": 0.94,
+      "tier": "Watch",
+      "category": "Campus Q&A evangelism/Shorts-driven clips",
+      "notes": "940K subs; viral shorts machine from campus dialogues; format tangential to us but dominates the algorithm in this space",
+      "research_status": "reference_only"
+    },
+    {
+      "rank": 31,
+      "name": "Capturing Christianity",
+      "subscribers_millions": 0.42,
+      "tier": "Emerging",
+      "category": "Apologetics interviews/Debates",
+      "notes": "Cameron Bertuzzi; interview/debate hub bridging philosophy of religion and lay audiences; ~402-416K subs",
+      "research_status": "reference_only"
+    },
+    {
+      "rank": 32,
+      "name": "Paulogia",
+      "subscribers_millions": 0.3,
+      "tier": "Emerging",
+      "category": "Skeptic response/Counter-apologetics",
+      "notes": "Point-by-point responses to apologists; the counter-programming side of our audience; subs approximate",
+      "research_status": "reference_only"
+    },
+    {
+      "rank": 33,
+      "name": "Genetically Modified Skeptic",
+      "subscribers_millions": 0.6,
+      "tier": "Watch",
+      "category": "Secular humanism/Religion commentary",
+      "notes": "Drew McCoy; empathetic atheist commentary, gained ~12K subs/30 days in 2026; subs approximate",
+      "research_status": "reference_only"
+    },
+    {
+      "rank": 34,
+      "name": "Truth Unites (Gavin Ortlund)",
+      "subscribers_millions": 0.3,
+      "tier": "Emerging",
+      "category": "Irenic theology/Church history for laypeople",
+      "notes": "Scholar-pastor doing church-history storytelling with a calm tone close to ours; subs approximate",
+      "research_status": "reference_only"
+    },
+    {
+      "rank": 35,
+      "name": "The Ten Minute Bible Hour",
+      "subscribers_millions": 0.45,
+      "tier": "Emerging",
+      "category": "Exploratory Christian content/Visiting traditions",
+      "notes": "Matt Whitman; curious non-dogmatic 'visit every denomination' format is a storytelling template; subs approximate",
+      "research_status": "reference_only"
+    },
+    {
+      "rank": 36,
+      "name": "The Histocrat",
+      "subscribers_millions": 0.25,
+      "tier": "Emerging",
+      "category": "Long-form ancient history/Archaeology and religion",
+      "notes": "Multi-hour narrated deep dives incl. ancient religion topics; subs approximate",
+      "research_status": "reference_only"
+    },
+    {
+      "rank": 37,
+      "name": "Sam Aronow",
+      "subscribers_millions": 0.1,
+      "tier": "Emerging",
+      "category": "Jewish history/Chronological deep dives",
+      "notes": "Definitive Jewish-history channel, adjacent coverage of Second Temple era; 82K in 2024, subs approximate",
+      "research_status": "reference_only"
+    },
+    {
+      "rank": 38,
+      "name": "Digital Hammurabi",
+      "subscribers_millions": 0.07,
+      "tier": "Emerging",
+      "category": "Assyriology/Hebrew Bible scholarship",
+      "notes": "PhD couple (Josh Bowen, Megan Lewis) on ancient Near East context of the Bible; small but scholarly credible; subs approximate",
+      "research_status": "reference_only"
+    },
+    {
+      "rank": 39,
+      "name": "History Valley",
+      "subscribers_millions": 0.04,
+      "tier": "Emerging",
+      "category": "Religious history interviews/Scholar conversations",
+      "notes": "Jacob Berman; prolific scholar-interview channel in the MythVision mold; subs approximate (trackers conflict)",
+      "research_status": "reference_only"
+    },
+    {
+      "rank": 40,
+      "name": "Blogging Theology",
+      "subscribers_millions": 0.9,
+      "tier": "Watch",
+      "category": "Interfaith interviews/Muslim perspective on scripture",
+      "notes": "Paul Williams; hosts major biblical scholars from an interfaith angle, shows cross-faith demand for scholarship; subs approximate",
+      "research_status": "reference_only"
+    }
+  ],
+  "research_summary": {
+    "north_star_channels": 8,
+    "direct_competitors": 17,
+    "emerging_creators": 12,
+    "reference_channels": 3,
+    "niches_identified": [
+      "Academic biblical scholarship",
+      "Religious-history documentary storytelling",
+      "Comparative religion and mythology",
+      "Esotericism and gnosticism",
+      "Critical/secular New Testament scholarship",
+      "Christian apologetics and counter-apologetics",
+      "Denominational history and theology explainers",
+      "Catholic media networks",
+      "Biblical drama and narrative media",
+      "Ancient history documentaries covering religion",
+      "Scholar interview podcasts",
+      "Interfaith and skeptic-adjacent commentary"
+    ]
+  }
+}
