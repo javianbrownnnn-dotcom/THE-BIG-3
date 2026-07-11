@@ -79,6 +79,13 @@ import {
   templateTitles,
 } from "@/features/studio/templates";
 import { aggregateChannelStats, simulateChannelScan } from "@/features/competitors/scan";
+import {
+  ciCompetitorChannels,
+  ciIdeas,
+  ciInsights,
+  founderRealityChannel,
+  magnatesMediaIntel,
+} from "./ciBusinessSeed";
 
 // ---------------------------------------------------------------------------
 // Seeded PRNG — data is identical on every load.
@@ -182,6 +189,8 @@ const channels: Channel[] = [
     ],
     createdAt: daysAgo(240),
   },
+  // The CI report's flagship recommendation (docs/COMPETITIVE_INTELLIGENCE_BUSINESS.md §9).
+  founderRealityChannel,
 ];
 
 // ---------------------------------------------------------------------------
@@ -258,6 +267,8 @@ function makeSnapshots(
 
 const videos: VideoRow[] = [];
 for (const ch of channels) {
+  // Channels without baselines (Founder Reality is pre-launch) have no videos.
+  if (!CHANNEL_BASE[ch.id]) continue;
   const [baseCtr, basePct, baseViews] = CHANNEL_BASE[ch.id];
   const topics = TOPICS[ch.id];
   const count = topics.length;
@@ -303,11 +314,16 @@ videos.sort((a, b) => (b.publishedAt ?? "").localeCompare(a.publishedAt ?? ""));
 // Competitors
 // ---------------------------------------------------------------------------
 const competitorChannels: CompetitorChannel[] = [
-  { id: "cc_mag", organizationId: org.id, name: "Magnates Media", niche: "Business documentaries" },
+  // Extended in place with the CI report's channel intelligence (same channel
+  // the report calls "MagnatesMedia") — one row, not a duplicate.
+  { id: "cc_mag", organizationId: org.id, name: "Magnates Media", niche: "Business documentaries", ...magnatesMediaIntel },
   { id: "cc_hoc", organizationId: org.id, name: "How History Works", niche: "Business / history hybrid" },
   { id: "cc_rfb", organizationId: org.id, name: "ReligionForBreakfast", niche: "Academic religion" },
   { id: "cc_eso", organizationId: org.id, name: "Esoterica", niche: "Esoteric religious history" },
   { id: "cc_chris", organizationId: org.id, name: "Chris Voss (MasterClass clips)", niche: "Negotiation" },
+  // 34 business-niche rows from the July 2026 CI research cycle (35 total
+  // with Magnates Media above).
+  ...ciCompetitorChannels,
 ];
 
 const competitorVideos: CompetitorVideo[] = [];
@@ -619,6 +635,9 @@ const ideas: Idea[] = [
     title: "The oldest prayer ever written", description: "Sumerian tablet cold open; strong scene material.",
     priority: "low", status: "archived", tags: ["sumer"], createdAt: daysAgo(60),
   },
+  // The deduplicated CI ideas: 19 niche-level opportunities + the 20-video
+  // Founder Reality launch slate (opportunity #1 became the channel itself).
+  ...ciIdeas,
 ];
 
 // ---------------------------------------------------------------------------
@@ -655,6 +674,9 @@ const insights: AiInsight[] = [
     body: "Last 4 uploads average 51% viewed vs 46% baseline (t=+2.3), coinciding with adoption of the act-break rule in Story Structure SOP v2.",
     confidence: 0.72, createdAt: daysAgo(8),
   },
+  // Knowledge base from the business-niche CI research (quoted findings, not
+  // app-detected statistics — see ciBusinessSeed.ts).
+  ...ciInsights,
 ];
 
 const recommendations: AiRecommendation[] = [
@@ -988,7 +1010,10 @@ const comments: Comment[] = [
 // usable tool, not just a showcase. Seeded arrays are replaced in place so
 // every reference stays valid.
 // ---------------------------------------------------------------------------
-const STORAGE_KEY = "big3.demo.v1";
+// v2: business-niche CI dataset seeded (Founder Reality channel, 35
+// competitors, CI ideas + insights). Bumping the key reseeds returning
+// browsers; their v1 local edits stay under the old key, orphaned.
+const STORAGE_KEY = "big3.demo.v2";
 
 function persist() {
   try {
