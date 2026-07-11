@@ -79,6 +79,15 @@ import {
   templateTitles,
 } from "@/features/studio/templates";
 import { aggregateChannelStats, simulateChannelScan } from "@/features/competitors/scan";
+import {
+  ciCompetitorChannels,
+  ciCompetitorVideos,
+  ciIdeas,
+  ciInsights,
+  founderRealityChannel,
+  magnatesMediaIntel,
+  magnatesTeardowns,
+} from "./ciBusinessSeed";
 
 // ---------------------------------------------------------------------------
 // Seeded PRNG — data is identical on every load.
@@ -182,6 +191,8 @@ const channels: Channel[] = [
     ],
     createdAt: daysAgo(240),
   },
+  // The CI report's flagship recommendation (docs/COMPETITIVE_INTELLIGENCE_BUSINESS.md §9).
+  founderRealityChannel,
 ];
 
 // ---------------------------------------------------------------------------
@@ -258,6 +269,8 @@ function makeSnapshots(
 
 const videos: VideoRow[] = [];
 for (const ch of channels) {
+  // Channels without baselines (Founder Reality is pre-launch) have no videos.
+  if (!CHANNEL_BASE[ch.id]) continue;
   const [baseCtr, basePct, baseViews] = CHANNEL_BASE[ch.id];
   const topics = TOPICS[ch.id];
   const count = topics.length;
@@ -303,11 +316,16 @@ videos.sort((a, b) => (b.publishedAt ?? "").localeCompare(a.publishedAt ?? ""));
 // Competitors
 // ---------------------------------------------------------------------------
 const competitorChannels: CompetitorChannel[] = [
-  { id: "cc_mag", organizationId: org.id, name: "Magnates Media", niche: "Business documentaries" },
+  // Extended in place with the CI report's channel intelligence (same channel
+  // the report calls "MagnatesMedia") — one row, not a duplicate.
+  { id: "cc_mag", organizationId: org.id, name: "Magnates Media", niche: "Business documentaries", ...magnatesMediaIntel },
   { id: "cc_hoc", organizationId: org.id, name: "How History Works", niche: "Business / history hybrid" },
   { id: "cc_rfb", organizationId: org.id, name: "ReligionForBreakfast", niche: "Academic religion" },
   { id: "cc_eso", organizationId: org.id, name: "Esoterica", niche: "Esoteric religious history" },
   { id: "cc_chris", organizationId: org.id, name: "Chris Voss (MasterClass clips)", niche: "Negotiation" },
+  // 34 business-niche rows from the July 2026 CI research cycle (35 total
+  // with Magnates Media above).
+  ...ciCompetitorChannels,
 ];
 
 const competitorVideos: CompetitorVideo[] = [];
@@ -357,6 +375,18 @@ const competitorVideos: CompetitorVideo[] = [];
   }
 }
 
+// Business-niche CI teardown cycle (July 2026): outlier videos for the new
+// competitor set, plus teardowns for the two existing Magnates Media outliers
+// — attached in place so the originals keep their ids and stats.
+competitorVideos.push(...ciCompetitorVideos);
+for (const cv of competitorVideos) {
+  const td = magnatesTeardowns[cv.title];
+  if (td && cv.isOutlier && !cv.teardown) {
+    cv.teardown = td;
+    cv.teardownAt = daysAgo(0);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // SOPs — versioned, append-only, some AI-authored versions.
 // ---------------------------------------------------------------------------
@@ -380,7 +410,7 @@ function sopWithVersions(
     examples: v.examples,
     changeSummary: v.changeSummary,
     source: v.source ?? "human",
-    createdAt: daysAgo(150 - i * 45),
+    createdAt: v.createdAt ?? daysAgo(150 - i * 45),
   })) as SopVersion[];
   versions.reverse(); // newest first
   return {
@@ -395,6 +425,11 @@ function sopWithVersions(
 
 const coldOpenVideos = videos.filter((v) => v.hookType === "story_cold_open").map((v) => v.id);
 const outlierCompIds = competitorVideos.filter((c) => c.isOutlier).map((c) => c.id);
+// CI teardown evidence links: each updated SOP version cites the torn-down
+// competitor videos that motivated its new rules.
+const ciTeardowns = competitorVideos.filter((c) => c.id.startsWith("cv_ci_"));
+const ciIdsWhere = (pred: (c: CompetitorVideo) => boolean, n: number) =>
+  ciTeardowns.filter(pred).slice(0, n).map((c) => c.id);
 
 const sops: SopRow[] = [
   sopWithVersions(
@@ -442,9 +477,30 @@ const sops: SopRow[] = [
         source: "ai",
         examples: "\"The vault door was already open when the auditors arrived...\"",
       },
+      {
+        purpose: "Write the first 30 seconds so a browsing viewer commits to the video.",
+        whenToUse: "Every video, before scripting the body.",
+        steps: [
+          "Draft 5 hook options before writing anything else.",
+          "Default to a story cold open: drop the viewer inside a single scene, mid-action.",
+          "Business/founder videos: use proof-then-promise — concrete proof in the first 5 seconds, payoff by second 15, commitment by 30. Holds 78% at 30s in the CI sample vs 67% for question hooks.",
+          "Deliver the title's promise by second 15 — the 10–20s retention cliff is unrecoverable.",
+          "Never open with a statistic — numbers before context underperform.",
+          "Read the hook aloud; if it takes over 20 seconds, cut it in half.",
+        ],
+        changeSummary:
+          "July 2026 CI teardown cycle (per-channel pass over the business competitor set): added the proof-then-promise default for business/founder content and the 15-second delivery rule. Evidence: MagnatesMedia, ColdFusion, Internet Historian and How Money Works outlier teardowns.",
+        source: "ai",
+        createdAt: daysAgo(0),
+        examples:
+          "\"The vault door was already open when the auditors arrived...\" · Proof-then-promise: \"He turned down $50M. [proof] By the end of this video you'll know exactly why — and whether he was right. [promise]\"",
+      },
     ],
     coldOpenVideos.slice(0, 6),
-    outlierCompIds.slice(0, 3),
+    [
+      ...outlierCompIds.slice(0, 3),
+      ...ciIdsWhere((c) => c.hook === "story_cold_open" || c.hook === "bold_claim", 5),
+    ],
   ),
   sopWithVersions(
     {
@@ -474,9 +530,26 @@ const sops: SopRow[] = [
         ],
         changeSummary: "Added single-object guidance from competitor outlier analysis; added A/B threshold.",
       },
+      {
+        purpose: "Design thumbnails that earn the click without misleading.",
+        whenToUse: "After the title is locked, before scheduling.",
+        steps: [
+          "One focal object or face; no more than 3 visual elements.",
+          "Business/founder videos: face on the left third + a ≤3-word claim on the right, orange/blue palette — the CI sample's winning pattern (72% success, +25–30% CTR).",
+          "Check readability on a phone first — 70% of niche views are mobile; max 4 words, readable at 120px wide.",
+          "Prefer a single object + tension copy over a collage (see Luxottica outlier).",
+          "Never text-heavy: the algorithm favors visual hierarchy; the text-first pattern is declining (28% success).",
+          "Test against the 6 competing thumbnails in the niche this week.",
+          "A/B test when expected views > 50k.",
+        ],
+        changeSummary:
+          "July 2026 CI teardown cycle: added the face-left / ≤3-word-claim / orange-blue formula and the mobile-first check. Evidence: face-centered outliers across MagnatesMedia, ColdFusion, MrBeast and Fortune teardowns.",
+        source: "ai",
+        createdAt: daysAgo(0),
+      },
     ],
     [],
-    outlierCompIds.slice(0, 2),
+    [...outlierCompIds.slice(0, 2), ...ciIdsWhere((c) => c.isOutlier, 4)],
   ),
   sopWithVersions(
     {
@@ -509,8 +582,26 @@ const sops: SopRow[] = [
         changeSummary: "Quantified the rise-and-fall advantage; added act-break rule from retention curve analysis.",
         source: "ai",
       },
+      {
+        purpose: "Pick the narrative spine that maximizes retention for the topic.",
+        whenToUse: "At outline stage, after research is complete.",
+        steps: [
+          "Default to rise-and-fall for company/institution stories (1.25x baseline retention, n=11).",
+          "Founder/person stories: hero's journey with failures integrated — 74% completion in the CI sample. Never success-only; integrated failures beat inspiration.",
+          "Plan 3–5 emotional beats (setback → revelation → triumph) per 12–18 minutes — beats outperform flat narratives by 15–20% retention regardless of spine.",
+          "Use case study structure for tactic/method topics.",
+          "Avoid listicles for long-form — retention runs ~0.8x baseline.",
+          "Write the midpoint reversal before writing anything else.",
+          "End every act on an open question.",
+        ],
+        changeSummary:
+          "July 2026 CI teardown cycle: added the hero's-journey-with-failures default for founder stories and the emotional-beat rule. Evidence: Internet Historian, Real Stories and Wendover teardowns; pattern analysis §3.4.",
+        source: "ai",
+        createdAt: daysAgo(0),
+      },
     ],
     videos.filter((v) => v.storyStructure === "rise_and_fall").slice(0, 4).map((v) => v.id),
+    ciIdsWhere((c) => c.storyStructure === "rise_and_fall" || c.storyStructure === "case_study", 4),
   ),
   sopWithVersions(
     {
@@ -529,7 +620,25 @@ const sops: SopRow[] = [
           "Score the idea 1-5 on demand, differentiation, and production cost.",
         ],
       },
+      {
+        purpose: "Only greenlight topics with demonstrated demand.",
+        whenToUse: "Weekly idea review, before any topic enters production.",
+        steps: [
+          "Find 3+ comparable videos with above-baseline views/day in the niche.",
+          "Check the CI saturation map before greenlight: generic founder stories and generic advice are declining (−15–30% YoY); the open gaps are failure analysis, female/international founders, creator-economy founders, and AI × founders.",
+          "Name the competitor blind spot the topic exploits — if no tracked channel is weak where this topic is strong, rescore it.",
+          "Check search volume for the core query.",
+          "Log the comparable videos in the competitor database.",
+          "Score the idea 1-5 on demand, differentiation, and production cost.",
+        ],
+        changeSummary:
+          "July 2026 CI teardown cycle: added the saturation-map gate and the blind-spot requirement. Evidence: per-channel blind-spot notes across all 25 deep-dived competitors (20/25 are AdSense-only, most are success-only).",
+        source: "ai",
+        createdAt: daysAgo(0),
+      },
     ],
+    [],
+    ciIdsWhere((c) => Boolean(c.teardown), 3),
   ),
   sopWithVersions(
     {
@@ -548,7 +657,25 @@ const sops: SopRow[] = [
           "Say the title out loud — if it sounds like a headline, rewrite it like a story.",
         ],
       },
+      {
+        purpose: "Write titles that create an open loop the thumbnail doesn't close.",
+        whenToUse: "Before thumbnail design; title leads.",
+        steps: [
+          "Write 10 title candidates; sleep on it; pick 2 finalists.",
+          "Business/founder videos: draft against [Number/Claim] – [Benefit] – [Curiosity]; numbers add +34% CTR, personal pronouns +18%, honest parentheticals +12%.",
+          "Front-load the first 40 characters — mobile truncates there; keep the whole title under 55.",
+          "Never write a claim the video can't cash — audience trust damage is permanent (CI threat #13).",
+          "Title and thumbnail must not repeat the same words.",
+          "Say the title out loud — if it sounds like a headline, rewrite it like a story.",
+        ],
+        changeSummary:
+          "July 2026 CI teardown cycle: added the number/benefit/curiosity formula and the 40-character mobile rule. Evidence: title-pattern analysis across MagnatesMedia, Company Man, How Money Works and Wall Street Millennial teardowns.",
+        source: "ai",
+        createdAt: daysAgo(0),
+      },
     ],
+    [],
+    ciIdsWhere((c) => c.hook === "question" || c.hook === "contrarian", 4),
   ),
   sopWithVersions(
     {
@@ -566,6 +693,23 @@ const sops: SopRow[] = [
           "Add a curiosity re-hook every 2 minutes ('but that's not the strange part').",
           "Watch at 2x with fresh eyes; note every moment attention drifts.",
         ],
+      },
+      {
+        purpose: "A dedicated edit pass focused purely on watch-time.",
+        whenToUse: "After picture lock, before color/sound.",
+        steps: [
+          "Cut anything that doesn't advance the story or raise a question.",
+          "Target a 6–8s average shot length for the 18–45 core; hold longer only on emotional beats.",
+          "Audit the 10–20s window frame by frame — the CI retention cliff; the hook must have paid off by second 15.",
+          "First 3 minutes: a visual change every 3-5 seconds.",
+          "Add a curiosity re-hook every 2 minutes ('but that's not the strange part').",
+          "Sponsor reads go mid-roll, natively integrated — intro reads over 20s cost 5–10% retention.",
+          "Watch at 2x with fresh eyes; note every moment attention drifts.",
+        ],
+        changeSummary:
+          "July 2026 CI teardown cycle: added the 6–8s pacing target, the 10–20s cliff audit, and the mid-roll sponsor rule. Evidence: pacing analysis across ColdFusion (8–15s, slow), MagnatesMedia (4–8s) and MrBeast (2–4s) teardowns; monetization patterns §4.2.",
+        source: "ai",
+        createdAt: daysAgo(0),
       },
     ],
   ),
@@ -619,6 +763,9 @@ const ideas: Idea[] = [
     title: "The oldest prayer ever written", description: "Sumerian tablet cold open; strong scene material.",
     priority: "low", status: "archived", tags: ["sumer"], createdAt: daysAgo(60),
   },
+  // The deduplicated CI ideas: 19 niche-level opportunities + the 20-video
+  // Founder Reality launch slate (opportunity #1 became the channel itself).
+  ...ciIdeas,
 ];
 
 // ---------------------------------------------------------------------------
@@ -655,6 +802,9 @@ const insights: AiInsight[] = [
     body: "Last 4 uploads average 51% viewed vs 46% baseline (t=+2.3), coinciding with adoption of the act-break rule in Story Structure SOP v2.",
     confidence: 0.72, createdAt: daysAgo(8),
   },
+  // Knowledge base from the business-niche CI research (quoted findings, not
+  // app-detected statistics — see ciBusinessSeed.ts).
+  ...ciInsights,
 ];
 
 const recommendations: AiRecommendation[] = [
@@ -988,7 +1138,12 @@ const comments: Comment[] = [
 // usable tool, not just a showcase. Seeded arrays are replaced in place so
 // every reference stays valid.
 // ---------------------------------------------------------------------------
-const STORAGE_KEY = "big3.demo.v1";
+// v2: business-niche CI dataset seeded (Founder Reality channel, 35
+// competitors, CI ideas + insights). v3: per-channel teardowns of the CI
+// competitors' outlier videos + the CI-informed SOP versions. Bumping the key
+// reseeds returning browsers; older local edits stay under the old key,
+// orphaned.
+const STORAGE_KEY = "big3.demo.v3";
 
 function persist() {
   try {

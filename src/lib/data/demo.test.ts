@@ -11,12 +11,13 @@ beforeEach(() => {
 });
 
 describe("seeded company", () => {
-  it("has the three channels", async () => {
+  it("has the three founder channels plus the Founder Reality concept", async () => {
     const channels = await provider.listChannels();
     expect(channels.map((c) => c.name)).toEqual([
       "Business Storytelling",
       "Ancient Religions & Storytelling",
       "Sales Psychology",
+      "Founder Reality",
     ]);
   });
 

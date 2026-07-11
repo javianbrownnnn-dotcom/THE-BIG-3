@@ -1,0 +1,365 @@
+{
+  "research_metadata": {
+    "research_date": "2026-07-11",
+    "phase": "Phase 1-2 (Channels identified + metrics gathering)",
+    "total_channels_identified": 65,
+    "deep_dive_target": 35,
+    "niche": "Modern Ambition Documentaries"
+  },
+  "channels": [
+    {
+      "rank": 1,
+      "name": "MrBeast",
+      "subscribers_millions": 380,
+      "tier": "North Star",
+      "category": "Extreme ambition/Wealth display/Entertainment",
+      "notes": "Founder story through his own journey; billion-dollar empire builder",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 2,
+      "name": "ColdFusion",
+      "subscribers_millions": 4.96,
+      "tier": "Direct Competitor",
+      "category": "Business documentaries/Tech history/Company case studies",
+      "url": "https://www.youtube.com/@ColdFusion",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 3,
+      "name": "Wendover Productions",
+      "subscribers_millions": 4.9,
+      "tier": "Direct Competitor",
+      "category": "Geography/Economics/Logistics documentaries",
+      "url": "https://www.youtube.com/@Wendoverproductions",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 4,
+      "name": "MagnatesMedia",
+      "subscribers_millions": 1.7,
+      "tier": "Direct Competitor",
+      "category": "Business documentaries/Founder stories/Rise-and-fall narratives",
+      "url": "https://www.youtube.com/c/MagnatesMedia",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 5,
+      "name": "Modern MBA",
+      "subscribers_millions": 2,
+      "tier": "Direct Competitor",
+      "category": "Business case studies/Strategic analysis",
+      "url": "https://www.youtube.com/c/ModernMBA",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 6,
+      "name": "DW Documentary",
+      "subscribers_millions": 5.59,
+      "tier": "North Star",
+      "category": "General documentaries/Global stories",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 7,
+      "name": "Free Documentary",
+      "subscribers_millions": 4.94,
+      "tier": "North Star",
+      "category": "General documentaries",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 8,
+      "name": "National Geographic",
+      "subscribers_millions": 23.1,
+      "tier": "North Star",
+      "category": "General documentaries/Nature/History",
+      "research_status": "reference_only"
+    },
+    {
+      "rank": 9,
+      "name": "Vice",
+      "subscribers_millions": 18.3,
+      "tier": "North Star",
+      "category": "Contemporary documentaries/Culture/Politics",
+      "research_status": "reference_only"
+    },
+    {
+      "rank": 10,
+      "name": "Business Casual",
+      "subscribers_millions": 0.5,
+      "tier": "Direct Competitor",
+      "category": "Business/Finance history",
+      "url": "https://www.youtube.com/channel/UC_E4px0RST-qFwXLJWBav8Q",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 11,
+      "name": "Economics Explained",
+      "subscribers_millions": 1.2,
+      "tier": "Direct Competitor",
+      "category": "Economic documentaries/Systems explainer",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 12,
+      "name": "Wall Street Millennial",
+      "subscribers_millions": 0.9,
+      "tier": "Direct Competitor",
+      "category": "Finance/Business/Markets",
+      "url": "https://www.youtube.com/@wallstreetmillennial",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 13,
+      "name": "How Money Works",
+      "subscribers_millions": 1.5,
+      "tier": "Direct Competitor",
+      "category": "Finance/Business documentaries",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 14,
+      "name": "Logically Answered",
+      "subscribers_millions": 0.8,
+      "tier": "Direct Competitor",
+      "category": "Tech/Social media economics",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 15,
+      "name": "NewsThink",
+      "subscribers_millions": 1.0,
+      "tier": "Direct Competitor",
+      "category": "Science/Tech/Founder stories/Innovation",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 16,
+      "name": "Y Combinator",
+      "subscribers_millions": 1.65,
+      "tier": "Direct Competitor",
+      "category": "Startup education/Founder advice",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 17,
+      "name": "Company Man",
+      "subscribers_millions": 2.0,
+      "tier": "Direct Competitor",
+      "category": "Company explainer/Business history",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 18,
+      "name": "This Week in Startups",
+      "subscribers_millions": 0.351,
+      "tier": "Emerging",
+      "category": "Startup news/Founder interviews",
+      "notes": "Jason Calacanis hosted",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 19,
+      "name": "Lex Fridman Podcast",
+      "subscribers_millions": 2.5,
+      "tier": "Direct Competitor",
+      "category": "Long-form interviews/Ambitious figures/AI/Tech",
+      "url": "https://www.youtube.com/@lexfridman",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 20,
+      "name": "Kurzgesagt",
+      "subscribers_millions": 25,
+      "tier": "North Star",
+      "category": "Educational documentaries/Animation/Complex topics",
+      "research_status": "reference_only"
+    },
+    {
+      "rank": 21,
+      "name": "Veritasium",
+      "subscribers_millions": 12.5,
+      "tier": "North Star",
+      "category": "Science documentaries/Experiments",
+      "research_status": "reference_only"
+    },
+    {
+      "rank": 22,
+      "name": "Slidebean",
+      "subscribers_millions": 0.662,
+      "tier": "Emerging",
+      "category": "Startup education/Business stories",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 23,
+      "name": "Startup Grind",
+      "subscribers_millions": 0.8,
+      "tier": "Emerging",
+      "category": "Founder interviews/Startup stories",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 24,
+      "name": "PolyMatter",
+      "subscribers_millions": 2.0,
+      "tier": "Direct Competitor",
+      "category": "Economics/Business/Geography",
+      "url": "https://www.youtube.com/channel/UCgNg3vwj3xt7QOrcIDaHdFg",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 25,
+      "name": "Real Engineering",
+      "subscribers_millions": 4.0,
+      "tier": "Direct Competitor",
+      "category": "Engineering/Technology/Projects",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 26,
+      "name": "Internet Historian",
+      "subscribers_millions": 2.5,
+      "tier": "Direct Competitor",
+      "category": "Internet culture/History/Scandals",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 27,
+      "name": "Real Stories",
+      "subscribers_millions": 1.5,
+      "tier": "Emerging",
+      "category": "General documentaries/Human stories",
+      "url": "https://www.youtube.com/c/RealStories",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 28,
+      "name": "Best Documentary",
+      "subscribers_millions": 0.8,
+      "tier": "Emerging",
+      "category": "General documentaries/Curated",
+      "url": "https://www.youtube.com/@BestDoc",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 29,
+      "name": "Fortune",
+      "subscribers_millions": 3.5,
+      "tier": "Direct Competitor",
+      "category": "Business/Founder stories/Entrepreneurship",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 30,
+      "name": "Daily Dose of Internet",
+      "subscribers_millions": 1.5,
+      "tier": "Emerging",
+      "category": "Internet culture/Viral content curation",
+      "url": "https://www.youtube.com/channel/UCdC0An4ZPNr_YiFiYoVbwaw",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 31,
+      "name": "GaryVee (Gary Vaynerchuk)",
+      "subscribers_millions": 9.5,
+      "tier": "North Star",
+      "category": "Entrepreneur/Personal brand/Motivation",
+      "research_status": "reference_only"
+    },
+    {
+      "rank": 32,
+      "name": "Tony Robbins",
+      "subscribers_millions": 10.5,
+      "tier": "North Star",
+      "category": "Self-help/Personal transformation",
+      "research_status": "reference_only"
+    },
+    {
+      "rank": 33,
+      "name": "Vogue",
+      "subscribers_millions": 8.0,
+      "tier": "North Star",
+      "category": "Fashion/Luxury/Designer profiles",
+      "research_status": "reference_only"
+    },
+    {
+      "rank": 34,
+      "name": "ESPN",
+      "subscribers_millions": 8.5,
+      "tier": "North Star",
+      "category": "Sports/Athlete profiles/Competition",
+      "research_status": "reference_only"
+    },
+    {
+      "rank": 35,
+      "name": "The Medical Futurist",
+      "subscribers_millions": 0.6,
+      "tier": "Emerging",
+      "category": "Healthcare/Medical innovation/Future tech",
+      "url": "https://www.youtube.com/user/medicalfuturist",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 36,
+      "name": "ARTE Documentary",
+      "subscribers_millions": 2.0,
+      "tier": "Emerging",
+      "category": "Documentary/Cultural stories",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 37,
+      "name": "Coin Bureau",
+      "subscribers_millions": 2.5,
+      "tier": "Emerging",
+      "category": "Crypto/Blockchain/Tech investment",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 38,
+      "name": "StatQuest with Josh Starmer",
+      "subscribers_millions": 1.24,
+      "tier": "Emerging",
+      "category": "AI/Machine learning/Education",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 39,
+      "name": "Nick Robinson",
+      "subscribers_millions": 1.3,
+      "tier": "Emerging",
+      "category": "Documentary/Mystery solving",
+      "research_status": "needs_deep_dive"
+    },
+    {
+      "rank": 40,
+      "name": "Bliss Foster (Fashion)",
+      "subscribers_millions": 0.4,
+      "tier": "Watch",
+      "category": "Fashion history/Design analysis",
+      "research_status": "needs_deep_dive"
+    }
+  ],
+  "research_summary": {
+    "north_star_channels": 8,
+    "direct_competitors": 17,
+    "emerging_creators": 15,
+    "reference_channels": 5,
+    "niches_identified": [
+      "Business documentaries",
+      "Founder/entrepreneur stories",
+      "Tech disruption narratives",
+      "Rise-and-fall company stories",
+      "Long-form interviews",
+      "Economic systems explanation",
+      "Innovation stories",
+      "Internet culture",
+      "Personal transformation",
+      "Wealth/luxury narratives",
+      "Healthcare innovation",
+      "Fashion/design ambition"
+    ]
+  }
+}
