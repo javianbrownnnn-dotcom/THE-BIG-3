@@ -138,7 +138,7 @@ function mergeFactChecks(existing: any[] | null, claims: string[], origin: strin
 
 const relevanceGatePrompt = `You are the relevance gate of the Modern Ambition Content Studio. Evaluate the topic BEFORE anything is generated. Be honest — reject or warn against topics that are too broad, too boring, too generic, disconnected from ambition, or impossible to make emotionally engaging.
 Return STRICT JSON:
-{ "relevant": "yes"|"no"|"maybe", "score": 1-10, "bestPersona": string, "whyViewerCares": string, "emotionalHook": string, "businessHook": string, "psychologyHook": string, "weakness": string, "clickabilityFix": string, "recommendedLengthMinutes": 15|18|20|25, "videoPromise": string }
+{ "relevant": "yes"|"no"|"maybe", "score": 1-10, "bestPersona": string, "whyViewerCares": string, "emotionalHook": string, "businessHook": string, "psychologyHook": string, "weakness": string, "clickabilityFix": string, "recommendedLengthMinutes": 18|20, "videoPromise": string }
 videoPromise is ONE sentence. bestPersona must be one of the provided persona names.`;
 
 const researchPacketPrompt = `You build the research packet for a Modern Ambition documentary. You have no browsing tools: DO NOT INVENT FACTS. Use only widely known, easily verifiable information; put anything uncertain, specific (dates, numbers, quotes) or contested into unverifiedClaims for human fact-checking. Prefer fewer, solid items over many shaky ones.
@@ -164,7 +164,7 @@ Ground every beat in the research packet. Return STRICT JSON:
 { "sections": [{ "timestamp": string, "title": string, "purpose": string, "beats": string[], "emotionalJob": string, "brollIdeas": string[], "retentionDevice": string, "transition": string }] }`;
 
 function scriptPrompt(mins: number): string {
-  const [lo, hi] = WORD_RANGES[mins] ?? [2100, 2400];
+  const [lo, hi] = WORD_RANGES[mins] ?? [2500, 2900];
   return `You write the full voiceover script following the approved outline exactly (section by section, with the outline's timestamps as ## headings). Target ${lo}-${hi} words total (flexible range for a ${mins}-minute video).
 Style: strong narration, not essay writing; written for voiceover; short and medium sentences; create tension every 60-90 seconds; no filler; visually suggestive for B-roll; don't over-explain; don't moralize hard; cinematic but restrained; smart but understandable; emotionally sharp, never melodramatic; built around conflict, tradeoffs, psychology, consequences.
 Facts: use ONLY what the research packet supports. Mark anything uncertain inline as [FACT-CHECK: claim]. ${BANNED}
@@ -253,7 +253,7 @@ Deno.serve(async (req) => {
         }], { system: relevanceGatePrompt });
         patch.relevance = r;
         if (!project.primary_persona) patch.primary_persona = r.bestPersona;
-        if ([15, 18, 20, 25].includes(r.recommendedLengthMinutes)) {
+        if ([18, 20].includes(r.recommendedLengthMinutes)) {
           patch.video_length_minutes = r.recommendedLengthMinutes;
         }
         break;
@@ -299,7 +299,7 @@ Deno.serve(async (req) => {
       }
       case "script": {
         need(project.outline, "Approve an outline before the full script is written.");
-        const [lo, hi] = WORD_RANGES[project.video_length_minutes] ?? [2100, 2400];
+        const [lo, hi] = WORD_RANGES[project.video_length_minutes] ?? [2500, 2900];
         const budgets = sectionBudgets(project.outline);
         const base = `${ground}\n\n<research_packet>\n${JSON.stringify(project.research)}\n</research_packet>\n\n<approved_outline>\n${JSON.stringify(project.outline)}\n</approved_outline>\n\n<section_word_budgets note="~${WPM} words per minute of runtime; hit each section's budget within ±15% so the total lands in ${lo}-${hi} words">\n${budgets}\n</section_word_budgets>`;
         let r = await askClaudeJson<{ script: string }>([{

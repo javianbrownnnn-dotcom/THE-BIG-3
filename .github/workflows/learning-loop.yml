@@ -17,10 +17,34 @@ jobs:
   run-loop:
     runs-on: ubuntu-latest
     steps:
-      - name: Invoke learning-loop edge function
+      - name: Check required secrets
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
+          missing=0
+          if [ -z "$SUPABASE_URL" ]; then
+            echo "::error::Repository secret SUPABASE_URL is not set. Add it under Settings → Secrets and variables → Actions (e.g. https://<project-ref>.supabase.co)."
+            missing=1
+          fi
+          if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "::error::Repository secret SUPABASE_SERVICE_ROLE_KEY is not set. Copy it from Supabase → Project Settings → API → service_role key."
+            missing=1
+          fi
+          if [ "$missing" = "1" ]; then
+            echo "The learning loop needs both secrets to reach your backend. See docs/GO_LIVE.md."
+            exit 1
+          fi
+
+      - name: Invoke learning-loop edge function
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          # Trim any trailing slash so the URL is always well-formed.
+          base="${SUPABASE_URL%/}"
           curl --fail-with-body -sS -X POST \
-            "${{ secrets.SUPABASE_URL }}/functions/v1/learning-loop" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            "${base}/functions/v1/learning-loop" \
+            -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
             -H "Content-Type: application/json" \
             -d '{}'

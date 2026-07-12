@@ -1287,7 +1287,7 @@ export class SupabaseProvider implements DataProvider {
       status: row.status,
       primaryPersona: row.primary_persona ?? undefined,
       secondaryPersona: row.secondary_persona ?? undefined,
-      videoLengthMinutes: row.video_length_minutes ?? 15,
+      videoLengthMinutes: row.video_length_minutes ?? 18,
       relevance: row.relevance ?? undefined,
       research: row.research ?? undefined,
       titleLab: row.title_lab ?? undefined,
@@ -1349,7 +1349,7 @@ export class SupabaseProvider implements DataProvider {
       topic: input.topic,
       primary_persona: input.primaryPersona ?? null,
       secondary_persona: input.secondaryPersona ?? null,
-      video_length_minutes: input.videoLengthMinutes ?? 15,
+      video_length_minutes: input.videoLengthMinutes ?? 18,
       created_by: auth.user?.id,
     }).select("*").single();
     if (error) throw error;

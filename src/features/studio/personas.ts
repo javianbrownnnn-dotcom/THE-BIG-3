@@ -133,7 +133,10 @@ export const BUILTIN_PERSONAS: StudioPersona[] = [
 export const PERSONA_UNLOCKS = [30, 100];
 export const MAX_PERSONAS = 5;
 
-export const VIDEO_LENGTHS: StudioVideoLength[] = [15, 18, 20, 25];
+// Picker options — the channel standard is 18–20 min. 15/25 remain valid
+// StudioVideoLength values for older projects, just not offered for new ones.
+export const VIDEO_LENGTHS: StudioVideoLength[] = [18, 20];
+export const DEFAULT_VIDEO_LENGTH: StudioVideoLength = 18;
 
 /** Flexible word ranges per length — guidance, not law. */
 export const WORD_RANGES: Record<StudioVideoLength, [number, number]> = {
