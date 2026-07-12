@@ -106,3 +106,48 @@ export function metricByGroup(
 }
 
 export const THIRTY_DAYS = 30 * DAY;
+
+/**
+ * Org-level monthly results for the dashboard hero: views (reach, summed),
+ * CTR (packaging, averaged) and avg % viewed (retention, averaged) per
+ * calendar month. Raw values — the hero indexes them for display.
+ */
+export interface MonthlyResults {
+  label: string;
+  /** Total views the month's uploads have earned to date. */
+  views?: number;
+  ctr?: number;
+  pct?: number;
+}
+
+export function monthlyResults(videos: Video[], months = 6): MonthlyResults[] {
+  const now = new Date();
+  const rows: MonthlyResults[] = [];
+  // The current month is in progress — a partial cohort plots as a fake
+  // cliff, so the window is the last `months` completed months.
+  for (let i = months; i >= 1; i--) {
+    const start = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+    const inMonth = videos.filter((v) => {
+      if (!v.publishedAt) return false;
+      const t = new Date(v.publishedAt).getTime();
+      return t >= start.getTime() && t < end.getTime();
+    });
+    const mean = (values: number[]) =>
+      values.length ? values.reduce((a, b) => a + b, 0) / values.length : undefined;
+    const viewValues = inMonth
+      .map((v) => v.metrics?.views)
+      .filter((x): x is number => x != null);
+    const ctr = mean(inMonth.map((v) => v.metrics?.ctr).filter((x): x is number => x != null));
+    const pct = mean(
+      inMonth.map((v) => v.metrics?.avgPercentViewed).filter((x): x is number => x != null),
+    );
+    rows.push({
+      label: start.toLocaleDateString("en", { month: "short" }),
+      views: viewValues.length ? viewValues.reduce((a, b) => a + b, 0) : undefined,
+      ctr: ctr != null ? +ctr.toFixed(2) : undefined,
+      pct: pct != null ? +pct.toFixed(1) : undefined,
+    });
+  }
+  return rows;
+}
