@@ -12,11 +12,79 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders, jsonResponse } from "../_shared/claude.ts";
 
 const API = "https://www.googleapis.com/youtube/v3";
+const ANALYTICS = "https://youtubeanalytics.googleapis.com/v2/reports";
 
 function isoDurationToSecs(iso: string | undefined): number {
   const m = iso?.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
   if (!m) return 0;
   return (Number(m[1]) || 0) * 3600 + (Number(m[2]) || 0) * 60 + (Number(m[3]) || 0);
+}
+
+// Private metrics per video, keyed by YouTube video id. Present only for
+// channels the owner has connected via OAuth.
+interface PrivateMetrics {
+  impressions?: number;
+  ctr?: number; // 0..100
+  avgViewDurationSecs?: number;
+  avgPercentViewed?: number; // 0..100
+  watchTimeHours?: number;
+}
+
+async function accessTokenFromRefresh(refreshToken: string): Promise<string | null> {
+  const clientId = Deno.env.get("GOOGLE_CLIENT_ID");
+  const clientSecret = Deno.env.get("GOOGLE_CLIENT_SECRET");
+  if (!clientId || !clientSecret) return null;
+  const res = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
+      grant_type: "refresh_token",
+    }),
+  });
+  const data = await res.json().catch(() => null);
+  return data?.access_token ?? null;
+}
+
+/**
+ * One Analytics report per channel: private metrics for every video, grouped
+ * by the `video` dimension. Best-effort — any failure returns an empty map so
+ * the public-stats sync always still succeeds.
+ */
+async function fetchChannelPrivateMetrics(token: string): Promise<Map<string, PrivateMetrics>> {
+  const out = new Map<string, PrivateMetrics>();
+  try {
+    const url = new URL(ANALYTICS);
+    url.searchParams.set("ids", "channel==MINE");
+    url.searchParams.set("startDate", "2005-02-14"); // video lifetime
+    url.searchParams.set("endDate", new Date().toISOString().slice(0, 10));
+    url.searchParams.set("dimensions", "video");
+    url.searchParams.set(
+      "metrics",
+      "impressions,impressionsCtr,averageViewDuration,averageViewPercentage,estimatedMinutesWatched",
+    );
+    url.searchParams.set("maxResults", "200");
+    url.searchParams.set("sort", "-estimatedMinutesWatched");
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) return out;
+    const data = await res.json();
+    // columnHeaders order matches the metrics list; row[0] is the video id.
+    for (const row of data.rows ?? []) {
+      const [vid, impressions, ctr, avgDur, avgPct, minutesWatched] = row;
+      out.set(String(vid), {
+        impressions: impressions != null ? Number(impressions) : undefined,
+        ctr: ctr != null ? Number((ctr * 100).toFixed(2)) : undefined,
+        avgViewDurationSecs: avgDur != null ? Number(avgDur) : undefined,
+        avgPercentViewed: avgPct != null ? Number(avgPct.toFixed(1)) : undefined,
+        watchTimeHours: minutesWatched != null ? Number((minutesWatched / 60).toFixed(1)) : undefined,
+      });
+    }
+  } catch {
+    // Owner analytics unavailable — public sync continues.
+  }
+  return out;
 }
 
 async function ytGet(path: string, params: Record<string, string>, key: string) {
@@ -86,16 +154,37 @@ Deno.serve(async (req) => {
         if (vid) byVideoId.set(vid, v.id);
       }
 
+      // If the channel owner has connected via OAuth, pull private metrics
+      // (CTR, impressions, retention) for all videos in one report and fold
+      // them into each snapshot — this is what makes CTR/retention appear in
+      // the videos list, the KPI row, and the dashboard graph.
+      let priv = new Map<string, PrivateMetrics>();
+      let ownerConnected = false;
+      const { data: cred } = await db
+        .from("youtube_credentials").select("refresh_token").eq("channel_id", channel.id).maybeSingle();
+      if (cred?.refresh_token) {
+        const token = await accessTokenFromRefresh(cred.refresh_token);
+        if (token) {
+          priv = await fetchChannelPrivateMetrics(token);
+          ownerConnected = true;
+        }
+      }
+
       let created = 0, snapshots = 0;
       for (const item of uploads) {
-        const stats = {
+        const p = priv.get(item.id) ?? {};
+        const snapshot = {
           views: item.statistics?.viewCount ? Number(item.statistics.viewCount) : null,
+          impressions: p.impressions ?? null,
+          ctr: p.ctr ?? null,
+          avg_view_duration_secs: p.avgViewDurationSecs ?? null,
+          avg_percent_viewed: p.avgPercentViewed ?? null,
+          watch_time_hours: p.watchTimeHours ?? null,
+          source: "youtube_api",
         };
         const existingId = byVideoId.get(item.id);
         if (existingId) {
-          await db.from("video_metric_snapshots").insert({
-            video_id: existingId, views: stats.views, source: "youtube_api",
-          });
+          await db.from("video_metric_snapshots").insert({ video_id: existingId, ...snapshot });
           snapshots++;
         } else {
           const durationSecs = isoDurationToSecs(item.contentDetails?.duration);
@@ -109,14 +198,19 @@ Deno.serve(async (req) => {
             format: durationSecs > 0 && durationSecs <= 180 ? "short" : "long_form",
           }).select("id").single();
           if (video) {
-            await db.from("video_metric_snapshots").insert({
-              video_id: video.id, views: stats.views, source: "youtube_api",
-            });
+            await db.from("video_metric_snapshots").insert({ video_id: video.id, ...snapshot });
             created++;
           }
         }
       }
-      results.push({ channel: channel.name, uploads: uploads.length, created, snapshots });
+      results.push({
+        channel: channel.name,
+        uploads: uploads.length,
+        created,
+        snapshots,
+        ownerConnected,
+        privateMetrics: priv.size,
+      });
     }
     return jsonResponse({ ok: true, results });
   } catch (err) {
