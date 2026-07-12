@@ -43,6 +43,7 @@ import {
   windowStats,
 } from "./stats";
 import { WeeklyRhythm } from "./WeeklyRhythm";
+import { ResultsTrend } from "./ResultsTrend";
 import type { AiRecommendation, Idea, Sop } from "@/types";
 
 /** One card, one verb: the next thing that moves the loop forward. */
@@ -260,6 +261,9 @@ export function DashboardPage() {
 
       {/* Niche scope — view one niche or the whole company together */}
       <NicheChips scope={niche} onPick={pickNiche} options={nicheOptions} />
+
+      {/* The headline: are the results moving? */}
+      <ResultsTrend videos={videos} />
 
       {/* KPI row — 2-up on phones so the pulse fits one screen */}
       <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-3">
