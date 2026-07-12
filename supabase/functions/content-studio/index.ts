@@ -15,6 +15,18 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { askClaudeJson, corsHeaders, jsonResponse } from "../_shared/claude.ts";
 import { CHANNEL_IDENTITY } from "../_shared/identity.ts";
+import { ANCIENT_IDENTITY, ANCIENT_PERSONAS } from "../_shared/identity_ancient.ts";
+
+// Pick the creative profile from the project channel's niche. Mirrors
+// src/features/studio/nicheProfiles.ts — keep in sync.
+const ANCIENT_RE =
+  /(religio|myth|christ|bible|biblical|church|theolog|esoteric|gnostic|scriptur|ancient|sacred|storytelling|mytholog)/i;
+function profileForNiche(niche: string | null | undefined) {
+  if (ANCIENT_RE.test(niche ?? "")) {
+    return { identity: ANCIENT_IDENTITY, personas: ANCIENT_PERSONAS, label: "Myth & Meaning" };
+  }
+  return { identity: CHANNEL_IDENTITY, personas: BUILTIN_PERSONAS, label: "Modern Ambition" };
+}
 
 const BUILTIN_PERSONAS = [
   {
@@ -80,11 +92,11 @@ const BANNED = `Never use: "Little did he know", "Everything changed forever", "
 // Prompt templates — each receives the same grounding block.
 // ---------------------------------------------------------------------------
 
-function grounding(project: any, personas: any[], rules: any[], sops: any[] = []): string {
+function grounding(project: any, personas: any[], rules: any[], sops: any[] = [], identity: string = CHANNEL_IDENTITY): string {
   const persona = personas.find((p) => p.name === project.primary_persona) ?? personas[0];
   const secondary = personas.find((p) => p.name === project.secondary_persona);
   return [
-    `<channel_identity>\n${CHANNEL_IDENTITY}\n</channel_identity>`,
+    `<channel_identity>\n${identity}\n</channel_identity>`,
     `<primary_persona>\n${JSON.stringify(persona)}\n</primary_persona>`,
     secondary ? `<secondary_persona>\n${JSON.stringify(secondary)}\n</secondary_persona>` : "",
     `<video_length_minutes>${project.video_length_minutes}</video_length_minutes>`,
@@ -136,12 +148,12 @@ function mergeFactChecks(existing: any[] | null, claims: string[], origin: strin
   return items;
 }
 
-const relevanceGatePrompt = `You are the relevance gate of the Modern Ambition Content Studio. Evaluate the topic BEFORE anything is generated. Be honest — reject or warn against topics that are too broad, too boring, too generic, disconnected from ambition, or impossible to make emotionally engaging.
+const relevanceGatePrompt = `You are the relevance gate of the Content Studio (the channel identity is provided above). Evaluate the topic BEFORE anything is generated. Be honest — reject or warn against topics that are too broad, too boring, too generic, disconnected from ambition, or impossible to make emotionally engaging.
 Return STRICT JSON:
 { "relevant": "yes"|"no"|"maybe", "score": 1-10, "bestPersona": string, "whyViewerCares": string, "emotionalHook": string, "businessHook": string, "psychologyHook": string, "weakness": string, "clickabilityFix": string, "recommendedLengthMinutes": 18|20, "videoPromise": string }
 videoPromise is ONE sentence. bestPersona must be one of the provided persona names.`;
 
-const researchPacketPrompt = `You build the research packet for a Modern Ambition documentary. You have no browsing tools: DO NOT INVENT FACTS. Use only widely known, easily verifiable information; put anything uncertain, specific (dates, numbers, quotes) or contested into unverifiedClaims for human fact-checking. Prefer fewer, solid items over many shaky ones.
+const researchPacketPrompt = `You build the research packet for a documentary on this channel (identity provided above). You have no browsing tools: DO NOT INVENT FACTS. Use only widely known, easily verifiable information; put anything uncertain, specific (dates, numbers, quotes) or contested into unverifiedClaims for human fact-checking. Prefer fewer, solid items over many shaky ones.
 Return STRICT JSON:
 { "mainSubject": string, "timeline": string[], "keyEvents": string[], "keyConflicts": string[], "turningPoints": string[], "businessContext": string, "psychologicalContext": string, "culturalContext": string, "controversies": string[], "unverifiedClaims": string[], "bestAngle": string, "emotionalQuestion": string, "endingIdea": string }`;
 
@@ -180,10 +192,10 @@ Return STRICT JSON:
   "boringSections": string[], "clickOffRisks": string[], "needsMoreTension": string[], "genericLines": string[], "essayLikeParts": string[], "cut": string[], "expand": string[], "factCheck": string[],
   "proposedRules": [{ "category": "title"|"script"|"thumbnail"|"hook"|"ending"|"general", "rule": string }], "warnings": string[] }`;
 
-const feedbackRulePrompt = `You convert creator feedback into reusable writing rules for the Modern Ambition Script Bible. Each distinct note becomes ONE precise, actionable rule a writer can follow next time (imperative, specific, no fluff). Example: "This sounds too motivational" → "Avoid direct motivational advice. Show ambition through story, consequences, and tension instead."
+const feedbackRulePrompt = `You convert creator feedback into reusable writing rules for this channel Script Bible. Each distinct note becomes ONE precise, actionable rule a writer can follow next time (imperative, specific, no fluff). Example: "This sounds too motivational" → "Avoid direct motivational advice. Show ambition through story, consequences, and tension instead."
 Return STRICT JSON: { "rules": [{ "category": "title"|"script"|"thumbnail"|"hook"|"ending"|"general", "rule": string, "sourceFeedback": string }] }`;
 
-const personaReviewPrompt = `You design ONE new viewer persona for Modern Ambition, grounded in the accumulated feedback rules and completed projects provided. It must be distinct from the existing personas, realistic, and useful for targeting future documentaries. Also suggest one-line refinements to existing personas if the evidence supports them.
+const personaReviewPrompt = `You design ONE new viewer persona for this channel, grounded in the accumulated feedback rules and completed projects provided. It must be distinct from the existing personas, realistic, and useful for targeting future documentaries. Also suggest one-line refinements to existing personas if the evidence supports them.
 Return STRICT JSON:
 { "newPersona": { "name": string, "ageRange": string, "description": string, "respondsTo": string[] } | null,
   "refinements": [{ "personaName": string, "refinement": string }] }`;
@@ -221,6 +233,15 @@ Deno.serve(async (req) => {
         .eq("organization_id", organizationId).eq("status", "active"),
     ]);
     const rules = ruleRows ?? [];
+    // Choose the creative profile (identity + built-in personas) from the
+    // project channel's niche, so scripting/outlining/research follow the
+    // niche you're making a video for.
+    let channelNiche: string | null = null;
+    if (project.channel_id) {
+      const { data: ch } = await db.from("channels").select("niche").eq("id", project.channel_id).single();
+      channelNiche = ch?.niche ?? null;
+    }
+    const profile = profileForNiche(channelNiche);
     const sops = (sopRows ?? [])
       .filter((x: any) => !x.channel_id || x.channel_id === project.channel_id)
       .map((x: any) => {
@@ -232,10 +253,10 @@ Deno.serve(async (req) => {
       .filter((x: any) => x.steps.length)
       .slice(0, 12);
     const personas = [
-      ...BUILTIN_PERSONAS,
+      ...profile.personas,
       ...(personaRows ?? []).map((r: any) => ({ name: r.name, ...r.definition })),
     ];
-    const ground = grounding(project, personas, rules, sops);
+    const ground = grounding(project, personas, rules, sops, profile.identity);
 
     // Relevance before generation: enforce step preconditions server-side.
     const need = (cond: unknown, msg: string) => {
@@ -249,7 +270,7 @@ Deno.serve(async (req) => {
       case "relevance": {
         const r = await askClaudeJson<any>([{
           role: "user",
-          content: `${ground}\n\nEvaluate this topic for Modern Ambition. Persona names available: ${personas.map((p) => p.name).join(", ")}.`,
+          content: `${ground}\n\nEvaluate this topic for ${profile.label}. Persona names available: ${personas.map((p) => p.name).join(", ")}.`,
         }], { system: relevanceGatePrompt });
         patch.relevance = r;
         if (!project.primary_persona) patch.primary_persona = r.bestPersona;
@@ -375,8 +396,8 @@ Deno.serve(async (req) => {
           .eq("organization_id", organizationId).eq("status", "done");
         const done = count ?? 0;
         const unlocked = PERSONA_UNLOCKS.filter((n) => done >= n).length;
-        const current = BUILTIN_PERSONAS.length + (personaRows?.length ?? 0);
-        if (current < Math.min(MAX_PERSONAS, BUILTIN_PERSONAS.length + unlocked)) {
+        const current = profile.personas.length + (personaRows?.length ?? 0);
+        if (current < Math.min(MAX_PERSONAS, profile.personas.length + unlocked)) {
           try {
             const r = await askClaudeJson<any>([{
               role: "user",
