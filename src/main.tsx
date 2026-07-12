@@ -23,6 +23,34 @@ window.addEventListener("vite:preloadError", (event) => {
   window.location.reload();
 });
 
+// Self-healing updates: iOS Home-Screen web apps can freeze on an old cached
+// snapshot of the site indefinitely. Even a frozen snapshot runs JS, so on
+// boot and whenever the app returns to the foreground we ask the server which
+// build is current (version.json, never cached) and force one cache-busting
+// refresh if we're stale. The timestamp guard prevents reload loops when the
+// network fetch itself serves a stale answer.
+async function checkForNewBuild() {
+  try {
+    const res = await fetch(`${import.meta.env.BASE_URL}version.json`, { cache: "no-store" });
+    if (!res.ok) return;
+    const { build } = (await res.json()) as { build?: string };
+    if (!build || build === __BUILD_STAMP__) return;
+    const KEY = "big3.updateReloadAt";
+    const last = Number(sessionStorage.getItem(KEY) ?? 0);
+    if (Date.now() - last < 120_000) return;
+    sessionStorage.setItem(KEY, String(Date.now()));
+    const url = new URL(window.location.href);
+    url.searchParams.set("u", Date.now().toString(36));
+    window.location.replace(url.toString());
+  } catch {
+    // Offline or blocked — never break the app over an update check.
+  }
+}
+checkForNewBuild();
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") void checkForNewBuild();
+});
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
