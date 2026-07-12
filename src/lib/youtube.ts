@@ -123,13 +123,15 @@ export async function resolveChannel(ref: string, apiKey: string): Promise<YtCha
   };
 }
 
-/** "PT1H4M35S" → 3875 */
+/** "PT1H4M35S" → 3875. Handles day components ("P1DT2H") from 24h+ streams. */
 export function isoDurationToSecs(iso: string | undefined): number {
   if (!iso) return 0;
-  const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  const m = iso.match(/P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?/);
   if (!m) return 0;
-  const [, h, min, s] = m;
-  return (Number(h) || 0) * 3600 + (Number(min) || 0) * 60 + (Number(s) || 0);
+  const [, d, h, min, s] = m;
+  return (
+    (Number(d) || 0) * 86_400 + (Number(h) || 0) * 3600 + (Number(min) || 0) * 60 + (Number(s) || 0)
+  );
 }
 
 /** Map a videos.list item to our shape. Exported for tests and the edge function mirror. */

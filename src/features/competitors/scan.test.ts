@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   aggregateChannelStats,
+  isResearchRow,
   flagOutliers,
   simulateChannelScan,
   uploadCadenceDays,
@@ -124,5 +125,35 @@ describe("simulateChannelScan", () => {
     const second = simulateChannelScan(channel, seen, 6);
     const overlap = second.filter((r) => first.some((f) => f.title === r.title));
     expect(overlap).toHaveLength(0);
+  });
+});
+
+describe("isResearchRow", () => {
+  it("identifies seeded CI research rows by id", () => {
+    expect(isResearchRow({ id: "cv_ci_coldfusion_1" })).toBe(true);
+    expect(isResearchRow({ id: "cv_cx_hochelaga_2" })).toBe(true);
+    expect(isResearchRow({ id: "cv_0001" })).toBe(false); // seeded demo (non-CI)
+    expect(isResearchRow({ id: "cv_lx2abc" })).toBe(false); // runtime-created
+    expect(isResearchRow({})).toBe(false);
+  });
+});
+
+describe("aggregateChannelStats with research rows excluded", () => {
+  it("real rows alone drive the stats a live scan writes", () => {
+    const research = [
+      { id: "cv_ci_x_1", viewsPerDay: 999_999, isOutlier: true, publishedAt: "2026-01-01T00:00:00Z" },
+    ];
+    const real = [
+      { id: "cv_a", viewsPerDay: 1000, isOutlier: false, publishedAt: "2026-06-01T00:00:00Z" },
+      { id: "cv_b", viewsPerDay: 2000, isOutlier: false, publishedAt: "2026-06-08T00:00:00Z" },
+      { id: "cv_c", viewsPerDay: 3000, isOutlier: true, publishedAt: "2026-06-15T00:00:00Z" },
+    ];
+    const all = [...research, ...real];
+    const onlyReal = all.filter((v) => !isResearchRow(v));
+    const stats = aggregateChannelStats(onlyReal);
+    expect(stats.trackedVideoCount).toBe(3);
+    expect(stats.medianViewsPerDay).toBe(2000); // untouched by the 999,999 research row
+    expect(stats.outlierCount).toBe(1);
+    expect(stats.uploadCadenceDays).toBe(7);
   });
 });

@@ -5,7 +5,7 @@
 
 import { data } from "@/lib/data";
 import { fetchUploads, resolveChannel } from "@/lib/youtube";
-import { aggregateChannelStats, uploadsToCompetitorVideos } from "./scan";
+import { aggregateChannelStats, isResearchRow, uploadsToCompetitorVideos } from "./scan";
 import type { CompetitorChannel, CompetitorScanResult } from "@/types";
 
 const videoIdFromUrl = (url?: string) => url?.match(/[?&]v=([A-Za-z0-9_-]{6,})/)?.[1];
@@ -35,9 +35,16 @@ export async function scanCompetitorFromYouTube(
     created++;
   }
 
-  // Recompute channel-level headline stats over the full tracked set.
-  const all = [...mine, ...mapped];
-  const stats = aggregateChannelStats(all);
+  // Recompute channel-level headline stats from the provider's deduped state
+  // (concatenating mine+mapped would double-count rescanned videos), and only
+  // over real scanned rows — seeded research rows carry illustrative numbers
+  // that must not contaminate YouTube-sourced statistics. Before the first
+  // real scan (no real rows yet), the research-derived stats stand.
+  const after = (await data.listCompetitorVideos()).filter(
+    (v) => v.competitorChannelId === channel.id,
+  );
+  const real = after.filter((v) => !isResearchRow(v));
+  const stats = aggregateChannelStats(real.length > 0 ? real : after);
   // No niche set by hand? Take YouTube's own categorization of the channel so
   // it lands in the right niche section automatically.
   const autoNiche =
@@ -56,7 +63,7 @@ export async function scanCompetitorFromYouTube(
     channelId: channel.id,
     channelName: yt.title,
     created,
-    totalTracked: all.length,
+    totalTracked: after.length,
     outliers: mapped.filter((m) => m.isOutlier).length,
     simulated: false,
   };

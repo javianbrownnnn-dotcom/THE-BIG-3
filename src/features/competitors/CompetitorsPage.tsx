@@ -46,6 +46,7 @@ import {
 import { getStoredApiKey } from "@/lib/youtube";
 import { nicheKeyOf, nicheKeyOfCompetitor, useNicheScope } from "@/lib/niches";
 import { NicheChips } from "@/components/layout/NicheChips";
+import { isResearchRow } from "./scan";
 import { CompetitorTeardownDialog } from "./CompetitorTeardownDialog";
 import { TeardownLibrary } from "./TeardownLibrary";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -438,6 +439,14 @@ export function CompetitorsPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-1.5">
+                        {isResearchRow(v) && (
+                          <Badge
+                            variant="outline"
+                            title="From the CI research cycle — stats are illustrative, not YouTube data. Scan the channel to pull real uploads."
+                          >
+                            research
+                          </Badge>
+                        )}
                         {v.isOutlier && <Badge variant="warning">outlier</Badge>}
                         <CompetitorTeardownDialog video={v} />
                       </div>

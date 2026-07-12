@@ -62,6 +62,15 @@ export function uploadCadenceDays(publishDates: Array<string | undefined>): numb
   return +(sum / (times.length - 1) / DAY_MS).toFixed(1);
 }
 
+/**
+ * Seeded CI-research rows carry illustrative stats (marked so in their
+ * aiObservations) — they must never mix into channel statistics once real
+ * scanned data exists. They're identifiable by their stable seed ids.
+ */
+export function isResearchRow(v: { id?: string }): boolean {
+  return !!v.id && (v.id.startsWith("cv_ci_") || v.id.startsWith("cv_cx_"));
+}
+
 /** Roll a channel's tracked videos up into the headline stats shown on its card. */
 export function aggregateChannelStats(
   videos: Array<{ viewsPerDay?: number; isOutlier?: boolean; publishedAt?: string }>,
