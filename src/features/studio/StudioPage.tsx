@@ -50,7 +50,7 @@ import { usePersistedState } from "@/hooks/usePersistedState";
 import { relativeTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { ContentProject, StudioVideoLength } from "@/types";
-import { MAX_PERSONAS, PERSONA_UNLOCKS, STEP_LABELS, VIDEO_LENGTHS } from "./personas";
+import { DEFAULT_VIDEO_LENGTH, MAX_PERSONAS, PERSONA_UNLOCKS, STEP_LABELS, VIDEO_LENGTHS } from "./personas";
 import { STUDIO_STEPS } from "@/types";
 
 function StepDots({ project }: { project: ContentProject }) {
@@ -89,7 +89,7 @@ export function StudioPage() {
     topic: "",
     primaryPersona: "",
     secondaryPersona: "",
-    length: "" as "" | `${StudioVideoLength}`,
+    length: `${DEFAULT_VIDEO_LENGTH}` as "" | `${StudioVideoLength}`,
   });
 
   const submit = async () => {

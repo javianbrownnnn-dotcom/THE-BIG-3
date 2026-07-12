@@ -2550,7 +2550,7 @@ export class DemoProvider implements DataProvider {
       status: "relevance",
       primaryPersona: input.primaryPersona,
       secondaryPersona: input.secondaryPersona,
-      videoLengthMinutes: input.videoLengthMinutes ?? 15,
+      videoLengthMinutes: input.videoLengthMinutes ?? 18,
       thumbnailVariants: [],
       createdAt: now,
       updatedAt: now,
