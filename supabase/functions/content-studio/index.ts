@@ -51,13 +51,36 @@ const WORD_RANGES: Record<number, [number, number]> = {
   15: [2100, 2400], 18: [2500, 2900], 20: [2900, 3300], 25: [3500, 4100],
 };
 
+const WPM = 150; // documentary narration pace the WORD_RANGES are built on
+
+const countWords = (text: string): number =>
+  text.trim().split(/\s+/).filter(Boolean).length;
+
+/** "10:00-12:30" (or with en dash) → seconds; NaN-safe. */
+function spanSeconds(ts: string | undefined): number {
+  const m = (ts ?? "").match(/(\d+):(\d{2})\s*[-–]\s*(\d+):(\d{2})/);
+  if (!m) return 0;
+  return Math.max(0, (+m[3] * 60 + +m[4]) - (+m[1] * 60 + +m[2]));
+}
+
+/** Per-section word budgets from the outline's own timestamps at ~150 wpm. */
+function sectionBudgets(outline: any[]): string {
+  return (outline ?? [])
+    .map((sec: any) => {
+      const secs = spanSeconds(sec.timestamp);
+      if (!secs) return `- ${sec.timestamp} ${sec.title}`;
+      return `- ${sec.timestamp} ${sec.title}: ~${Math.round((secs / 60) * WPM)} words`;
+    })
+    .join("\n");
+}
+
 const BANNED = `Never use: "Little did he know", "Everything changed forever", "This was only the beginning", "Against all odds", "The rest is history", "In today's video", "Smash that like button", "Subscribe for more".`;
 
 // ---------------------------------------------------------------------------
 // Prompt templates — each receives the same grounding block.
 // ---------------------------------------------------------------------------
 
-function grounding(project: any, personas: any[], rules: any[]): string {
+function grounding(project: any, personas: any[], rules: any[], sops: any[] = []): string {
   const persona = personas.find((p) => p.name === project.primary_persona) ?? personas[0];
   const secondary = personas.find((p) => p.name === project.secondary_persona);
   return [
@@ -74,6 +97,11 @@ function grounding(project: any, personas: any[], rules: any[]): string {
       ? `<script_bible priority="MUST FOLLOW — rules distilled from the creator's own feedback">\n${
         rules.map((r: any) => `[${r.category}] ${r.rule}`).join("\n")
       }\n</script_bible>`
+      : "",
+    sops.length
+      ? `<sops priority="MUST FOLLOW — the team's standard operating procedures for hooks, packaging, structure and credibility">\n${
+        sops.map((x: any) => `## ${x.title}\n${(x.steps ?? []).map((st: string) => `- ${st}`).join("\n")}`).join("\n\n")
+      }\n</sops>`
       : "",
   ].filter(Boolean).join("\n\n");
 }
@@ -182,18 +210,32 @@ Deno.serve(async (req) => {
       .from("content_projects").select("*").eq("id", projectId).single();
     if (!project) return jsonResponse({ error: "project not found" }, 404);
 
-    const [{ data: ruleRows }, { data: personaRows }] = await Promise.all([
+    const [{ data: ruleRows }, { data: personaRows }, { data: sopRows }] = await Promise.all([
       db.from("feedback_rules").select("category,rule")
         .eq("organization_id", organizationId).eq("active", true),
       db.from("content_personas").select("id,name,definition,active")
         .eq("organization_id", organizationId).eq("active", true),
+      // Active SOPs, org-wide plus the project channel's per-niche set —
+      // titles, outlines and scripts must follow the team's procedures.
+      db.from("sops").select("title, channel_id, status, sop_versions(steps, version_number)")
+        .eq("organization_id", organizationId).eq("status", "active"),
     ]);
     const rules = ruleRows ?? [];
+    const sops = (sopRows ?? [])
+      .filter((x: any) => !x.channel_id || x.channel_id === project.channel_id)
+      .map((x: any) => {
+        const latest = (x.sop_versions ?? []).sort(
+          (a: any, b: any) => b.version_number - a.version_number,
+        )[0];
+        return { title: x.title, steps: latest?.steps ?? [] };
+      })
+      .filter((x: any) => x.steps.length)
+      .slice(0, 12);
     const personas = [
       ...BUILTIN_PERSONAS,
       ...(personaRows ?? []).map((r: any) => ({ name: r.name, ...r.definition })),
     ];
-    const ground = grounding(project, personas, rules);
+    const ground = grounding(project, personas, rules, sops);
 
     // Relevance before generation: enforce step preconditions server-side.
     const need = (cond: unknown, msg: string) => {
@@ -257,10 +299,31 @@ Deno.serve(async (req) => {
       }
       case "script": {
         need(project.outline, "Approve an outline before the full script is written.");
-        const r = await askClaudeJson<{ script: string }>([{
+        const [lo, hi] = WORD_RANGES[project.video_length_minutes] ?? [2100, 2400];
+        const budgets = sectionBudgets(project.outline);
+        const base = `${ground}\n\n<research_packet>\n${JSON.stringify(project.research)}\n</research_packet>\n\n<approved_outline>\n${JSON.stringify(project.outline)}\n</approved_outline>\n\n<section_word_budgets note="~${WPM} words per minute of runtime; hit each section's budget within ±15% so the total lands in ${lo}-${hi} words">\n${budgets}\n</section_word_budgets>`;
+        let r = await askClaudeJson<{ script: string }>([{
           role: "user",
-          content: `${ground}\n\n<research_packet>\n${JSON.stringify(project.research)}\n</research_packet>\n\n<approved_outline>\n${JSON.stringify(project.outline)}\n</approved_outline>\n\nWrite the full script.`,
+          content: `${base}\n\nWrite the full script.`,
         }], { system: scriptPrompt(project.video_length_minutes), maxTokens: 16000 });
+        // Enforce the SOP word target: models undershoot long single-shot
+        // targets, so measure and revise — up to two expansion passes, one
+        // tightening pass.
+        for (let attempt = 0; attempt < 2; attempt++) {
+          const words = countWords(r.script ?? "");
+          if (words >= Math.round(lo * 0.93)) break;
+          r = await askClaudeJson<{ script: string }>([{
+            role: "user",
+            content: `${base}\n\n<previous_draft words="${words}">\n${r.script}\n</previous_draft>\n\nThe draft is ${words} words — the target for a ${project.video_length_minutes}-minute video is ${lo}-${hi} words. Rewrite it to the full target length: keep the structure, voice and every fact constraint; deepen scenes, consequences and psychology (never filler). Sections below their word budget are where to expand. Return the COMPLETE script.`,
+          }], { system: scriptPrompt(project.video_length_minutes), maxTokens: 16000 });
+        }
+        if (countWords(r.script ?? "") > Math.round(hi * 1.15)) {
+          const words = countWords(r.script ?? "");
+          r = await askClaudeJson<{ script: string }>([{
+            role: "user",
+            content: `${base}\n\n<previous_draft words="${words}">\n${r.script}\n</previous_draft>\n\nThe draft is ${words} words — over the ${lo}-${hi} target for ${project.video_length_minutes} minutes. Tighten it to the target: cut repetition and over-explanation, keep every scene beat. Return the COMPLETE script.`,
+          }], { system: scriptPrompt(project.video_length_minutes), maxTokens: 16000 });
+        }
         patch.script = r.script;
         patch.fact_checks = mergeFactChecks(
           project.fact_checks, extractScriptClaims(r.script), "script",

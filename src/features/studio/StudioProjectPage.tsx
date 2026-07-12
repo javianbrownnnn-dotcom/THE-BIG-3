@@ -985,7 +985,11 @@ export function StudioProjectPage() {
               <p
                 className={cn(
                   "mt-0.5 text-xs tabular-nums",
-                  scriptWords >= wLo && scriptWords <= wHi ? "text-success" : "text-muted-foreground",
+                  scriptWords === 0
+                    ? "text-muted-foreground"
+                    : scriptWords >= wLo && scriptWords <= wHi
+                      ? "text-success"
+                      : "text-warning",
                 )}
               >
                 {scriptWords} words · target {wLo}–{wHi}
