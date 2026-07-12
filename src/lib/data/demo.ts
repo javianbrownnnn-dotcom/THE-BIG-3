@@ -2352,7 +2352,7 @@ export class DemoProvider implements DataProvider {
   async syncOwnerAnalytics() {
     await delay();
     // Demo data already carries CTR/retention on every snapshot; nothing to pull.
-    return { channelsConnected: 0, videosUpdated: 0 };
+    return { channelsConnected: 0, videosUpdated: 0, errors: [] };
   }
 
   async runLearningLoop() {

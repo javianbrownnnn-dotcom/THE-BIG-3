@@ -432,15 +432,16 @@ export class SupabaseProvider implements DataProvider {
     return this.invokeFn<VideoAnalytics>("youtube-analytics", { videoId });
   }
 
-  async syncOwnerAnalytics(): Promise<{ channelsConnected: number; videosUpdated: number }> {
-    const res = await this.invokeFn<{ results?: Array<{ ownerConnected?: boolean; privateMetrics?: number }> }>(
-      "youtube-sync",
-      {},
-    );
+  async syncOwnerAnalytics(): Promise<{ channelsConnected: number; videosUpdated: number; errors: Array<{ channel: string; error: string }> }> {
+    const res = await this.invokeFn<{
+      results?: Array<{ ownerConnected?: boolean; privateMetrics?: number }>;
+      errors?: Array<{ channel: string; error: string }>;
+    }>("youtube-sync", {});
     const results = res.results ?? [];
     return {
       channelsConnected: results.filter((r) => r.ownerConnected).length,
       videosUpdated: results.reduce((sum, r) => sum + (r.privateMetrics ?? 0), 0),
+      errors: res.errors ?? [],
     };
   }
 
