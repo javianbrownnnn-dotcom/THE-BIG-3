@@ -21,6 +21,22 @@
         var theme = localStorage.getItem("big3.theme");
         if (theme === "light") document.documentElement.classList.remove("dark");
       })();
+      // If the hashed entry bundle 404s (stale cached index.html after a
+      // redeploy), recover with one reload instead of a permanent white
+      // screen. Lazy-chunk failures after boot are handled in main.tsx via
+      // vite:preloadError.
+      window.addEventListener(
+        "error",
+        function (e) {
+          var t = e.target;
+          if (!t || (t.tagName !== "SCRIPT" && t.tagName !== "LINK")) return;
+          var last = Number(sessionStorage.getItem("big3.bootReloadAt") || 0);
+          if (Date.now() - last < 30000) return;
+          sessionStorage.setItem("big3.bootReloadAt", String(Date.now()));
+          location.reload();
+        },
+        true
+      );
     </script>
   </head>
   <body>
