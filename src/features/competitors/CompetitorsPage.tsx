@@ -44,7 +44,7 @@ import {
   useScanCompetitorChannel,
 } from "@/hooks/queries";
 import { getStoredApiKey } from "@/lib/youtube";
-import { nicheKeyOf, nicheKeyOfCompetitor, useNicheScope } from "@/lib/niches";
+import { NICHE_LABELS, nicheKeyOf, nicheKeyOfCompetitor, useNicheScope, type NicheKey } from "@/lib/niches";
 import { NicheChips } from "@/components/layout/NicheChips";
 import { isResearchRow } from "./scan";
 import { CompetitorTeardownDialog } from "./CompetitorTeardownDialog";
@@ -129,16 +129,25 @@ export function CompetitorsPage() {
     [filteredVideos],
   );
 
-  // Channels sectioned by niche — named niches alphabetical, un-niched last.
+  // Channels sectioned by the company's niches (not raw niche strings — the
+  // CI data carries ~30 distinct strings, which read as noise). Biggest
+  // channels first within each niche.
   const nicheGroups = useMemo(() => {
-    const groups = new Map<string, CompetitorChannel[]>();
+    const order: NicheKey[] = ["business", "religion", "sales", "other"];
+    const groups = new Map<NicheKey, CompetitorChannel[]>();
     for (const c of compChannels ?? []) {
-      const key = c.niche?.trim() || "No niche set";
+      const key = nicheKeyOfCompetitor(c);
       groups.set(key, [...(groups.get(key) ?? []), c]);
     }
-    return [...groups.entries()].sort(([a], [b]) =>
-      a === "No niche set" ? 1 : b === "No niche set" ? -1 : a.localeCompare(b),
-    );
+    return order
+      .filter((k) => groups.has(k))
+      .map(
+        (k) =>
+          [
+            NICHE_LABELS[k],
+            groups.get(k)!.sort((a, b) => (b.subscriberCount ?? 0) - (a.subscriberCount ?? 0)),
+          ] as const,
+      );
   }, [compChannels]);
 
   const addChannel = async () => {
