@@ -11,6 +11,11 @@ const singleFile = !!process.env.VITE_SINGLE_FILE;
 export default defineConfig({
   // Set VITE_BASE for subpath hosting (e.g. GitHub Pages: /THE-BIG-3/).
   base: process.env.VITE_BASE ?? "/",
+  // Build stamp shown in Settings — lets anyone verify which deploy a
+  // device is actually running (stale-cache debugging).
+  define: {
+    __BUILD_STAMP__: JSON.stringify(new Date().toISOString().slice(0, 16).replace("T", " ") + " UTC"),
+  },
   plugins: [react(), ...(singleFile ? [viteSingleFile()] : [])],
   resolve: {
     alias: {
