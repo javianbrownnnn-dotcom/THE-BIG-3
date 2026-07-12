@@ -20,12 +20,31 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { useCreateSop, useSops } from "@/hooks/queries";
+import { useChannels, useCreateSop, useSops } from "@/hooks/queries";
+import { nicheKeyOf, useNicheScope, type NicheKey } from "@/lib/niches";
+import { NicheChips } from "@/components/layout/NicheChips";
 import { relativeTime } from "@/lib/format";
 
 export function SopsPage() {
   const { data: sops, isLoading } = useSops();
+  const { data: channels } = useChannels();
   const createSop = useCreateSop();
+
+  // Niche scope (shared across pages). Org-wide SOPs (no channel) stay
+  // visible in every scope; per-niche SOPs follow their channel.
+  const [scope, pickScope] = useNicheScope();
+  const scopeOptions: NicheKey[] = [];
+  for (const c of channels ?? []) {
+    const k = nicheKeyOf(c.niche);
+    if (!scopeOptions.includes(k)) scopeOptions.push(k);
+  }
+  const scopedChannelIds =
+    scope === "all"
+      ? null
+      : new Set((channels ?? []).filter((c) => nicheKeyOf(c.niche) === scope).map((c) => c.id));
+  const visibleSops = (sops ?? []).filter(
+    (sop) => !scopedChannelIds || !sop.channelId || scopedChannelIds.has(sop.channelId),
+  );
   const [dialogOpen, setDialogOpen] = useState(false);
   const [installing, setInstalling] = useState(false);
   const [form, setForm] = useState({ title: "", category: "", purpose: "", steps: "" });
@@ -82,7 +101,9 @@ export function SopsPage() {
         description="The heart of the platform: how you work, versioned forever, improved by data."
         actions={
           <>
-            {missingStarters.length > 0 && (
+            <NicheChips scope={scope} onPick={pickScope} options={scopeOptions} />
+
+      {missingStarters.length > 0 && (
               <Button variant="outline" size="sm" onClick={installPlaybook} disabled={installing}>
                 <Sparkles />
                 {installing
@@ -96,6 +117,8 @@ export function SopsPage() {
           </>
         }
       />
+
+      <NicheChips scope={scope} onPick={pickScope} options={scopeOptions} />
 
       {missingStarters.length > 0 && (
         <Card className="mb-4 border-primary/30 bg-primary/5">
@@ -114,7 +137,7 @@ export function SopsPage() {
         </Card>
       )}
 
-      {(sops ?? []).length === 0 ? (
+      {visibleSops.length === 0 ? (
         <EmptyState
           icon={ListChecks}
           title="No SOPs yet"
@@ -127,7 +150,7 @@ export function SopsPage() {
         />
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
-          {(sops ?? []).map((sop) => {
+          {visibleSops.map((sop) => {
             const overdue = sop.nextReviewAt && new Date(sop.nextReviewAt).getTime() < now;
             const aiAuthored = sop.currentVersion?.source === "ai";
             return (

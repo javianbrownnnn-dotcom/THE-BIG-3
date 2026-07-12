@@ -128,10 +128,10 @@ function TeardownCard({ video }: { video: CompetitorVideo }) {
   );
 }
 
-export function TeardownLibrary() {
+export function TeardownLibrary({ scopedCompIds }: { scopedCompIds?: Set<string> }) {
   const { data: videos } = useCompetitorVideos(false);
   const torn = (videos ?? [])
-    .filter((v) => v.teardown)
+    .filter((v) => v.teardown && (!scopedCompIds || scopedCompIds.has(v.competitorChannelId)))
     .sort((a, b) => (b.teardownAt ?? "").localeCompare(a.teardownAt ?? ""));
 
   if (torn.length === 0) {

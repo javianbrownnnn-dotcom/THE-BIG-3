@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  useChannels,
   useCompetitorChannels,
   useCompetitorVideos,
   useCreateCompetitorChannel,
@@ -43,6 +44,8 @@ import {
   useScanCompetitorChannel,
 } from "@/hooks/queries";
 import { getStoredApiKey } from "@/lib/youtube";
+import { nicheKeyOf, nicheKeyOfCompetitor, useNicheScope } from "@/lib/niches";
+import { NicheChips } from "@/components/layout/NicheChips";
 import { CompetitorTeardownDialog } from "./CompetitorTeardownDialog";
 import { TeardownLibrary } from "./TeardownLibrary";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -57,7 +60,28 @@ export function CompetitorsPage() {
   const [showAllVideos, setShowAllVideos] = useState(false);
   const { data: videos, isLoading } = useCompetitorVideos(onlyOutliers);
   const { data: allVideos } = useCompetitorVideos(false);
-  const { data: compChannels } = useCompetitorChannels();
+  const { data: allCompChannels } = useCompetitorChannels();
+  const { data: ourChannels } = useChannels();
+
+  // Niche scope (shared across pages): the landscape, table, and teardown
+  // library all follow it.
+  const [scope, pickScope] = useNicheScope();
+  const scopeOptions = useMemo(() => {
+    const seen: ReturnType<typeof nicheKeyOf>[] = [];
+    for (const c of ourChannels ?? []) {
+      const k = nicheKeyOf(c.niche);
+      if (!seen.includes(k)) seen.push(k);
+    }
+    return seen;
+  }, [ourChannels]);
+  const compChannels = useMemo(
+    () =>
+      scope === "all"
+        ? allCompChannels
+        : (allCompChannels ?? []).filter((c) => nicheKeyOfCompetitor(c) === scope),
+    [allCompChannels, scope],
+  );
+  const scopedCompIds = useMemo(() => new Set((compChannels ?? []).map((c) => c.id)), [compChannels]);
   const createVideo = useCreateCompetitorVideo();
   const createChannel = useCreateCompetitorChannel();
   const scan = useScanCompetitorChannel();
@@ -89,8 +113,13 @@ export function CompetitorsPage() {
   });
 
   const filteredVideos = useMemo(
-    () => (videos ?? []).filter((v) => !channelFilter || v.competitorChannelId === channelFilter),
-    [videos, channelFilter],
+    () =>
+      (videos ?? []).filter(
+        (v) =>
+          scopedCompIds.has(v.competitorChannelId) &&
+          (!channelFilter || v.competitorChannelId === channelFilter),
+      ),
+    [videos, channelFilter, scopedCompIds],
   );
   // Big tables are the page's main render cost — start with one page of rows.
   const visibleVideos = showAllVideos ? filteredVideos : filteredVideos.slice(0, VIDEO_PAGE_SIZE);
@@ -200,10 +229,13 @@ export function CompetitorsPage() {
         </p>
       )}
 
+      {/* Niche scope — the landscape, table, and library all follow it */}
+      <NicheChips scope={scope} onPick={pickScope} options={scopeOptions} />
+
       {/* Playbook engine: every 20 teardowns the learning loop distills the
           winners into SOP proposals and grounds every AI in them. */}
       {(() => {
-        const banked = (allVideos ?? []).filter((v) => v.teardownAt || v.teardown).length;
+        const banked = (allVideos ?? []).filter((v) => scopedCompIds.has(v.competitorChannelId) && (v.teardownAt || v.teardown)).length;
         const remainder = banked % 20;
         return (
           <div className="mb-5 flex items-start gap-2.5 rounded-md border border-primary/20 bg-primary/5 p-3 text-xs">
@@ -232,7 +264,7 @@ export function CompetitorsPage() {
           <TabsTrigger value="teardowns" className="gap-1.5">
             <BookOpen className="h-3.5 w-3.5" /> Teardown library
             {(() => {
-              const n = (allVideos ?? []).filter((v) => v.teardown).length;
+              const n = (allVideos ?? []).filter((v) => scopedCompIds.has(v.competitorChannelId) && v.teardown).length;
               return n > 0 ? <Badge variant="secondary">{n}</Badge> : null;
             })()}
           </TabsTrigger>
@@ -428,7 +460,7 @@ export function CompetitorsPage() {
         </TabsContent>
 
         <TabsContent value="teardowns">
-          <TeardownLibrary />
+          <TeardownLibrary scopedCompIds={scopedCompIds} />
         </TabsContent>
       </Tabs>
 
