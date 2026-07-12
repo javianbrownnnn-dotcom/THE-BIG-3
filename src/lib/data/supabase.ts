@@ -432,6 +432,18 @@ export class SupabaseProvider implements DataProvider {
     return this.invokeFn<VideoAnalytics>("youtube-analytics", { videoId });
   }
 
+  async syncOwnerAnalytics(): Promise<{ channelsConnected: number; videosUpdated: number }> {
+    const res = await this.invokeFn<{ results?: Array<{ ownerConnected?: boolean; privateMetrics?: number }> }>(
+      "youtube-sync",
+      {},
+    );
+    const results = res.results ?? [];
+    return {
+      channelsConnected: results.filter((r) => r.ownerConnected).length,
+      videosUpdated: results.reduce((sum, r) => sum + (r.privateMetrics ?? 0), 0),
+    };
+  }
+
   async shareBrief(title: string, contentMd: string): Promise<string> {
     const orgId = await this.requireOrgId();
     const { data: auth } = await this.db.auth.getUser();

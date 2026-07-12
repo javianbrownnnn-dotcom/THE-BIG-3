@@ -89,7 +89,28 @@ export function ResultsTrend({ videos }: { videos: Video[] }) {
     return true;
   });
 
-  if (series.length === 0) return null;
+  // Instead of vanishing, explain why there's nothing to plot yet — the card
+  // stays put so the homepage layout is stable and the reason is visible.
+  if (series.length === 0) {
+    const anyViews = rows.some((r) => r.views != null);
+    return (
+      <Card className="mb-3 md:mb-4">
+        <CardHeader className="pb-2">
+          <CardTitle>Results — last 6 months</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex min-h-32 flex-col items-center justify-center gap-1 py-6 text-center">
+            <p className="text-sm font-medium">Not enough history to chart yet</p>
+            <p className="max-w-md text-xs text-muted-foreground">
+              {anyViews
+                ? "Publish across at least two months so there's a trend to draw. CTR and retention lines appear once a channel's YouTube owner connection has pulled private analytics (Channels → YouTube → Pull latest analytics)."
+                : "Sync your channels (Channels → YouTube) so published videos and their metrics flow in. Two months of data draws the first trend."}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const data: HeroRow[] = rows.map((r) => {
     const out: HeroRow = { ...r };

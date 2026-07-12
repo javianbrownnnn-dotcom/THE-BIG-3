@@ -66,6 +66,24 @@ export function YouTubeDialog({
     }
   };
 
+  const pullAnalytics = async () => {
+    setBusy(true);
+    try {
+      const res = await data.syncOwnerAnalytics();
+      await qc.invalidateQueries({ queryKey: ["videos"] });
+      await qc.invalidateQueries({ queryKey: ["channels"] });
+      toast.success(
+        res.videosUpdated > 0
+          ? `Pulled private analytics for ${res.videosUpdated} videos — CTR, impressions and retention are now live.`
+          : "Sync ran, but no private metrics came back yet. New analytics can take a day to populate after connecting.",
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const connect = async () => {
     setConnecting(true);
     try {
@@ -155,9 +173,15 @@ export function YouTubeDialog({
                   Google connection active — live retention, traffic sources, impressions, and
                   publishing are on for this channel. Nothing else to do here.
                 </p>
-                <Button size="sm" variant="ghost" onClick={connect} disabled={connecting}>
-                  <PlugZap /> {connecting ? "Opening Google…" : "Reconnect"}
-                </Button>
+                <div className="flex items-center gap-1.5">
+                  <Button size="sm" onClick={pullAnalytics} disabled={busy}>
+                    <RefreshCw className={busy ? "animate-spin" : ""} />
+                    {busy ? "Pulling…" : "Pull latest analytics"}
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={connect} disabled={connecting}>
+                    <PlugZap /> {connecting ? "Opening Google…" : "Reconnect"}
+                  </Button>
+                </div>
               </>
             ) : (
               <>

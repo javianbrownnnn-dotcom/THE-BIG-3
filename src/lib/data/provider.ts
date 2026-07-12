@@ -93,6 +93,12 @@ export interface DataProvider {
    * secrets configured on the backend.
    */
   connectYouTubeUrl(channelId: string): Promise<string>;
+  /**
+   * Pull owner analytics (CTR, impressions, retention) for connected channels
+   * and persist them into video snapshots. Returns how many channels were
+   * owner-connected and how many videos got private metrics.
+   */
+  syncOwnerAnalytics(): Promise<{ channelsConnected: number; videosUpdated: number }>;
 
   /**
    * Freeze a markdown idea brief behind a public unguessable-token URL that an

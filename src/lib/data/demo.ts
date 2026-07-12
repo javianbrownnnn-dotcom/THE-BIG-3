@@ -2349,6 +2349,12 @@ export class DemoProvider implements DataProvider {
 
   // Client-side mirror of the learning-loop edge function: same statistics,
   // computed over the demo dataset, so the loop is tangible without a backend.
+  async syncOwnerAnalytics() {
+    await delay();
+    // Demo data already carries CTR/retention on every snapshot; nothing to pull.
+    return { channelsConnected: 0, videosUpdated: 0 };
+  }
+
   async runLearningLoop() {
     await delay(1100);
     const counts = { insights: 0, recommendations: 0, notifications: 0 };
