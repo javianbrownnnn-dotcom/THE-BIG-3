@@ -24,6 +24,12 @@ describe("isoDurationToSecs", () => {
     expect(isoDurationToSecs("PT45S")).toBe(45);
     expect(isoDurationToSecs(undefined)).toBe(0);
   });
+
+  it("handles day components from 24h+ streams", () => {
+    expect(isoDurationToSecs("P1DT2H30M")).toBe(95_400);
+    expect(isoDurationToSecs("P1D")).toBe(86_400);
+    expect(isoDurationToSecs("PT0S")).toBe(0);
+  });
 });
 
 describe("mapVideoItem", () => {
@@ -48,5 +54,30 @@ describe("mapVideoItem", () => {
       comments: 902,
       thumbnailUrl: "https://i.ytimg.com/vi/abc123/mqdefault.jpg",
     });
+  });
+
+  it("hidden statistics stay undefined instead of becoming NaN or 0", () => {
+    // Channels can hide like counts; live streams can omit viewCount.
+    const video = mapVideoItem({
+      id: "xyz",
+      snippet: { title: "No stats", publishedAt: "2026-01-01T00:00:00Z", thumbnails: {} },
+      contentDetails: { duration: "PT10M" },
+      statistics: {},
+    });
+    expect(video.views).toBeUndefined();
+    expect(video.likes).toBeUndefined();
+    expect(video.comments).toBeUndefined();
+    expect(Number.isNaN(video.views as unknown as number)).toBe(false);
+  });
+
+  it("string counts from the API become numbers", () => {
+    const video = mapVideoItem({
+      id: "n1",
+      snippet: { title: "t", publishedAt: "2026-01-01T00:00:00Z", thumbnails: {} },
+      contentDetails: { duration: "PT1M" },
+      statistics: { viewCount: "0" },
+    });
+    expect(video.views).toBe(0);
+    expect(typeof video.views).toBe("number");
   });
 });
