@@ -96,6 +96,7 @@ Supabase (Postgres, Auth, RLS, Edge Functions) · Claude API
 - [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md) — schema, versioning, and RLS model
 - [`docs/AI_PIPELINE.md`](docs/AI_PIPELINE.md) — the learning loop, coach, and reports in detail
 - [`docs/COMPETITIVE_INTELLIGENCE_BUSINESS.md`](docs/COMPETITIVE_INTELLIGENCE_BUSINESS.md) — the business-niche CI report (35 competitors, patterns, ideas, the "Founder Reality" strategy); raw research in [`research/business-modern-ambition/`](research/business-modern-ambition/)
+- [`docs/COMPETITIVE_INTELLIGENCE_CHRISTIANITY.md`](docs/COMPETITIVE_INTELLIGENCE_CHRISTIANITY.md) — the Christianity-niche CI report (35 competitors, patterns, ideas, the Myth & Meaning strategy); raw research in [`research/christianity/`](research/christianity/)
 
 ## Scripts
 

@@ -1,0 +1,596 @@
+// Christianity-niche competitive intelligence seed — July 2026 research cycle.
+//
+// Mirrors ciBusinessSeed.ts for the second niche: 35 competitor rows (33 here
+// + ReligionForBreakfast and Esoterica extended in place in demo.ts — they
+// were already tracked, so no duplicate rows), the deduplicated Ideas list
+// (20 niche-level opportunities + 20 scored video ideas for the existing
+// "Ancient Religions & Storytelling" channel), the pattern insights, and new
+// CI-projection goals appended to that channel (this cycle upgrades an
+// existing channel rather than creating one — unlike Founder Reality).
+//
+// Provenance: docs/COMPETITIVE_INTELLIGENCE_CHRISTIANITY.md and
+// research/christianity/. Numbers are quoted from that research, never
+// invented — keep it that way when editing.
+
+import type {
+  AiInsight,
+  ChannelGoal,
+  CompetitorChannel,
+  Idea,
+} from "@/types";
+
+const ORG_ID = "org_demo";
+const NOW = Date.now();
+const DAY = 86_400_000;
+const daysAgo = (n: number) => new Date(NOW - n * DAY).toISOString();
+
+// ---------------------------------------------------------------------------
+// CI-projection goals for the existing "Ancient Religions & Storytelling"
+// channel (ch_rel) — appended to its goals in demo.ts. The report's §9
+// 12-month projection, conservative: from a ~15K-sub base to 93K subs and
+// ~$7.6K/month (AdSense $3.0K + Patreon $2.1K + courses $2.5K).
+// ---------------------------------------------------------------------------
+export const mythMeaningCiGoals: ChannelGoal[] = [
+  {
+    id: "goal_rel_ci_subs", channelId: "ch_rel",
+    metric: "subscribers", targetValue: 93_000, period: "month 12",
+    notes: "CI projection (Jul 2026, conservative): 600K views/mo and ~$7.6K/mo total revenue by month 12, from a ~15K-sub base at 2-3 uploads/month.",
+  },
+  {
+    id: "goal_rel_ci_revenue", channelId: "ch_rel",
+    metric: "monthly_revenue", targetValue: 7_600, period: "month 12",
+    notes: "Patronage-first ladder per the niche's proven structure: AdSense $3.0K + Patreon $2.1K + courses $2.5K (60% non-ad). Sponsors excluded as upside.",
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Channel intelligence for the two religion competitors we already track —
+// merged into cc_rfb / cc_eso in demo.ts instead of creating duplicates.
+// ---------------------------------------------------------------------------
+export const rfbIntel: Partial<CompetitorChannel> = {
+  url: "https://www.youtube.com/@ReligionForBreakfast",
+  youtubeChannelId: "UCct9aR7HC79Cv2g-9oDOTLw",
+  subscriberCount: 1230000,
+  uploadCadenceDays: 14.0,
+  notes: "CI Jul 2026 (Christianity cycle) · Direct Competitor · team ~2 · Patreon + courses · AI: none. Academic, nonsectarian religious studies explainers from a PhD scholar. The reference channel for 'religion explained without preaching or debunking.' Edge: The only 1M+ channel doing strictly academic, nonsectarian religion explainers with real scholarly credentials on camera.. What we can do better: Leaves immersive long-form storytelling untouched - he explains topics, we can narrate them as 45-90 min sagas with sound design and arc; Rarely serializes; no multi-part 'history of a belief system' epics that build binge watchlists; Under-produces atmosphere (music, pacing, cinematography) - we can match his rigor while beating him on emotional experience.",
+};
+
+export const esotericaIntel: Partial<CompetitorChannel> = {
+  url: "https://www.youtube.com/@TheEsotericaChannel",
+  youtubeChannelId: "UCoydhtfFSk1fZXNRnkGnneQ",
+  subscriberCount: 1000000,
+  uploadCadenceDays: 7.0,
+  notes: "CI Jul 2026 (Christianity cycle) · Direct Competitor · team ~1 · Patreon + products · AI: none. Rigorous academic deep dives into esotericism, Kabbalah, magic, alchemy and early Christian/Jewish history from Dr. Justin Sledge. Proves lecture-style scholarship on obscure texts scales to 1M subscribers. Edge: The only academically credentialed scholar covering occult and esoteric history at scale, with a community that treats the channel as a curriculum.. What we can do better: Zero visual storytelling - we can take the same source rigor and wrap it in cinematic narration, maps and reconstruction imagery he never uses; His Yahweh/early-Christianity videos massively outperform but he stays anchored to occultism - the mainstream ancient-religion lane he proved demand for is open to us; No serialized narrative structure or entry-level on-ramps, so binge-friendly beginner journeys through ancient belief systems remain uncontested.",
+};
+
+// ---------------------------------------------------------------------------
+// 33 competitor rows (23 deep-dived + 10 watchlist at summary level);
+// 35 total with the two in-place extensions above. Generated from
+// research/christianity/channels-*.json.
+// ---------------------------------------------------------------------------
+export const cxCompetitorChannels: CompetitorChannel[] = [
+  {
+    id: "cc_cx_let_s_talk_religion", organizationId: ORG_ID,
+    name: "Let's Talk Religion",
+    niche: "Comparative religion/Religious history documentaries",
+    url: "https://www.youtube.com/@LetsTalkReligion",
+    youtubeChannelId: "UC9dRb4fbJQIbQ3KHJZF_z0g",
+    subscriberCount: 1050000,
+    uploadCadenceDays: 7.0,
+    notes: "CI Jul 2026 (Christianity cycle) · Direct Competitor · team ~1 · Patreon + newsletter · AI: none. Calm, academic long-form documentaries on world religions - especially Islam, Sufism and Christian history - from Swedish religious-studies scholar Filip Holm. 96M+ lifetime views across 400+ videos. Edge: The audio-first comparative-religion scholar whose videos work equally as podcasts, capturing listeners no visual-first channel reaches.. What we can do better: His Christianity coverage is occasional and survey-level - a dedicated, serialized early-Christianity storytelling arc would own the search terms he only grazes; Flat chronological essays skip character-driven drama; we can tell the same histories through people, conflicts and stakes; Minimal visual investment means we can win the same topics on YouTube's browse/suggested surfaces with cinematic packaging.",
+  },
+  {
+    id: "cc_cx_hochelaga", organizationId: ORG_ID,
+    name: "Hochelaga",
+    niche: "Religious mysteries/Biblical lore/Atmospheric storytelling",
+    url: "https://www.youtube.com/@hochelaga",
+    youtubeChannelId: "UCjP-MiAEn9DPvUHNyGEs7Wg",
+    subscriberCount: 1000000,
+    uploadCadenceDays: 17.5,
+    notes: "CI Jul 2026 (Christianity cycle) · Direct Competitor · team ~2 · AdSense · AI: none. Atmospheric, cinematic storytelling about biblical lore, religious mysteries and strange history from Cambridge-trained Tommie Trelawny. Crossed 1M subscribers the week of July 7, 2026. Edge: The strongest cinematic mood and curiosity packaging in the religion niche - he makes religious history feel like an unsolved mystery.. What we can do better: Atmosphere without academic depth - we can deliver his cinematic feel plus citations and scholar-grade rigor, owning viewers who graduate past 'spooky Bible facts'; No fan monetization ladder (no Patreon/courses/products visible), so his superfans have nowhere to spend - ours will; Sub-20-minute one-offs leave the 45+ minute definitive deep-dive on the same topics (Nephilim, apocrypha, relics) available to us.",
+  },
+  {
+    id: "cc_cx_usefulcharts", organizationId: ORG_ID,
+    name: "UsefulCharts",
+    niche: "Religion/History explained via charts and timelines",
+    url: "https://www.youtube.com/@UsefulCharts",
+    subscriberCount: 2000000,
+    uploadCadenceDays: 7.0,
+    notes: "CI Jul 2026 (Christianity cycle) · Direct Competitor · team ~8 · Products + products · AI: none. History and religion explained through family trees, timelines and charts by Dr. Matt Baker (PhD Religious Studies). A chart company (founded 2018, Vancouver storefront) with a 2M-subscriber YouTube channel as its marketing engine. Edge: The only channel in the niche with a genuine physical-products company behind it - a content-to-commerce flywheel competitors haven't replicated.. What we can do better: Charts show the 'what' but never the 'why it mattered' - immersive narrative treatments of the same lineages (Herods, apostles, church fathers) are ours to take; His religion videos are structural overviews, not source-driven storytelling - we can be the depth destination his viewers click to next; Physical-product moat doesn't extend to digital community, courses or serialized series, leaving the recurring-revenue superfan layer open.",
+  },
+  {
+    id: "cc_cx_voices_of_the_past", organizationId: ORG_ID,
+    name: "Voices of the Past",
+    niche: "Primary-source history storytelling/Narrated documentaries",
+    url: "https://www.youtube.com/@VoicesofthePast",
+    youtubeChannelId: "UCqoGR_EedlhKDVuWNwYWRbg",
+    subscriberCount: 930000,
+    uploadCadenceDays: 14.0,
+    notes: "CI Jul 2026 (Christianity cycle) · Direct Competitor · team ~3 · AdSense · AI: none. History told through firsthand written accounts - diaries, letters and chronicles from people who were there, including early Christian and ancient religious texts. Run by David Kelly (History of the Universe; brother of History Time's Pete Kelly). Edge: Owns the 'hear history from the people who lived it' format with production-grade voice acting no religion channel matches.. What we can do better: Religious sources appear only occasionally amid general history - a channel doing the same immersive treatment exclusively for ancient belief and early Christian texts (martyr acts, Gnostic gospels, church fathers) would own that sub-audience outright; Accounts are presented raw with little scholarly interpretation - we can pair immersion with academic framing of what the source reveals about belief; Faceless anthology model builds no personal authority or community ladder - our named, credentialed storytelling brand can convert the same viewers into members.",
+  },
+  {
+    id: "cc_cx_dan_mcclellan", organizationId: ORG_ID,
+    name: "Dan McClellan",
+    niche: "Biblical scholarship/Data-over-dogma short-form rebuttals",
+    url: "https://www.youtube.com/@maklelan",
+    youtubeChannelId: "UCAAJCQ0FCqRmAEv95SyTfNg",
+    subscriberCount: 170000,
+    uploadCadenceDays: 1.0,
+    notes: "CI Jul 2026 (Christianity cycle) · Direct Competitor · team ~1 · Book sales + Data Over Dogma podcast Patreon (video content itself deliberately unmonetized) + products/newsletter · AI: none. PhD biblical scholar debunking pop claims about the Bible in rapid short-form rebuttals. 'Data over dogma' — stitch-style responses to apologists and influencers, ported from a 1M+ TikTok following. Edge: The only credentialed scholar winning the short-form algorithm war in biblical studies, with a TikTok audience an order of magnitude larger than his YouTube base.. What we can do better: He never tells stories — everything is rebuttal, so the viewer who wants immersive narrative about the ancient world (our lane) leaves his channel unsatisfied; No long-form YouTube-native catalog: we can convert his short-form-primed audience into 30-60 min deep dives he will never make; His content is Bible-only; the comparative ancient-religions frame (Mesopotamia, Egypt, Greco-Roman cults) he name-checks but never develops is wide open for us.",
+  },
+  {
+    id: "cc_cx_mythvision_podcast", organizationId: ORG_ID,
+    name: "MythVision Podcast",
+    niche: "Critical biblical scholarship interviews/Long-form podcast",
+    url: "https://www.youtube.com/@MythVisionPodcast",
+    youtubeChannelId: "UCWVCimOe67LOfyi9PjUeGgA",
+    subscriberCount: 350000,
+    uploadCadenceDays: 1.0,
+    notes: "CI Jul 2026 (Christianity cycle) · Direct Competitor · team ~2 · Patreon + channel memberships + paid courses (mvp-courses.com) + courses · AI: edit. The interview hub of critical biblical scholarship — Derek Lambert books virtually every major secular scholar (Ehrman, Tabor, Fredriksen, Dennis MacDonald) for multi-hour conversations. Owns the scholar-access lane. Edge: Scholar access as a moat — he has made himself the default distribution channel for critical biblical scholars promoting new work.. What we can do better: Raw interviews are unedited ore: we can synthesize the same scholarship into scripted, visual, narrative documentaries — the refined product his audience upgrades to; Zero cinematic craft means his catalog has no rewatch or share value; a produced retelling of the same material outcompetes it in browse and suggested feeds; He is locked to the deconstruction-audience frame; a neutral 'ancient meaning-making' framing can capture the far larger curious-but-not-angry audience he alienates.",
+  },
+  {
+    id: "cc_cx_bart_d_ehrman", organizationId: ORG_ID,
+    name: "Bart D. Ehrman",
+    niche: "Critical New Testament scholarship/Lectures and courses",
+    url: "https://www.youtube.com/@bartdehrman",
+    youtubeChannelId: "UCm9O8xILJQAs9LxaM4HiMOQ",
+    subscriberCount: 220000,
+    uploadCadenceDays: 2.3,
+    notes: "CI Jul 2026 (Christianity cycle) · Direct Competitor · team ~4 · Paid online courses and webinars (bartehrman.com), with charity-membership blog and book royalties alongside AdSense + courses/products/newsletter · AI: none. The most famous New Testament scholar alive running his own media funnel — weekly Misquoting Jesus podcast plus lecture clips, all feeding paid online courses, webinars, and a membership blog. Edge: He is the citation — other channels' authority derives from quoting him, and he converts that primacy directly into course revenue.. What we can do better: His courses prove this audience pays hundreds of dollars for structured depth, but he serves it zero cinematic storytelling — we can be the visual-narrative complement he can't produce; He rarely leaves the New Testament; the surrounding world of ancient Mediterranean religion, mystery cults, and comparative myth that contextualizes his material is our whitespace; His audience skews 50+; the same scholarship packaged with modern documentary pacing captures the 20-40 cohort before it ever finds him.",
+  },
+  {
+    id: "cc_cx_alex_o_connor_cosmicskep", organizationId: ORG_ID,
+    name: "Alex O'Connor (CosmicSkeptic)",
+    niche: "Philosophy of religion/Interviews and debates",
+    url: "https://www.youtube.com/@CosmicSkeptic",
+    youtubeChannelId: "UC7kIy8fZavEni8Gzl8NLjOQ",
+    subscriberCount: 1990000,
+    uploadCadenceDays: 4.7,
+    notes: "CI Jul 2026 (Christianity cycle) · Direct Competitor · team ~3 · Multiple + newsletter · AI: none. Oxford-trained philosopher hosting Within Reason — prestige long-form interviews and debates on God, the Bible, and meaning that both atheists and Christians watch. The niche's crossover mainstream act. Edge: The only creator in the niche whom apologists, atheists, and legacy media all treat as a fair arbiter — neutrality itself is his brand.. What we can do better: He debates what ancient texts mean but never immerses viewers in the ancient world itself — his audience's proven appetite for early-Christianity content has no narrative-documentary outlet on his channel; Argument is his product, story is ours: the same viewer who watches a 2-hour debate on the resurrection will watch a 1-hour cinematic history of how resurrection belief emerged; His output is guest-gated and non-scalable; a scripted catalog compounds in search and suggested traffic while his back catalog dates quickly with the news cycle.",
+  },
+  {
+    id: "cc_cx_fall_of_civilizations", organizationId: ORG_ID,
+    name: "Fall of Civilizations",
+    niche: "Epic long-form history documentaries/Ancient civilizations",
+    url: "https://www.youtube.com/@FallofCivilizations",
+    youtubeChannelId: "UCT6Y5JJPKe_JDMivpKgVXew",
+    subscriberCount: 1400000,
+    uploadCadenceDays: 53.8,
+    notes: "CI Jul 2026 (Christianity cycle) · North Star · team ~4 · Patreon (podcast-first patronage) + bestselling book + AdSense on multi-hour watch time + products · AI: none. Novelist-historian Paul Cooper's 3-4 hour cinematic epics on how great civilizations collapsed — the acknowledged gold standard for narrative history documentary craft on YouTube. Edge: Proof that novelistic prose plus patient production can make 3-hour history videos mass-market — a moat of craft rather than volume.. What we can do better: He treats belief systems as scenery to political collapse; nobody has applied his epic elegiac format to religions themselves — 'the rise and fall of a god' is our unclaimed franchise; His 2-3 releases a year leave his own audience starving between episodes; a monthly cadence at 60-90 minutes captures the same viewers in the gaps; No community, newsletter, or course layer — we can wrap comparable storytelling in the owned-audience infrastructure he never built.",
+  },
+  {
+    id: "cc_cx_toldinstone", organizationId: ORG_ID,
+    name: "toldinstone",
+    niche: "Greco-Roman antiquity/Everyday life/Early Christianity context",
+    url: "https://www.youtube.com/@toldinstone",
+    youtubeChannelId: "UCqBiWcuTF8IaLH7wBqnihsQ",
+    subscriberCount: 640000,
+    uploadCadenceDays: 7.0,
+    notes: "CI Jul 2026 (Christianity cycle) · Direct Competitor · team ~1 · AdSense + Patreon + book royalties + video sponsors + products · AI: none. Dr. Garrett Ryan (PhD, Greek and Roman history) answers irresistibly specific questions about everyday life in classical antiquity — the scholarly channel that made 'what was it actually like?' a format. Edge: Owns the 'daily life in antiquity' micro-niche — the trusted answer to every oddly specific question about Rome.. What we can do better: He touches early Christianity only as Roman context and stays studiously above the fray; the full narrative treatment of how new religions lived and spread inside that world is left to us; His 12-minute format answers questions but never builds worlds — we can take his proven curiosity hooks and pay them off with hour-long immersive storytelling; Belief, ritual, and meaning are his weakest coverage areas within antiquity; 'what it was like to worship' is an untouched twin of his 'what it was like to live' franchise.",
+  },
+  {
+    id: "cc_cx_history_time", organizationId: ORG_ID,
+    name: "History Time",
+    niche: "Long-form ancient history documentaries",
+    url: "https://www.youtube.com/@HistoryTime",
+    youtubeChannelId: "UCN9v4QG3AQEP3zuRvVs2dAg",
+    subscriberCount: 1300000,
+    uploadCadenceDays: 23.3,
+    notes: "CI Jul 2026 (Christianity cycle) · Direct Competitor · team ~1 · AdSense on multi-hour watch time + Patreon + Substack newsletter + newsletter · AI: none. Pete Kelly's feature-length narrated documentaries on the ancient and early-medieval world — multi-hour epics on lost peoples, migrations, and early religious history produced by one man. Edge: The strongest one-person feature-documentary machine on YouTube — trust and tone that a decade of solo consistency built.. What we can do better: His epics narrate what happened to ancient peoples but rarely why they believed — the interior world of ritual, myth, and meaning inside his own topics is our entire channel; Chronicle format means no argument or payoff; structuring similar material around a driving question (why did this god die? why did this cult win?) beats it on retention; He has no course, community, or product layer and treats early Christianity as one topic among fifty — a focused ancient-religion catalog can own the niche he only visits.",
+  },
+  {
+    id: "cc_cx_cogito", organizationId: ORG_ID,
+    name: "Cogito",
+    niche: "Animated history of religions/Explainer documentaries",
+    url: "https://www.youtube.com/@CogitoEdu",
+    youtubeChannelId: "UCKMnl27hDMKvch--noWe5CA",
+    subscriberCount: 900000,
+    uploadCadenceDays: 28.0,
+    notes: "CI Jul 2026 (Christianity cycle) · Direct Competitor · team ~2 · Multiple · AI: none. Neutral animated histories of world religions and peoples (History of Christianity, Judaism, Zoroastrianism). The calm, even-handed 'religion explained' documentary channel run by Irish animator Domhnall O Luchrain. Edge: The default neutral animated survey of every major religion — the Wikipedia-with-animation of the niche.. What we can do better: Surveys stay at overview altitude — we can own the deep narrative layer (one council, one heresy, one text per episode) his format never reaches; His cadence leaves months of audience demand unserved; a reliable weekly-to-biweekly schedule in the same lane captures his waiting audience; No storytelling voice or human protagonist — our character-driven, primary-source storytelling gives emotional stakes his neutral surveys deliberately avoid.",
+  },
+  {
+    id: "cc_cx_overly_sarcastic_product", organizationId: ORG_ID,
+    name: "Overly Sarcastic Productions",
+    niche: "Mythology and legends storytelling/Animated summaries",
+    url: "https://www.youtube.com/@OverlySarcasticProductions",
+    youtubeChannelId: "UCodbH5mUeF-m_BsNueRDjcw",
+    subscriberCount: 2540000,
+    uploadCadenceDays: 7.0,
+    notes: "CI Jul 2026 (Christianity cycle) · North Star · team ~5 · Multiple + products · AI: none. Two hosts (Red: mythology and literature, Blue: history) deliver fast, funny illustrated summaries of myths, classics, and world history. Comedy-education hybrid that made comparative mythology a mainstream young-audience genre. Edge: The strongest creator-fandom relationship in the mythology space, built on personality and owned art rather than production budget.. What we can do better: They serve myths as entertainment, not meaning — our 'Myth & Meaning' framing (why people believed, ritual, archaeology) is the graduation path for their maturing audience; Almost no coverage of early Christianity or religion-as-history; the biggest myth-adjacent topic on YouTube is left to apologists and we can take it with academic storytelling; No long-form documentary format — a 60-90 minute cinematic treatment of stories they cover in 15 comic minutes captures the same search terms at higher watch time.",
+  },
+  {
+    id: "cc_cx_inspiringphilosophy", organizationId: ORG_ID,
+    name: "InspiringPhilosophy",
+    niche: "Christian apologetics/Philosophy/Animated arguments",
+    url: "https://www.youtube.com/@InspiringPhilosophy",
+    youtubeChannelId: "UC5qDet6sa6rODi7t6wfpg8g",
+    subscriberCount: 530000,
+    uploadCadenceDays: 4.7,
+    notes: "CI Jul 2026 (Christianity cycle) · Direct Competitor · team ~3 · Multiple · AI: none. Michael Jones's nonprofit ministry building 'the largest apologetic library on the internet' — animated, citation-heavy defenses of Christianity spanning philosophy, quantum mechanics, Genesis, and the resurrection. Edge: The deepest single-channel apologetics reference library on YouTube, with nonprofit funding insulation from AdSense swings.. What we can do better: He argues, we narrate — the same source material (Genesis context, ancient cosmology, resurrection debates) told as neutral academic story reaches the far larger audience that clicks away from apologetics; His Genesis/ancient Near East videos prove demand for scholarly context, but his devotional frame concedes the secular-curious viewer to us entirely; No cinematic production or sound design — a visually premium treatment of identical topics wins the browse feed even against his SEO seniority.",
+  },
+  {
+    id: "cc_cx_redeemed_zoomer", organizationId: ORG_ID,
+    name: "Redeemed Zoomer",
+    niche: "Denominational history/Theology explained for Gen Z",
+    url: "https://www.youtube.com/@redeemedzoomer6053",
+    youtubeChannelId: "UCiLqiXa5O85APUBQV7X5w9Q",
+    subscriberCount: 690000,
+    uploadCadenceDays: 4.7,
+    notes: "CI Jul 2026 (Christianity cycle) · Direct Competitor · team ~2 · Patreon · AI: none. Richard Ackerman explains denominations, theology, and church history to Gen Z with maps, drawings, and Minecraft — while running Operation Reformation, a movement to reclaim mainline Protestant churches for orthodoxy. Edge: He converted an explainer channel into a real-world religious movement — audience-as-community depth no competitor matches.. What we can do better: His church history is advocacy; ours is scholarship — the large audience that wants pre-Reformation and ancient-church storytelling without a denominational agenda is unserved by him; He rarely goes earlier than the Reformation in depth; the first five centuries (councils, canon, Christology fights) are our open lane with his exact audience; Zero production ambition — cinematic, sound-designed storytelling on the same topics feels like a category upgrade rather than a competitor.",
+  },
+  {
+    id: "cc_cx_wes_huff", organizationId: ORG_ID,
+    name: "Wes Huff",
+    niche: "Manuscripts/Textual criticism/Apologetics",
+    url: "https://www.youtube.com/@WesHuff",
+    youtubeChannelId: "UCJX2EazMKUqBQV048px2aoA",
+    subscriberCount: 986000,
+    uploadCadenceDays: 2.8,
+    notes: "CI Jul 2026 (Christianity cycle) · Direct Competitor · team ~2 · Multiple + products · AI: none. PhD candidate and Apologetics Canada VP who made biblical manuscripts and textual criticism mainstream after his viral Joe Rogan appearance (Jan 2025). Approachable scholar persona bridging academia and apologetics. Edge: The only creator who has taken manuscript scholarship to Joe Rogan's audience — mainstream credibility spillover the niche has never had.. What we can do better: He covers manuscripts as evidence, not as stories — the human drama of how texts were written, copied, fought over, and canonized is our narrative territory he leaves untouched; His momentum is personality-bound and interview-driven; authored, evergreen long-form documentaries on the same artifacts out-position him in search over time; He stays inside the biblical canon — surrounding literature (Enoch, Gnostic gospels, Dead Sea Scrolls context, pagan parallels) is where his curious viewers go next, and we can be waiting there.",
+  },
+  {
+    id: "cc_cx_bibleproject", organizationId: ORG_ID,
+    name: "BibleProject",
+    niche: "Animated biblical literacy/Nonprofit media studio",
+    url: "https://www.youtube.com/@bibleproject",
+    youtubeChannelId: "UCVfwlh9XpX2Y_tQfjeln9QA",
+    subscriberCount: 5400000,
+    uploadCadenceDays: 7.0,
+    notes: "CI Jul 2026 (Christianity cycle) · North Star · team ~130 · Donations + courses/newsletter · AI: none. Nonprofit crowdfunded animation studio (Tim Mackie + Jon Collins, Portland) making the Bible's literary design accessible through short animated explainers, podcasts, classes, and an app — free in 50+ languages. Edge: The only crowdfunded animation studio in religion media — scale, polish, and financial independence no individual creator can replicate.. What we can do better: They present the Bible's literary unity and skip its historical messiness — canon formation, council politics, textual variants, and ancient Near East borrowings are exactly our academic-storytelling lane; Their devotional frame can't touch comparative material (Ugaritic parallels, Enochic literature, Greco-Roman context) without controversy; we can make that our core identity; Nothing over ten minutes on the main feed — their millions of viewers who want feature-length narrative depth after a 7-minute overview currently have nowhere branded to go.",
+  },
+  {
+    id: "cc_cx_the_chosen", organizationId: ORG_ID,
+    name: "The Chosen",
+    niche: "Biblical drama series/Streaming-first storytelling",
+    url: "https://www.youtube.com/@TheChosenSeries",
+    youtubeChannelId: "UCBXOFnNTULFaAnj24PAeblg",
+    subscriberCount: 1700000,
+    uploadCadenceDays: 2.3,
+    notes: "CI Jul 2026 (Christianity cycle) · North Star · team ~100 · Crowdfunding/Donations + products/newsletter · AI: none. The first multi-season streaming drama about the life of Jesus, funded by the largest media crowdfund ever and kept free via its own app and the Come and See Foundation. YouTube functions as the top-of-funnel: trailers, scene clips, cast content and livestreams that drive viewers into the app and theatrical releases. Edge: The only player with a billion-view scripted Jesus franchise and a nonprofit funding engine that makes it permanently free.. What we can do better: They dramatize but never explain - viewers finish an episode full of questions about historical context (Second Temple Judaism, Rome, who the Pharisees actually were) that our academic storytelling can answer directly; Zero coverage of the messy history around the text itself (canon formation, apocrypha, competing early Christianities) because it would complicate the devotional brand - that is exactly our lane; Their audience skews devotional and is underserved on comparative context (how the Jesus story sits among ancient Mediterranean religions and myth), which we can serve without attacking faith.",
+  },
+  {
+    id: "cc_cx_crecganford", organizationId: ORG_ID,
+    name: "Crecganford",
+    niche: "Comparative mythology/Origins of religion",
+    url: "https://www.youtube.com/@Crecganford",
+    youtubeChannelId: "UChhMB_J0kz8eBJECy4d5uSQ",
+    subscriberCount: 220000,
+    uploadCadenceDays: 4.7,
+    notes: "CI Jul 2026 (Christianity cycle) · Emerging · team ~1 · Multiple + products · AI: none. Jon F. White traces myths back tens of thousands of years using phylogenetic methods, asking what the world's oldest stories were and how they spread. Runs the Mythology & Folklore Database used by researchers at 100+ universities, which gives the channel unusual scholarly legitimacy. Edge: The only creator combining comparative mythology with phylogenetic dating methods, backed by a database academics actually use.. What we can do better: He reconstructs deep-time myth origins but rarely lands the 'so what' - our storytelling-first format can take the same material and deliver narrative payoff and meaning, not just data; Minimal visual investment means the atmospheric, cinematic treatment of ancient belief is completely unclaimed in his lane - we can out-produce him on identical topics; He avoids early Christianity and the biblical world almost entirely, leaving the bridge between comparative myth and Christian origins - our core beat - wide open.",
+  },
+  {
+    id: "cc_cx_gnostic_informant", organizationId: ORG_ID,
+    name: "Gnostic Informant",
+    niche: "Gnosticism/Comparative religion/On-location history",
+    url: "https://www.youtube.com/@GnosticInformant",
+    youtubeChannelId: "UCtdweFMJ5DGj7_q5IcpQhPQ",
+    subscriberCount: 240000,
+    uploadCadenceDays: 4.7,
+    notes: "CI Jul 2026 (Christianity cycle) · Emerging · team ~1 · Multiple · AI: none. Neal Sendlak's edgy comparative-religion channel arguing the 'informant' angle: what churches did not tell you about Gnosticism, Christian origins and pagan parallels. Differentiates with self-funded on-location filming at ancient sites (Egypt, Greece, Anatolia, Rome) and long podcast interviews with scholars. Edge: The only sub-500K creator in the niche regularly filming at the ancient Mediterranean sites he covers.. What we can do better: His 'they hid it from you' framing burns long-term credibility - we can cover the same Gnostic and apocryphal material with academic rigor and inherit the viewers he loses as they mature; On-location footage is wasted on loose, unscripted delivery - a tightly written narrative documentary using licensed/archival visuals can beat his retention without a plane ticket; He optimizes for controversy over comprehension; structured series (e.g., a proper 'Early Christianities' arc) that build cumulative understanding are absent from his catalog and central to ours.",
+  },
+  {
+    id: "cc_cx_centre_place", organizationId: ORG_ID,
+    name: "Centre Place",
+    niche: "Academic lectures/Church history/Second Temple Judaism",
+    url: "https://www.youtube.com/@centre-place",
+    youtubeChannelId: "UCWv114UTADTuZBweshlMa1g",
+    subscriberCount: 190000,
+    uploadCadenceDays: 2.3,
+    notes: "CI Jul 2026 (Christianity cycle) · Emerging · team ~3 · Donations · AI: none. The YouTube arm of Toronto's Community of Christ congregation, where pastor-historian John Hamer delivers weekly academic lectures on church history, Second Temple Judaism, theology and world religions with charts, maps and timelines. A congregation's outreach program that accidentally became one of the best free religious-history lecture libraries online. Edge: A functioning congregation whose weekly output doubles as a university-grade open courseware library on religious history.. What we can do better: Their material proves demand for deep academic religious history, but nobody is editing it into narrative - we can cover the same syllabus (Second Temple Judaism, canon history, restoration movements) as scripted, visual documentaries and capture the audience the format leaves behind; No discoverability strategy: their best lectures rank on search only; story-driven titles, chaptering and cinematic packaging on identical topics would consistently out-perform them for the same queries; As a church channel they soft-pedal comparative and mythological framing (Christianity alongside other ancient religions), which is precisely our positioning and their audience's unmet curiosity.",
+  },
+  {
+    id: "cc_cx_kipp_davis", organizationId: ORG_ID,
+    name: "Kipp Davis",
+    niche: "Dead Sea Scrolls scholarship/Scholar reaction-critique",
+    url: "https://www.youtube.com/@DrKippDavis",
+    subscriberCount: 120000,
+    uploadCadenceDays: 3.5,
+    notes: "CI Jul 2026 (Christianity cycle) · Emerging · team ~1 · Multiple · AI: none. A publishing Dead Sea Scrolls scholar (Second Temple Judaism, forgery detection) who grew fast by critiquing viral pop-apologetics claims - most famously the Wes Huff/Joe Rogan material - and by showing what manuscript scholarship actually looks like. The channel is the 'scholar reacts' corrective layer of the niche. Edge: The only actual Dead Sea Scrolls specialist doing rapid-response critique of viral religious claims on YouTube.. What we can do better: He rebuts stories but never tells them - a cinematic narrative documentary on the scrolls, Qumran, or the forgery scandal (his own beat) would out-reach his entire catalog and he lacks the production capacity to make it; Reaction content decays; evergreen, structured storytelling on Second Temple Judaism can permanently capture the search demand his viral moments only spike; His tone alienates believing viewers who still want rigorous history - our non-combative academic storytelling can serve both sides of the audience he splits.",
+  },
+  {
+    id: "cc_cx_mike_winger_biblethinker", organizationId: ORG_ID,
+    name: "Mike Winger (BibleThinker)",
+    niche: "In-depth Bible teaching/Apologetics marathons",
+    url: "https://www.youtube.com/@MikeWinger",
+    youtubeChannelId: "UC7u2HaYBKDaLPcWmldxgGEA",
+    subscriberCount: 1000000,
+    uploadCadenceDays: 4.7,
+    notes: "CI Jul 2026 (Christianity cycle) · Direct Competitor · team ~3 · Donations + newsletter · AI: none. Former pastor turned full-time YouTube Bible teacher whose brand is exhaustive single-host deep dives - multi-hour verse-by-verse studies, a 40+ hour women-in-ministry series, and the viral 'cover-up culture' investigations of charismatic church scandals. Passed 1M subscribers in 2026, then announced a three-month hiatus beginning June 1, 2026, citing exhaustion and a book contract - the key-person risk of the model made visible. Edge: A million-subscriber audience built entirely on donor-funded, ultra-long-form trust - the strongest parasocial credibility in the niche.. What we can do better: His June-August 2026 hiatus leaves a vacuum of deep, trustworthy long-form Bible content - a direct window for our early-Christianity storytelling to catch his underserved audience while uploads are paused; He teaches from inside confessional commitments and won't touch critical-historical framing (canon politics, competing early Christianities, ancient Near East parallels) - his most curious viewers graduate to exactly what we make; The one-man format is structurally unscalable; our three-person team producing scripted, visual, narrative episodes competes on production dimensions he has chosen never to enter.",
+  },
+  {
+    id: "cc_cx_kings_and_generals", organizationId: ORG_ID,
+    name: "Kings and Generals",
+    niche: "Animated history documentaries/Military and religious history",
+    subscriberCount: 4160000,
+    notes: "CI Jul 2026 (Christianity cycle) · North Star (watchlist — summary level; deep-dive scheduled Q4 2026). 4.16M as of June 2026; factory production model; frequent series on Crusades, early Islam, Christianization",
+  },
+  {
+    id: "cc_cx_crashcourse", organizationId: ORG_ID,
+    name: "CrashCourse",
+    niche: "Educational series/Religions curriculum",
+    subscriberCount: 16500000,
+    notes: "CI Jul 2026 (Christianity cycle) · North Star (watchlist — summary level; deep-dive scheduled Q4 2026). 2024 Religions series with John Green mainstreamed academic religious studies; curriculum-series playbook; subs approximate",
+  },
+  {
+    id: "cc_cx_capturing_christianity", organizationId: ORG_ID,
+    name: "Capturing Christianity",
+    niche: "Apologetics interviews/Debates",
+    subscriberCount: 420000,
+    notes: "CI Jul 2026 (Christianity cycle) · Emerging (watchlist — summary level; deep-dive scheduled Q4 2026). Cameron Bertuzzi; interview/debate hub bridging philosophy of religion and lay audiences; ~402-416K subs",
+  },
+  {
+    id: "cc_cx_paulogia", organizationId: ORG_ID,
+    name: "Paulogia",
+    niche: "Skeptic response/Counter-apologetics",
+    subscriberCount: 300000,
+    notes: "CI Jul 2026 (Christianity cycle) · Emerging (watchlist — summary level; deep-dive scheduled Q4 2026). Point-by-point responses to apologists; the counter-programming side of our audience; subs approximate",
+  },
+  {
+    id: "cc_cx_truth_unites_gavin_ortlu", organizationId: ORG_ID,
+    name: "Truth Unites (Gavin Ortlund)",
+    niche: "Irenic theology/Church history for laypeople",
+    subscriberCount: 300000,
+    notes: "CI Jul 2026 (Christianity cycle) · Emerging (watchlist — summary level; deep-dive scheduled Q4 2026). Scholar-pastor doing church-history storytelling with a calm tone close to ours; subs approximate",
+  },
+  {
+    id: "cc_cx_the_ten_minute_bible_hou", organizationId: ORG_ID,
+    name: "The Ten Minute Bible Hour",
+    niche: "Exploratory Christian content/Visiting traditions",
+    subscriberCount: 450000,
+    notes: "CI Jul 2026 (Christianity cycle) · Emerging (watchlist — summary level; deep-dive scheduled Q4 2026). Matt Whitman; curious non-dogmatic 'visit every denomination' format is a storytelling template; subs approximate",
+  },
+  {
+    id: "cc_cx_the_histocrat", organizationId: ORG_ID,
+    name: "The Histocrat",
+    niche: "Long-form ancient history/Archaeology and religion",
+    subscriberCount: 250000,
+    notes: "CI Jul 2026 (Christianity cycle) · Emerging (watchlist — summary level; deep-dive scheduled Q4 2026). Multi-hour narrated deep dives incl. ancient religion topics; subs approximate",
+  },
+  {
+    id: "cc_cx_sam_aronow", organizationId: ORG_ID,
+    name: "Sam Aronow",
+    niche: "Jewish history/Chronological deep dives",
+    subscriberCount: 100000,
+    notes: "CI Jul 2026 (Christianity cycle) · Emerging (watchlist — summary level; deep-dive scheduled Q4 2026). Definitive Jewish-history channel, adjacent coverage of Second Temple era; 82K in 2024, subs approximate",
+  },
+  {
+    id: "cc_cx_digital_hammurabi", organizationId: ORG_ID,
+    name: "Digital Hammurabi",
+    niche: "Assyriology/Hebrew Bible scholarship",
+    subscriberCount: 70000,
+    notes: "CI Jul 2026 (Christianity cycle) · Emerging (watchlist — summary level; deep-dive scheduled Q4 2026). PhD couple (Josh Bowen, Megan Lewis) on ancient Near East context of the Bible; small but scholarly credible; subs approximate",
+  },
+  {
+    id: "cc_cx_history_valley", organizationId: ORG_ID,
+    name: "History Valley",
+    niche: "Religious history interviews/Scholar conversations",
+    subscriberCount: 40000,
+    notes: "CI Jul 2026 (Christianity cycle) · Emerging (watchlist — summary level; deep-dive scheduled Q4 2026). Jacob Berman; prolific scholar-interview channel in the MythVision mold; subs approximate (trackers conflict)",
+  },
+];
+// ---------------------------------------------------------------------------
+// The deduplicated Ideas list (Christianity cycle).
+//
+// 20 opportunities + 20 video ideas from the CI report, all for the existing
+// Ancient Religions & Storytelling channel (ch_rel). Checked title-by-title
+// against the channel's 3 pre-existing pipeline ideas — no overlaps (the
+// forgery-scandal idea is the modern crime story, distinct from "What the
+// Dead Sea Scrolls actually say"; Mithras is one god's full biography,
+// distinct from the mystery-cults idea). Where a video idea instantiates an
+// opportunity, the two share a topic tag. Priority = report tier.
+// ---------------------------------------------------------------------------
+const cxIdea = (
+  id: string,
+  title: string,
+  description: string,
+  priority: Idea["priority"],
+  tags: string[],
+): Idea => ({
+  id, organizationId: ORG_ID, channelId: "ch_rel", title, description,
+  priority, status: "inbox", tags, createdAt: daysAgo(0),
+});
+
+const XOP = "Niche-level opportunity (Christianity CI report §5)";
+const XVI = "Video idea (Christianity CI report §7)";
+
+export const cxIdeas: Idea[] = [
+  // --- Opportunities #1–20 → niche-level concepts --------------------------
+  cxIdea("idea_cx_op01", "Serialized early-Christianity narrative arc (councils, canon, christology)",
+    `${XOP}, tier 1 — the flagship series. Redeemed Zoomer rarely goes pre-Reformation, Cogito stays at survey altitude, BibleProject skips canon politics. 300–800K potential subs · difficulty 6/10 · CTR 5–7% · serialization is a patronage engine (early-access tier). Number the episodes; every episode hooks the next.`,
+    "high", ["niche", "opportunity", "early_christianity_arc"]),
+  cxIdea("idea_cx_op02", "'Rise and Fall of a God' franchise",
+    `${XOP}, tier 1. Fall of Civilizations' unclaimed twin — epic elegiac format applied to deities (2–3 releases/yr leaves his audience starving). 400K–1M subs · difficulty 8/10 (tent-pole spec) · strongest Patreon-conversion format in the dataset. Quarterly: Baal → Mithras → Asherah → Serapis.`,
+    "high", ["niche", "opportunity", "god_franchise"]),
+  cxIdea("idea_cx_op03", "Manuscript drama / textual-detective stories",
+    `${XOP}, tier 1. Wes Huff treats manuscripts as evidence, not stories; Kipp Davis rebuts but never narrates his own beat. 300–700K subs · difficulty 5/10 · CTR 5–7% (heist framing on real history) · sponsor fit: Bible software, education platforms. Recurring 'Textual Detectives' sub-series.`,
+    "high", ["niche", "opportunity", "textual_detectives"]),
+  cxIdea("idea_cx_op04", "Long-form graduation path for BibleProject / McClellan / OSP audiences",
+    `${XOP}, tier 1. Three of the niche's biggest audiences have no long-form destination (BibleProject caps at 10 min; McClellan is shorts-only; OSP viewers outgrow comedy summaries). 500K–1.5M reachable via suggested adjacency · difficulty 5/10 — a positioning/packaging play. Title against their top videos.`,
+    "high", ["niche", "opportunity", "graduation_path"]),
+  cxIdea("idea_cx_op05", "Scholarly-but-cinematic apocrypha & Gnosticism coverage",
+    `${XOP}, tier 1. Gnostic Informant proved demand but burns credibility with conspiracy framing; Hochelaga's apocrypha one-offs pull 500K–1M views at <20 light minutes. 300–700K subs · CTR 6–8% (most clickable honest cluster) · difficulty 6/10. Sources on screen — the contrast IS the brand.`,
+    "high", ["niche", "opportunity", "apocrypha"]),
+  cxIdea("idea_cx_op06", "'What it was like to worship' immersive history franchise",
+    `${XOP}, tier 2. toldinstone's untouched twin of 'what it was like to live'; Voices of the Past covers religion only occasionally. 250–600K subs · difficulty 6/10 · sensory reconstruction + scholarly framing; hedge reconstruction claims — this audience checks.`,
+    "medium", ["niche", "opportunity", "immersive_worship"]),
+  cxIdea("idea_cx_op07", "Centre Place lecture-to-documentary conversion (Second Temple syllabus)",
+    `${XOP}, tier 2. 100+ academic lectures prove topic demand with zero packaging — their catalog is a validated topic map. Same syllabus as scripted cinematic documentaries wins their search queries. 200–450K subs · difficulty 5/10 · collab-reachable (John Hamer).`,
+    "medium", ["niche", "opportunity", "second_temple"]),
+  cxIdea("idea_cx_op08", "The deconstruction-neutral academic lane",
+    `${XOP}, tier 2. The niche polarizes into apologetics vs counter-apologetics and concedes the middle: the curious-but-not-angry audience is the largest underserved psychographic. RFB proves neutral is the biggest brand — and he explains rather than narrates. 500K–1M · difficulty 4/10 (a discipline, not a cost) · most advertiser-safe religion content.`,
+    "medium", ["niche", "opportunity", "neutral_lane"]),
+  cxIdea("idea_cx_op09", "Course/patronage monetization ladder",
+    `${XOP}, tier 2. Ehrman sells $50–300 courses off a 220K-sub channel; RFB runs The Religion Department; the storytelling channels haven't built the ladder (Hochelaga's superfans have nowhere to spend). Revenue multiplier 2–5x AdSense at maturity: early-access tier → research-notes tier → annual cohort course.`,
+    "medium", ["niche", "opportunity", "monetization_ladder"]),
+  cxIdea("idea_cx_op10", "Hebrew Bible scholarship as narrative (Yahweh, El, Asherah, monotheism's origins)",
+    `${XOP}, tier 2. Esoterica's Yahweh series massively outperforms but he stays anchored to occultism; McClellan name-checks the scholarship in 4-min clips with no long-form payoff. 300–700K subs · difficulty 6/10 (highest citation-risk cluster — scholar review pass required) · enormous patronage pull.`,
+    "medium", ["niche", "opportunity", "yahweh_origins"]),
+  cxIdea("idea_cx_op11", "Primary-source performance for religious texts",
+    `${XOP}, tier 3. Voices of the Past's voice-acted format applied exclusively to religious texts (martyr acts, church fathers, Gnostic gospels). 150–400K subs · difficulty 6/10 (voice-actor budget ~$200–500/episode).`,
+    "low", ["niche", "opportunity", "primary_sources"]),
+  cxIdea("idea_cx_op12", "Cadence-gap capture in the epic-documentary lane",
+    `${XOP}, tier 3. Fall of Civilizations ships 2–3x/year, History Time ~monthly — a reliable monthly 45–90 min release in their suggested neighborhoods captures waiting audiences. Structural advantage · difficulty 4/10 — a scheduling commitment; don't over-promise (burnout threat).`,
+    "low", ["niche", "opportunity", "cadence_gap"]),
+  cxIdea("idea_cx_op13", "Comparative myth with production values (flood myths, dying-and-rising gods)",
+    `${XOP}, tier 3. Crecganford owns myth phylogenetics with minimal visual investment and avoids the biblical world — the myth-to-Christian-origins bridge is wide open. 200–500K subs · difficulty 5/10.`,
+    "low", ["niche", "opportunity", "comparative_myth"]),
+  cxIdea("idea_cx_op14", "The Mike Winger hiatus window (Q3 2026 trust-vacuum capture)",
+    `${XOP}, tier 3 but TIME-LIMITED: his June–August 2026 hiatus pauses the niche's biggest long-form Bible catalog; his most curious viewers graduate to critical-historical content he won't touch. 100–300K reachable · difficulty 3/10 (topic selection + respectful tone) · act in Q3.`,
+    "high", ["niche", "opportunity", "hiatus_window"]),
+  cxIdea("idea_cx_op15", "Audio-first repurposing (podcast + newsletter)",
+    `${XOP}, tier 3. Narration-driven format is already podcast-shaped (Let's Talk Religion triples surface area this way; Fall of Civilizations has 200M+ podcast listens); most rivals have no newsletter. +20–30% consumption surface · difficulty 2/10.`,
+    "low", ["niche", "opportunity", "audio_repurposing"]),
+  cxIdea("idea_cx_op16", "The Chosen context-companion lane",
+    `${XOP}, tier 3. 6.5M monthly viewers finish episodes full of historical-context questions (Second Temple Judaism, Rome, the Pharisees) that academic storytelling can answer without attacking faith. 200–500K crossover · difficulty 4/10 · never framed as reaction content.`,
+    "low", ["niche", "opportunity", "chosen_companion"]),
+  cxIdea("idea_cx_op17", "Roman-world religious history (neutral classics lane)",
+    `${XOP}, tier 3. toldinstone stays above the fray on early Christianity; O'Connor's 6M monthly views prove appetite with no documentary outlet. 250–600K subs · difficulty 5/10 · classics content is advertiser-safe.`,
+    "low", ["niche", "opportunity", "roman_world"]),
+  cxIdea("idea_cx_op18", "'Competing Christianities' / heresies series",
+    `${XOP}, tier 3. Marcionites, Ebionites, Valentinians, Arians as character-driven episodes — BibleProject can't touch it, Cogito skips it, Redeemed Zoomer does advocacy. Feeds the flagship arc. 200–500K · difficulty 5/10.`,
+    "low", ["niche", "opportunity", "early_christianity_arc", "heresies"]),
+  cxIdea("idea_cx_op19", "Owned-audience infrastructure (newsletter + community)",
+    `${XOP}, tier 3. Only 5 of 25 deep-dived channels have newsletters; almost none run structured communities. Email + Discord de-risks the algorithm and feeds course launches. 5–10% of subs on email at maturity · difficulty 3/10.`,
+    "low", ["niche", "opportunity", "owned_audience"]),
+  cxIdea("idea_cx_op20", "Scholar-access synthesis (interviews as raw material, not product)",
+    `${XOP}, tier 3. MythVision's raw interviews are unedited ore — synthesize the same scholarship into scripted documentaries; 1 interview/quarter cut into episodes rather than 3-hour podcasts. Credibility multiplier + collab pipeline · difficulty 4/10.`,
+    "low", ["niche", "opportunity", "scholar_access"]),
+
+  // --- Video ideas #1–20 → the Myth & Meaning slate ------------------------
+  cxIdea("idea_cx_v01", "The Council That Defined God: Nicaea, 325 AD",
+    `${XVI}, tier 1. CTR 5–6% · RPM $6–8 · evergreen 10/10 · difficulty 6/10. 55 min political thriller: persecution generation → council floor → verdict → exiles; gently debunks the canon-vote myth. Flagship of the early-Christianity arc.`,
+    "high", ["early_christianity_arc", "councils"]),
+  cxIdea("idea_cx_v02", "The Gospels That Didn't Make It",
+    `${XVI}, tier 1. CTR 6–8% · RPM $5–7 · evergreen 10/10 · difficulty 6/10. 60 min canon formation told through the books that lost (Thomas, Peter, Mary; Marcion's challenge). The niche's highest-demand honest topic — inherits Gnostic Informant's maturing viewers.`,
+    "high", ["early_christianity_arc", "apocrypha", "canon"]),
+  cxIdea("idea_cx_v03", "Before He Was God Alone: The Forgotten History of Yahweh",
+    `${XVI}, tier 1. CTR 6–7% · RPM $4–6 · evergreen 10/10 · difficulty 7/10 (scholar review pass required). 65 min biography of a god: Ugaritic texts, the divine council, 'Yahweh and his Asherah', exile and monotheism. Esoterica proved the demand then retreated to occultism.`,
+    "high", ["yahweh_origins", "hebrew_bible"]),
+  cxIdea("idea_cx_v04", "Rise and Fall of a God #1: Baal",
+    `${XVI}, tier 1. CTR 4–6% · RPM $5–8 (watch-time annuity) · evergreen 10/10 · difficulty 8/10 (tent-pole: commissioned art, voice actor). 75 min franchise launch: the Baal cycle as drama → contest narratives → how a god becomes a devil (Beelzebub). Strongest Patreon-conversion release of the year.`,
+    "high", ["god_franchise", "comparative_myth"]),
+  cxIdea("idea_cx_v05", "The Monk, the Trash Basket, and the World's Oldest Bible",
+    `${XVI}, tier 1. CTR 6–7% · RPM $6–9 (advertiser-safe adventure framing) · evergreen 9/10 · difficulty 5/10. 45 min Tischendorf/Codex Sinaiticus detective story — rescue or theft? Opens the Textual Detectives sub-series; fast, cheap first release.`,
+    "high", ["textual_detectives", "manuscripts"]),
+  cxIdea("idea_cx_v06", "The Dead Sea Scrolls Forgery Scandal",
+    `${XVI}, tier 2. CTR 6–7% · RPM $6–8 · evergreen 8/10 · difficulty 5/10. 50 min modern crime story (post-2002 fake fragments, Museum of the Bible) — distinct from the pipeline's 'What the Dead Sea Scrolls actually say'. Kipp Davis's own beat he'll never produce; natural consultant collab.`,
+    "medium", ["textual_detectives", "dead_sea_scrolls"]),
+  cxIdea("idea_cx_v07", "The Last Day of the Temple",
+    `${XVI}, tier 2. CTR 5–6% · RPM $5–8 · evergreen 10/10 · difficulty 7/10. 60 min immersive reconstruction of the Temple's final year + how 70 AD created both Judaism and Christianity. toldinstone's untouched 'what it was like to worship' twin; answers The Chosen audience's context questions.`,
+    "medium", ["immersive_worship", "second_temple"]),
+  cxIdea("idea_cx_v08", "The Flood Before Noah",
+    `${XVI}, tier 2. CTR 6–7% · RPM $5–7 · evergreen 10/10 · difficulty 6/10. 50 min comparative-myth narrative (Atrahasis, Gilgamesh XI voice-acted, Genesis in context) — dependence and difference, not gotcha. Crecganford's beat with production values.`,
+    "medium", ["comparative_myth", "hebrew_bible"]),
+  cxIdea("idea_cx_v09", "The First Heretic: Marcion, the Man Who Forced the Bible into Existence",
+    `${XVI}, tier 2. CTR 5–6% · RPM $5–7 · evergreen 9/10 · difficulty 5/10. 45 min character-driven arc episode 2 — the first published Christian canon rejected the whole Old Testament. Feeds directly out of 'The Gospels That Didn't Make It'.`,
+    "medium", ["early_christianity_arc", "heresies", "canon"]),
+  cxIdea("idea_cx_v10", "The Gospel in the Garbage Dump",
+    `${XVI}, tier 2. CTR 6–7% · RPM $5–7 · evergreen 9/10 · difficulty 5/10. 40 min discovery narrative: Oxyrhynchus + Nag Hammadi framing for the Gospel of Thomas. The 40+ minute rigorous apocrypha treatment is uncontested.`,
+    "medium", ["apocrypha", "textual_detectives"]),
+  cxIdea("idea_cx_v11", "Did Christianity Copy the Dying-and-Rising Gods?",
+    `${XVI}, tier 2. CTR 6–8% · RPM $4–6 · evergreen 9/10 · difficulty 7/10 (both camps' fact-checkers). 55 min honest adjudication: steelman the parallels, then what scholars actually conclude. Serves the curious middle between MythVision's sensationalism and McClellan's 4-min debunks; highest cross-tribal share potential.`,
+    "medium", ["comparative_myth", "neutral_lane"]),
+  cxIdea("idea_cx_v12", "How Israel Stopped Believing in Many Gods",
+    `${XVI}, tier 2. CTR 5–6% · RPM $4–6 · evergreen 10/10 · difficulty 6/10. 55 min sequel to the Yahweh biography: Josiah's reform, Babylon, Second Isaiah — monotheism as a conclusion reached in the ashes of a destroyed kingdom.`,
+    "medium", ["yahweh_origins", "hebrew_bible"]),
+  cxIdea("idea_cx_v13", "The Book of Enoch: The Bible's Banned Prequel",
+    `${XVI}, tier 2. CTR 7–8% · RPM $4–6 (keep 'banned' descriptive, not thumbnail bait) · evergreen 9/10 · difficulty 5/10. 50 min text biography: the Watchers, why it was beloved then dropped (except Ethiopia). Hochelaga's biggest one-offs at 15 light minutes prove the demand for the definitive version.`,
+    "medium", ["apocrypha"]),
+  cxIdea("idea_cx_v14", "Zoroaster's Shadow: The Religion That Shaped Heaven and Hell",
+    `${XVI}, tier 2. CTR 5–6% · RPM $5–7 · evergreen 10/10 · difficulty 6/10. 60 min comparative narrative presenting the influence debate as a live scholarly question. Cogito and Let's Talk Religion prove search demand at survey altitude; neither builds the narrative bridge.`,
+    "medium", ["comparative_myth"]),
+  cxIdea("idea_cx_v15", "Rise and Fall of a God #2: Mithras, the God of the Legions",
+    `${XVI}, tier 2. CTR 5–6% · RPM $5–8 · evergreen 10/10 · difficulty 8/10. 70 min franchise entry — one god's full biography plus why Christianity won (distinct from the pipeline's mystery-cults idea). Serves O'Connor's early-Christianity appetite with no documentary outlet.`,
+    "medium", ["god_franchise", "roman_world"]),
+  cxIdea("idea_cx_v16", "The Scribes Who Changed the Bible",
+    `${XVI}, tier 3. CTR 5–6% · RPM $5–7 · evergreen 9/10 · difficulty 5/10. 40 min Textual Detectives entry: ending of Mark, pericope adulterae — watching scribes add famous passages. Ehrman's course empire proves paying demand; we're the visual-narrative complement.`,
+    "low", ["textual_detectives", "manuscripts"]),
+  cxIdea("idea_cx_v17", "Why Rome Feared the Christians",
+    `${XVI}, tier 3. CTR 5–6% · RPM $5–8 · evergreen 10/10 · difficulty 5/10. 50 min primary-source narrative (Pliny–Trajan letters, martyr acts, voice-acted) — Voices of the Past's format on the religious sub-beat he only visits.`,
+    "low", ["primary_sources", "roman_world"]),
+  cxIdea("idea_cx_v18", "The Other Messiahs",
+    `${XVI}, tier 3. CTR 5–6% · RPM $5–7 · evergreen 9/10 · difficulty 5/10. 45 min Second Temple context: the dozen first-century messiah claimants — and the one who almost beat Rome. Serves The Chosen viewers' unanswered context questions at long-form depth.`,
+    "low", ["second_temple", "chosen_companion"]),
+  cxIdea("idea_cx_v19", "The Ark of the Covenant: What Actually Happened to It",
+    `${XVI}, tier 3. CTR 7–8% · RPM $5–7 · evergreen 9/10 · difficulty 4/10. 40 min curiosity topic resolved with scholarship — the anti-sensationalism template; high browse-traffic test vehicle.`,
+    "low", ["hebrew_bible", "curiosity_packaging"]),
+  cxIdea("idea_cx_v20", "Constantine: The Emperor Who Bet on a Forbidden God",
+    `${XVI}, tier 3. CTR 5–6% · RPM $5–8 · evergreen 10/10 · difficulty 6/10. 60 min belief-politics biography completing the Nicaea-era binge cluster with the council and Marcion episodes. Kings and Generals covers his battles, never his belief politics.`,
+    "low", ["early_christianity_arc", "roman_world"]),
+];
+
+// ---------------------------------------------------------------------------
+// Pattern insights — the Christianity CI report's knowledge base, one entry
+// per pattern, each ending in a "what we do differently" line. Quoted
+// research findings (25-channel deep-dive sample), not app-detected
+// statistics.
+// ---------------------------------------------------------------------------
+const cxInsight = (
+  id: string,
+  kind: string,
+  title: string,
+  body: string,
+  confidence: number,
+): AiInsight => ({
+  id, organizationId: ORG_ID, channelId: "ch_rel",
+  kind, title, body, confidence, createdAt: daysAgo(0),
+});
+
+export const cxInsights: AiInsight[] = [
+  cxInsight("ins_cx_gap", "competitor",
+    "Rigor and narrative are substitutes in this niche — nobody combines them",
+    "Every channel in the 25-deep-dive sample picked one: ReligionForBreakfast/Esoterica/Ehrman have rigor without story; Hochelaga/Voices of the Past/History Time have story without rigor. Six competitors' blind-spot lists independently point at the combination. What we do differently: rigor + cinematic narrative is the whole positioning — match RFB's sourcing while beating him on emotional experience. [CI Jul 2026 · Christianity §1]",
+    0.9),
+  cxInsight("ins_cx_patronage", "pattern",
+    "Patronage-first monetization — sponsors are a side dish here",
+    "Only 3 of 25 deep-dived channels are AdSense-led; Patreon/memberships dominate, courses are the proven premium tier (Ehrman sells $50–300 courses off a 220K-sub channel), and the niche's giants are donation-funded nonprofits (BibleProject, The Chosen). Patron conversion runs ~0.13–0.35% of subs. What we do differently: build the ladder early — early-access tier, research-notes tier, annual cohort course — instead of waiting for sponsor CPMs that never come. [CI Jul 2026 · Christianity §4]",
+    0.85),
+  cxInsight("ins_cx_thumbs", "pattern",
+    "Artifact-led thumbnails beat faces for documentary formats — the inverse of the business niche",
+    "Faces cluster exclusively in the interview/debate/reaction lanes; documentary channels win with manuscripts, icons, reconstructed scenes, and restrained text — and visibly non-clickbait packaging is itself a trust signal this audience rewards. What we do differently: artifact-forward thumbnails with ≤3 words, no arrows, no shocked faces; A/B against painting-detail crops. [CI Jul 2026 · Christianity §3]",
+    0.8),
+  cxInsight("ins_cx_cadence", "pattern",
+    "Low cadence is viable: watch time + patronage decouple income from frequency",
+    "Six channels averaging ~1.1M subs ship 0.1–0.5 videos/week (Fall of Civilizations: 2–3/year). Long runtimes make each upload an AdSense annuity and patronage smooths the gaps. What we do differently: 2–3 quality releases/month beats weekly filler — out-ship the epics 4–8x without matching explainer-channel cadence. [CI Jul 2026 · Christianity §4]",
+    0.85),
+  cxInsight("ins_cx_voice", "pattern",
+    "Credentialed human narration is the moat — 24 of 25 channels show zero AI usage",
+    "Roughly half the sample fronts academic credentials on camera or in scripts; YouTube's 2026 AI-content crackdown widens the authenticity premium. This audience checks citations and punishes errors permanently. What we do differently: human narration always, sources on screen, and a scholar-review pass on high-stakes scripts (Yahweh/Asherah cluster). [CI Jul 2026 · Christianity §3]",
+    0.85),
+  cxInsight("ins_cx_graduation", "competitor",
+    "Three of the niche's biggest audiences have no long-form destination",
+    "BibleProject (5.4M subs) caps at ~10 minutes; Dan McClellan (~2.5M monthly views) is short-form only; OSP viewers outgrow comedy summaries with nowhere to go on-channel. The graduation path is the largest reachable pool in the dataset (500K–1.5M via suggested adjacency). What we do differently: deliberately title/tag against their top videos — their search terms, our depth. [CI Jul 2026 · Christianity §5]",
+    0.8),
+  cxInsight("ins_cx_neutral", "pattern",
+    "The curious-but-not-angry middle is the largest underserved psychographic",
+    "The niche polarizes into apologetics (InspiringPhilosophy, Huff) and counter-apologetics (MythVision, Paulogia, Kipp Davis), each conceding the middle. ReligionForBreakfast proves the neutral brand is the biggest brand — and he's alone in it. Neutral content is also the most advertiser-safe religion content. What we do differently: 'ancient meaning-making' framing; neutrality maintained under comment-section pressure from both camps. [CI Jul 2026 · Christianity §4–5]",
+    0.85),
+  cxInsight("ins_cx_sensational", "competitor",
+    "Sensationalism burns trust permanently in this niche — Gnostic Informant is the cautionary tale",
+    "'They hid it from you' framing gets clicks and then bleeds maturing viewers; weak sourcing is detected fast by an audience that includes seminarians and grad students. What we do differently: honest titles that still open loops ('The Gospels That Didn't Make It'), 'banned/forbidden' used descriptively not conspiratorially, and citations visible on screen. [CI Jul 2026 · Christianity §6]",
+    0.85),
+  cxInsight("ins_cx_serialization", "pattern",
+    "Serialization is the niche's patronage engine",
+    "Numbered arcs and franchises (Fall of Civilizations' episodes, Redeemed Zoomer's denomination series) convert casual viewers to members via early-access and 'next episode' pull. What we do differently: the early-Christianity arc and the 'Rise and Fall of a God' franchise are both numbered, both end on hooks, and both feed a Patreon early-access tier. [CI Jul 2026 · Christianity §5]",
+    0.75),
+  cxInsight("ins_cx_hiatus", "anomaly",
+    "Time-limited: the Mike Winger hiatus window (June–August 2026)",
+    "The niche's biggest long-form Bible catalog (~1.5M monthly views, donor-funded) paused uploads June 1; his most curious viewers graduate to critical-historical content he won't touch. What we do differently: ship the early-Christianity and manuscript episodes during Q3 2026 with respectful, non-combative packaging to catch that audience while the vacuum lasts. [CI Jul 2026 · Christianity §5, opp #14]",
+    0.7),
+  cxInsight("ins_cx_rpm", "pattern",
+    "Religion AdSense RPMs are modest ($4–10) — packaging discipline protects them",
+    "Advertiser sensitivity clusters around conspiratorial/controversial framings; adventure-history and classics framings are the most advertiser-safe. Sponsors that do appear: education platforms, Bible software, audiobooks, documentary streamers, history games. What we do differently: factual titles, sensitive topics framed academically, and revenue weighted toward patronage/courses so RPM dips don't matter. [CI Jul 2026 · Christianity §4]",
+    0.75),
+  cxInsight("ins_cx_topicmap", "pattern",
+    "Proven-demand topic clusters: apocrypha/lost gospels, Yahweh's origins, manuscripts-as-drama",
+    "Apocrypha is the most clickable honest cluster (CTR 6–8% in this sample); Esoterica's Yahweh series and Hochelaga's Nephilim one-offs massively outperform their baselines; Wes Huff took manuscripts mainstream in under two years. What we do differently: enter through these three proven clusters before broadening; each has a named incumbent weakness. [CI Jul 2026 · Christianity §5, §7]",
+    0.8),
+  cxInsight("ins_cx_lectures", "competitor",
+    "Centre Place's lecture catalog is a free, validated topic-demand map",
+    "100+ academic lectures (Second Temple Judaism, canon history) rank on search with zero packaging — proof of sustained demand for exactly our syllabus. What we do differently: treat their catalog as keyword research; cover the same syllabus as scripted, chaptered, cinematic documentaries and win their queries. [CI Jul 2026 · Christianity §5, opp #7]",
+    0.75),
+  cxInsight("ins_cx_owned", "pattern",
+    "Owned-audience infrastructure is a niche-wide gap",
+    "Only 5 of 25 deep-dived channels run newsletters; almost none run structured communities. Algorithm dependence is the top strategic threat for low-cadence channels. What we do differently: newsletter + Discord from this quarter; email 5–10% of subs at maturity feeds course launches directly. [CI Jul 2026 · Christianity §5–6]",
+    0.75),
+];

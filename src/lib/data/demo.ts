@@ -88,6 +88,14 @@ import {
   magnatesMediaIntel,
   magnatesTeardowns,
 } from "./ciBusinessSeed";
+import {
+  cxCompetitorChannels,
+  cxIdeas,
+  cxInsights,
+  esotericaIntel,
+  mythMeaningCiGoals,
+  rfbIntel,
+} from "./ciChristianitySeed";
 
 // ---------------------------------------------------------------------------
 // Seeded PRNG — data is identical on every load.
@@ -172,6 +180,8 @@ const channels: Channel[] = [
     goals: [
       { id: uid("goal"), channelId: "ch_rel", metric: "ctr", targetValue: 5.5, period: "monthly" },
       { id: uid("goal"), channelId: "ch_rel", metric: "watch_time_hours", targetValue: 30000, period: "monthly" },
+      // Christianity CI cycle (Jul 2026): 12-month projection as goals.
+      ...mythMeaningCiGoals,
     ],
     createdAt: daysAgo(280),
   },
@@ -320,12 +330,17 @@ const competitorChannels: CompetitorChannel[] = [
   // the report calls "MagnatesMedia") — one row, not a duplicate.
   { id: "cc_mag", organizationId: org.id, name: "Magnates Media", niche: "Business documentaries", ...magnatesMediaIntel },
   { id: "cc_hoc", organizationId: org.id, name: "How History Works", niche: "Business / history hybrid" },
-  { id: "cc_rfb", organizationId: org.id, name: "ReligionForBreakfast", niche: "Academic religion" },
-  { id: "cc_eso", organizationId: org.id, name: "Esoterica", niche: "Esoteric religious history" },
+  // Both religion rows extended in place with the Christianity CI cycle's
+  // channel intelligence — one row each, not duplicates.
+  { id: "cc_rfb", organizationId: org.id, name: "ReligionForBreakfast", niche: "Academic religion", ...rfbIntel },
+  { id: "cc_eso", organizationId: org.id, name: "Esoterica", niche: "Esoteric religious history", ...esotericaIntel },
   { id: "cc_chris", organizationId: org.id, name: "Chris Voss (MasterClass clips)", niche: "Negotiation" },
   // 34 business-niche rows from the July 2026 CI research cycle (35 total
   // with Magnates Media above).
   ...ciCompetitorChannels,
+  // 33 Christianity-niche rows from the July 2026 CI research cycle (35
+  // total with ReligionForBreakfast and Esoterica above).
+  ...cxCompetitorChannels,
 ];
 
 const competitorVideos: CompetitorVideo[] = [];
@@ -766,6 +781,10 @@ const ideas: Idea[] = [
   // The deduplicated CI ideas: 19 niche-level opportunities + the 20-video
   // Founder Reality launch slate (opportunity #1 became the channel itself).
   ...ciIdeas,
+  // Christianity cycle: 20 opportunities + 20 video ideas for the existing
+  // Ancient Religions & Storytelling channel (no overlaps with its 3
+  // pre-existing pipeline ideas — checked title-by-title).
+  ...cxIdeas,
 ];
 
 // ---------------------------------------------------------------------------
@@ -805,6 +824,8 @@ const insights: AiInsight[] = [
   // Knowledge base from the business-niche CI research (quoted findings, not
   // app-detected statistics — see ciBusinessSeed.ts).
   ...ciInsights,
+  // Knowledge base from the Christianity-niche CI research.
+  ...cxInsights,
 ];
 
 const recommendations: AiRecommendation[] = [
@@ -1143,7 +1164,9 @@ const comments: Comment[] = [
 // competitors' outlier videos + the CI-informed SOP versions. Bumping the key
 // reseeds returning browsers; older local edits stay under the old key,
 // orphaned.
-const STORAGE_KEY = "big3.demo.v3";
+// v4: Christianity-niche CI dataset seeded (35 competitors incl. two
+// in-place extensions, ideas, insights, ch_rel projection goals).
+const STORAGE_KEY = "big3.demo.v4";
 
 function persist() {
   try {
