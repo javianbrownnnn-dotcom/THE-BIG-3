@@ -20,6 +20,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { SwipeToDelete } from "@/components/ui/swipe-to-delete";
 import {
   Dialog,
   DialogContent,
@@ -93,6 +94,10 @@ function TaskCard({ task }: { task: Task }) {
   };
 
   return (
+    <SwipeToDelete
+      label="Delete"
+      onDelete={() => deleteTask.mutate(task.id, { onSuccess: () => toast("Task removed") })}
+    >
     <Card>
       <CardContent className="space-y-2 p-3">
         <div className="flex items-start justify-between gap-2">
@@ -144,6 +149,7 @@ function TaskCard({ task }: { task: Task }) {
         </div>
       </CardContent>
     </Card>
+    </SwipeToDelete>
   );
 }
 

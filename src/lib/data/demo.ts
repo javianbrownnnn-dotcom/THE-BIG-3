@@ -2326,6 +2326,20 @@ export class DemoProvider implements DataProvider {
     persist();
   }
 
+  async deleteVideo(id: string) {
+    const i = videos.findIndex((v) => v.id === id);
+    if (i >= 0) videos.splice(i, 1);
+    // Mirror the SQL cascade/set-null behaviour: unlink SOP evidence and
+    // production links that pointed at the removed video.
+    for (const s of sops) {
+      s.linkedVideoIds = s.linkedVideoIds.filter((v) => v !== id);
+    }
+    for (const prod of productions) {
+      if (prod.linkedVideoId === id) prod.linkedVideoId = undefined;
+    }
+    persist();
+  }
+
   async listActivity() { return clone(activity); }
 
   async askCoach(message: string, _history: ChatMessage[]): Promise<CoachReply> {

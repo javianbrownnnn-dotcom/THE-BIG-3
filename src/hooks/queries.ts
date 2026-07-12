@@ -148,6 +148,14 @@ export function useDeleteProduction() {
   });
 }
 
+export function useDeleteVideo() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => data.deleteVideo(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["videos"] }),
+  });
+}
+
 export const useComments = (entityType: CommentEntityType, entityId: string) =>
   useQuery({
     queryKey: ["comments", entityType, entityId],

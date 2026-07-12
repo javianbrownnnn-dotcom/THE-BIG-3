@@ -227,6 +227,8 @@ export interface DataProvider {
   deleteChannel(id: string): Promise<void>;
   deleteCompetitorChannel(id: string): Promise<void>;
   deleteProduction(id: string): Promise<void>;
+  /** Remove a mis-logged video and its whole metric history (cascade). */
+  deleteVideo(id: string): Promise<void>;
 
   // ------------------------------------------------------------------
   // Modern Ambition Content Studio: the gated documentary pipeline.

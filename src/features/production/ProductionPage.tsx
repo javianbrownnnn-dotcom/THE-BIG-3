@@ -16,6 +16,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SwipeToDelete } from "@/components/ui/swipe-to-delete";
 import {
   Dialog,
   DialogContent,
@@ -37,6 +38,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   useChannels,
+  useDeleteProduction,
   useContentProjects,
   useCreateProduction,
   useDraftProduction,
@@ -62,6 +64,7 @@ const STAGE_LABELS: Record<ProductionStage, string> = {
 function ProductionCard({ production }: { production: Production }) {
   const { data: channels } = useChannels();
   const { data: members } = useMembers();
+  const deleteProduction = useDeleteProduction();
   const { data: studioProjects } = useContentProjects();
   const channel = channels?.find((c) => c.id === production.channelId);
   const assignee = members?.find((m) => m.id === production.assigneeId);
@@ -72,6 +75,13 @@ function ProductionCard({ production }: { production: Production }) {
     new Date(production.dueDate).getTime() < Date.now();
 
   return (
+    <SwipeToDelete
+      label="Delete"
+      onDelete={() => {
+        if (!window.confirm(`Delete "${production.title}"? Its script and checklists are removed.`)) return;
+        deleteProduction.mutate(production.id, { onSuccess: () => toast("Production deleted") });
+      }}
+    >
     <Link to={`/production/${production.id}`} className="block">
       <Card className="overflow-hidden transition-colors hover:border-primary/40">
         {getThumbnail(production) && (
@@ -117,6 +127,7 @@ function ProductionCard({ production }: { production: Production }) {
         </CardContent>
       </Card>
     </Link>
+    </SwipeToDelete>
   );
 }
 

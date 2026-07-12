@@ -1266,6 +1266,13 @@ export class SupabaseProvider implements DataProvider {
     if (error) throw error;
   }
 
+  async deleteVideo(id: string): Promise<void> {
+    // Cascades to the video's metric snapshots (migration 0017 lets whole-
+    // entity deletes pass the append-only guard).
+    const { error } = await this.db.from("videos").delete().eq("id", id);
+    if (error) throw error;
+  }
+
 
   // ------------------------------------------------------------------
   // Modern Ambition Content Studio
