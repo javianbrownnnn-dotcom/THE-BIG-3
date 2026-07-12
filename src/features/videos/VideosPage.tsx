@@ -14,6 +14,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useChannels, useVideos } from "@/hooks/queries";
+import { nicheKeyOf, useNicheScope, type NicheKey } from "@/lib/niches";
+import { NicheChips } from "@/components/layout/NicheChips";
 import { useFavorites } from "@/hooks/useFavorites";
 import { usePersistedState } from "@/hooks/usePersistedState";
 import { humanize } from "@/lib/format";
@@ -65,16 +67,35 @@ export function VideosPage() {
     [videos],
   );
 
+  // Niche scope (shared across pages).
+  const [scope, pickScope] = useNicheScope();
+  const scopeOptions = useMemo(() => {
+    const seen: NicheKey[] = [];
+    for (const c of channels ?? []) {
+      const k = nicheKeyOf(c.niche);
+      if (!seen.includes(k)) seen.push(k);
+    }
+    return seen;
+  }, [channels]);
+  const scopedChannelIds = useMemo(
+    () =>
+      scope === "all"
+        ? null
+        : new Set((channels ?? []).filter((c) => nicheKeyOf(c.niche) === scope).map((c) => c.id)),
+    [channels, scope],
+  );
+
   const filtered = useMemo(
     () =>
       (videos ?? []).filter((v) => {
+        if (scopedChannelIds && !scopedChannelIds.has(v.channelId)) return false;
         if (favOnly && !favorites.has(v.id)) return false;
         if (channelId !== ALL && v.channelId !== channelId) return false;
         if (hook !== ALL && v.hookType !== hook) return false;
         if (search && !v.title.toLowerCase().includes(search.toLowerCase())) return false;
         return true;
       }),
-    [videos, channelId, hook, search, favOnly, favorites],
+    [videos, channelId, hook, search, favOnly, favorites, scopedChannelIds],
   );
 
   if (isLoading) return <Skeleton className="h-96" />;
@@ -95,6 +116,8 @@ export function VideosPage() {
           </>
         }
       />
+
+      <NicheChips scope={scope} onPick={pickScope} options={scopeOptions} />
 
       {/* Filters: search on top, paired selects, then one quiet utility row */}
       <div className="mb-4 space-y-2">

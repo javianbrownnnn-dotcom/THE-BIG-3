@@ -36,6 +36,8 @@ import {
 } from "@/hooks/queries";
 import type { Idea, IdeaPriority, IdeaStatus } from "@/types";
 import { usePersistedState } from "@/hooks/usePersistedState";
+import { nicheKeyOf, useNicheScope, type NicheKey } from "@/lib/niches";
+import { NicheChips } from "@/components/layout/NicheChips";
 import { GenerateIdeasDialog } from "./GenerateIdeasDialog";
 import { BriefDialog } from "./BriefDialog";
 
@@ -180,14 +182,31 @@ export function IdeasPage() {
     tags: "",
   });
 
+  // Niche scope (shared across pages). Ideas without a channel stay visible
+  // in every scope.
+  const [scope, pickScope] = useNicheScope();
+  const scopeOptions = useMemo(() => {
+    const seen: NicheKey[] = [];
+    for (const c of channels ?? []) {
+      const k = nicheKeyOf(c.niche);
+      if (!seen.includes(k)) seen.push(k);
+    }
+    return seen;
+  }, [channels]);
+  const scopedIdeas = useMemo(() => {
+    if (scope === "all") return ideas ?? [];
+    const ids = new Set((channels ?? []).filter((c) => nicheKeyOf(c.niche) === scope).map((c) => c.id));
+    return (ideas ?? []).filter((i) => !i.channelId || ids.has(i.channelId));
+  }, [ideas, channels, scope]);
+
   const byStatus = useMemo(() => {
     const map = new Map<IdeaStatus, Idea[]>();
     for (const s of BOARD) map.set(s, []);
-    for (const idea of ideas ?? []) {
+    for (const idea of scopedIdeas) {
       if (map.has(idea.status)) map.get(idea.status)!.push(idea);
     }
     return map;
-  }, [ideas]);
+  }, [scopedIdeas]);
 
   const submit = async () => {
     if (!form.title) {
@@ -233,6 +252,8 @@ export function IdeasPage() {
         }
       />
       <BriefDialog open={briefOpen} onOpenChange={setBriefOpen} />
+
+      <NicheChips scope={scope} onPick={pickScope} options={scopeOptions} />
 
       {(ideas ?? []).length === 0 ? (
         <EmptyState

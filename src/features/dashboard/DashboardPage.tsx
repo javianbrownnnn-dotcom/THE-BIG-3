@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
@@ -30,7 +30,8 @@ import {
   useSops,
   useVideos,
 } from "@/hooks/queries";
-import { NICHE_LABELS, nicheKeyOf, type NicheKey } from "./niches";
+import { NICHE_LABELS, nicheKeyOf, nicheKeyOfCompetitor, useNicheScope, type NicheKey } from "@/lib/niches";
+import { NicheChips } from "@/components/layout/NicheChips";
 import { STEP_LABELS } from "@/features/studio/personas";
 import { compactNumber, duration, humanize, percent, relativeTime } from "@/lib/format";
 import {
@@ -157,8 +158,6 @@ function ResumeWork() {
   );
 }
 
-const NICHE_STORAGE_KEY = "big3.dashboard.niche";
-
 export function DashboardPage() {
   const { data: allVideos, isLoading } = useVideos();
   const { data: allChannels } = useChannels();
@@ -169,17 +168,9 @@ export function DashboardPage() {
   const { data: recommendations } = useRecommendations();
   const { data: activity } = useActivity();
 
-  // Niche scope: view the home screen per niche or all together.
-  const [niche, setNiche] = useState<NicheKey | "all">(() => {
-    const saved = localStorage.getItem(NICHE_STORAGE_KEY);
-    return saved === "business" || saved === "religion" || saved === "sales" || saved === "other"
-      ? saved
-      : "all";
-  });
-  const pickNiche = (n: NicheKey | "all") => {
-    setNiche(n);
-    localStorage.setItem(NICHE_STORAGE_KEY, n);
-  };
+  // Niche scope: view the home screen per niche or all together (shared
+  // across all list pages).
+  const [niche, pickNiche] = useNicheScope();
 
   const nicheOptions = useMemo(() => {
     const seen: NicheKey[] = [];
@@ -203,7 +194,7 @@ export function DashboardPage() {
     }
     const channelIds = new Set(chans.filter((c) => nicheKeyOf(c.niche) === niche).map((c) => c.id));
     const competitorIds = new Set(
-      (competitorChannels ?? []).filter((c) => nicheKeyOf(c.niche) === niche).map((c) => c.id),
+      (competitorChannels ?? []).filter((c) => nicheKeyOfCompetitor(c) === niche).map((c) => c.id),
     );
     return {
       channels: chans.filter((c) => channelIds.has(c.id)),
@@ -268,27 +259,7 @@ export function DashboardPage() {
       />
 
       {/* Niche scope — view one niche or the whole company together */}
-      <div className="mb-3 flex flex-wrap items-center gap-1.5 md:mb-4" role="tablist" aria-label="Niche filter">
-        <Button
-          size="sm"
-          variant={niche === "all" ? "default" : "outline"}
-          className="h-7 rounded-full px-3 text-xs"
-          onClick={() => pickNiche("all")}
-        >
-          All niches
-        </Button>
-        {nicheOptions.map((k) => (
-          <Button
-            key={k}
-            size="sm"
-            variant={niche === k ? "default" : "outline"}
-            className="h-7 rounded-full px-3 text-xs"
-            onClick={() => pickNiche(k)}
-          >
-            {NICHE_LABELS[k]}
-          </Button>
-        ))}
-      </div>
+      <NicheChips scope={niche} onPick={pickNiche} options={nicheOptions} />
 
       {/* KPI row — 2-up on phones so the pulse fits one screen */}
       <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-3">
