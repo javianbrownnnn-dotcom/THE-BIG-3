@@ -134,6 +134,15 @@ export function TeardownLibrary({ scopedCompIds }: { scopedCompIds?: Set<string>
     .filter((v) => v.teardown && (!scopedCompIds || scopedCompIds.has(v.competitorChannelId)))
     .sort((a, b) => (b.teardownAt ?? "").localeCompare(a.teardownAt ?? ""));
 
+  if (torn.length === 0 && scopedCompIds && (videos ?? []).some((v) => v.teardown)) {
+    return (
+      <EmptyState
+        icon={BookOpen}
+        title="No teardowns in this niche"
+        description='Teardowns exist for other niches — tap "All niches" above (or another niche chip) to see them.'
+      />
+    );
+  }
   if (torn.length === 0) {
     return (
       <EmptyState
