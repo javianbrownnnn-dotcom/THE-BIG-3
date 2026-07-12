@@ -34,7 +34,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   useCompetitorChannels,
   useCompetitorVideos,
@@ -50,9 +49,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { compactNumber, humanize, relativeTime, shortDate } from "@/lib/format";
 import type { CompetitorChannel } from "@/types";
 
+const VIDEO_PAGE_SIZE = 30;
+
 export function CompetitorsPage() {
   const [onlyOutliers, setOnlyOutliers] = useState(false);
   const [channelFilter, setChannelFilter] = useState<string | null>(null);
+  const [showAllVideos, setShowAllVideos] = useState(false);
   const { data: videos, isLoading } = useCompetitorVideos(onlyOutliers);
   const { data: allVideos } = useCompetitorVideos(false);
   const { data: compChannels } = useCompetitorChannels();
@@ -90,6 +92,8 @@ export function CompetitorsPage() {
     () => (videos ?? []).filter((v) => !channelFilter || v.competitorChannelId === channelFilter),
     [videos, channelFilter],
   );
+  // Big tables are the page's main render cost — start with one page of rows.
+  const visibleVideos = showAllVideos ? filteredVideos : filteredVideos.slice(0, VIDEO_PAGE_SIZE);
   const outlierCount = useMemo(
     () => filteredVideos.filter((v) => v.isOutlier).length,
     [filteredVideos],
@@ -250,7 +254,9 @@ export function CompetitorsPage() {
               key={c.id}
               role="button"
               onClick={() => setChannelFilter(active ? null : c.id)}
-              className={`cursor-pointer transition-colors ${active ? "border-primary" : "hover:border-muted-foreground/40"}`}
+              // content-visibility lets offscreen cards skip layout/paint —
+              // the landscape renders 70+ of these.
+              className={`cursor-pointer transition-colors [content-visibility:auto] [contain-intrinsic-size:auto_170px] ${active ? "border-primary" : "hover:border-muted-foreground/40"}`}
             >
               <CardContent className="space-y-3 p-4">
                 <div className="flex items-start justify-between gap-2">
@@ -361,19 +367,14 @@ export function CompetitorsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredVideos.map((v) => (
+                {visibleVideos.map((v) => (
                   <TableRow key={v.id}>
                     <TableCell className="max-w-[280px]">
                       <div className="flex items-center gap-2">
                         {v.isOutlier && (
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <Flame className="h-4 w-4 shrink-0 text-warning" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              Statistical outlier — z = {v.outlierScore}
-                            </TooltipContent>
-                          </Tooltip>
+                          <span title={`Statistical outlier — z = ${v.outlierScore}`}>
+                            <Flame className="h-4 w-4 shrink-0 text-warning" />
+                          </span>
                         )}
                         <span className="line-clamp-1 font-medium">{v.title}</span>
                       </div>
@@ -413,6 +414,13 @@ export function CompetitorsPage() {
                 ))}
               </TableBody>
             </Table>
+            {!showAllVideos && filteredVideos.length > VIDEO_PAGE_SIZE && (
+              <div className="border-t p-2 text-center">
+                <Button variant="ghost" size="sm" onClick={() => setShowAllVideos(true)}>
+                  Show all {filteredVideos.length} videos
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

@@ -36,7 +36,9 @@ function TeardownCard({ video }: { video: CompetitorVideo }) {
   };
 
   return (
-    <Card>
+    // content-visibility: the library holds 80+ of these cards; offscreen
+    // ones skip layout/paint until scrolled near.
+    <Card className="[content-visibility:auto] [contain-intrinsic-size:auto_460px]">
       <CardContent className="space-y-3 p-4">
         <div>
           <div className="flex flex-wrap items-center gap-1.5">
