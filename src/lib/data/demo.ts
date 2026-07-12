@@ -1412,6 +1412,13 @@ function replaceInPlace<T>(target: T[], source: T[] | undefined) {
 
 (function hydrate() {
   try {
+    // Drop payloads persisted under older demo versions — phones have small
+    // localStorage quotas (~5MB) and orphaned multi-MB blobs make persist()
+    // fail silently for the current version.
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith("big3.demo.") && k !== STORAGE_KEY) localStorage.removeItem(k);
+    }
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return;
     const s = JSON.parse(raw);

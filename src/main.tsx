@@ -8,6 +8,21 @@ import { AuthGate } from "@/features/auth/AuthGate";
 import { router } from "./router";
 import "./index.css";
 
+// After every deploy the hashed chunk filenames change and the old files are
+// purged. A phone that cached the previous index.html then 404s on the lazy
+// route imports and the page silently never renders. Vite fires
+// vite:preloadError for exactly this — recover with one reload (which
+// refetches the document and gets the new hashes). The timestamp guards
+// against reload loops if the network itself is down.
+window.addEventListener("vite:preloadError", (event) => {
+  event.preventDefault();
+  const KEY = "big3.chunkReloadAt";
+  const last = Number(sessionStorage.getItem(KEY) ?? 0);
+  if (Date.now() - last < 30_000) return;
+  sessionStorage.setItem(KEY, String(Date.now()));
+  window.location.reload();
+});
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
