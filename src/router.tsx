@@ -1,6 +1,7 @@
 import { lazy } from "react";
 import { createBrowserRouter, createHashRouter } from "react-router-dom";
 import { AppShell } from "@/components/layout/AppShell";
+import { CompetitorsPage } from "@/features/competitors/CompetitorsPage";
 
 // Every page is its own chunk so first paint only ships the shell + the
 // page being opened (recharts alone is ~390K and most pages never use it).
@@ -20,7 +21,10 @@ const VaultPage = page(() => import("@/features/vault/VaultPage"), "VaultPage");
 const VideoBuilderPage = page(() => import("@/features/builder/VideoBuilderPage"), "VideoBuilderPage");
 const VideosPage = page(() => import("@/features/videos/VideosPage"), "VideosPage");
 const VideoDetailPage = page(() => import("@/features/videos/VideoDetailPage"), "VideoDetailPage");
-const CompetitorsPage = page(() => import("@/features/competitors/CompetitorsPage"), "CompetitorsPage");
+// Competitors ships in the main bundle deliberately: it's the page users hit
+// hardest from phones, and as a lazy chunk it was the single point of failure
+// whenever a device held a stale cached index.html (chunk hash 404 → blank
+// tab). If the app shell loads, Competitors now loads.
 const IdeasPage = page(() => import("@/features/ideas/IdeasPage"), "IdeasPage");
 const SopsPage = page(() => import("@/features/sops/SopsPage"), "SopsPage");
 const SopDetailPage = page(() => import("@/features/sops/SopDetailPage"), "SopDetailPage");
