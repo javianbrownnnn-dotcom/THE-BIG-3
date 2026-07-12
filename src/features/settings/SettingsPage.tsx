@@ -40,7 +40,7 @@ export function SettingsPage() {
     <div className="animate-fade-in">
       <PageHeader
         title="Settings"
-        description={`Organization: ${org?.name ?? "—"}${data.isDemo ? " · running on demo data" : ""}`}
+        description={`Organization: ${org?.name ?? "—"}${data.isDemo ? " · running on demo data" : ""} · build ${__BUILD_STAMP__}`}
       />
 
       <div className="grid gap-4 lg:grid-cols-2">
