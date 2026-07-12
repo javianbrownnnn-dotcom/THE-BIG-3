@@ -9,15 +9,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { useChannels } from "@/hooks/queries";
+import { useChannels, useDeleteVideo } from "@/hooks/queries";
 import { useFavorites } from "@/hooks/useFavorites";
 import { compactNumber, duration, humanize, percent, shortDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { SwipeToDelete } from "@/components/ui/swipe-to-delete";
 import type { Video } from "@/types";
 
 export function VideoTable({ videos, hideChannel }: { videos: Video[]; hideChannel?: boolean }) {
   const { data: channels } = useChannels();
   const { favorites, toggle } = useFavorites();
+  const deleteVideo = useDeleteVideo();
   const channelName = (id: string) => channels?.find((c) => c.id === id)?.name ?? "—";
 
   return (
@@ -25,7 +27,15 @@ export function VideoTable({ videos, hideChannel }: { videos: Video[]; hideChann
       {/* Phone: a card list — the table's 11 columns crush titles to one word. */}
       <div className="divide-y divide-border md:hidden">
         {videos.map((v) => (
-          <div key={v.id} className="flex gap-3 p-3">
+          <SwipeToDelete
+            key={v.id}
+            label="Delete"
+            onDelete={() => {
+              if (!window.confirm(`Delete "${v.title}" and its whole metric history? The learning loop loses this data point.`)) return;
+              deleteVideo.mutate(v.id);
+            }}
+          >
+          <div className="flex gap-3 p-3">
             <button
               onClick={() => toggle(v.id)}
               aria-label={favorites.has(v.id) ? "Remove from favorites" : "Add to favorites"}
@@ -67,6 +77,7 @@ export function VideoTable({ videos, hideChannel }: { videos: Video[]; hideChann
               </div>
             </div>
           </div>
+          </SwipeToDelete>
         ))}
       </div>
 
