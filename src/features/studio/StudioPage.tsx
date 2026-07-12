@@ -9,6 +9,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { BookOpenText, Film, Plus, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { NicheChips } from "@/components/layout/NicheChips";
+import { nicheKeyOf, useNicheScope, type NicheKey } from "@/lib/niches";
 import { EmptyState } from "@/components/layout/EmptyState";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -143,6 +145,19 @@ export function StudioPage() {
     });
   };
 
+  // Niche scope (shared across pages): the project list follows it.
+  const [scope, pickScope] = useNicheScope();
+  const scopeOptions: NicheKey[] = [];
+  for (const c of channels ?? []) {
+    const k = nicheKeyOf(c.niche);
+    if (!scopeOptions.includes(k)) scopeOptions.push(k);
+  }
+  const nicheOfChannel = (channelId?: string) =>
+    nicheKeyOf((channels ?? []).find((c) => c.id === channelId)?.niche);
+  const scopedProjects = (projects ?? []).filter(
+    (p) => scope === "all" || nicheOfChannel(p.channelId) === scope,
+  );
+
   const doneCount = (projects ?? []).filter((p) => p.status === "done").length;
   const nextUnlock = PERSONA_UNLOCKS.find((n) => doneCount < n);
 
@@ -152,13 +167,15 @@ export function StudioPage() {
     <div className="animate-fade-in">
       <PageHeader
         title="Content Studio"
-        description="Modern Ambition's documentary pipeline: relevance before generation, feedback becomes rules, every script sharper than the last."
+        description="The documentary pipeline, per niche: relevance before generation, feedback becomes rules, every script sharper than the last."
         actions={
           <Button size="sm" onClick={() => setDialogOpen(true)}>
             <Plus /> New video project
           </Button>
         }
       />
+
+      <NicheChips scope={scope} onPick={pickScope} options={scopeOptions} />
 
       <Tabs defaultValue="projects">
         <TabsList className="mb-4">
@@ -175,7 +192,7 @@ export function StudioPage() {
         </TabsList>
 
         <TabsContent value="projects">
-          {(projects ?? []).length === 0 ? (
+          {scopedProjects.length === 0 ? (
             <EmptyState
               icon={Film}
               title="Start your first documentary project"
@@ -188,7 +205,7 @@ export function StudioPage() {
             />
           ) : (
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {(projects ?? []).map((p) => (
+              {scopedProjects.map((p) => (
                 <Card key={p.id} className="transition-colors hover:border-primary/40">
                   <CardContent className="space-y-2 p-3.5">
                     <div className="flex items-start justify-between gap-2">

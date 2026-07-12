@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { NicheChips } from "@/components/layout/NicheChips";
+import { nicheKeyOf, useNicheScope, type NicheKey } from "@/lib/niches";
 import { EmptyState } from "@/components/layout/EmptyState";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -364,15 +366,31 @@ export function ProductionPage() {
     format: "long_form" as VideoFormat,
   });
 
+  // Niche scope (shared across pages): the board follows the selected niche.
+  const [scope, pickScope] = useNicheScope();
+  const scopeOptions = useMemo(() => {
+    const seen: NicheKey[] = [];
+    for (const c of channels ?? []) {
+      const k = nicheKeyOf(c.niche);
+      if (!seen.includes(k)) seen.push(k);
+    }
+    return seen;
+  }, [channels]);
+  const nicheOf = useMemo(() => {
+    const byId = new Map((channels ?? []).map((c) => [c.id, nicheKeyOf(c.niche)]));
+    return (channelId: string) => byId.get(channelId);
+  }, [channels]);
+
   const byStage = useMemo(() => {
     const map = new Map<ProductionStage, Production[]>();
     for (const stage of PRODUCTION_STAGES) map.set(stage, []);
     for (const p of productions ?? []) {
       if (formatFilter !== "all" && (p.format ?? "long_form") !== formatFilter) continue;
+      if (scope !== "all" && nicheOf(p.channelId) !== scope) continue;
       map.get(p.stage)?.push(p);
     }
     return map;
-  }, [productions, formatFilter]);
+  }, [productions, formatFilter, scope, nicheOf]);
 
   const submit = async () => {
     if (!form.title.trim() || !form.channelId) {
@@ -439,6 +457,8 @@ export function ProductionPage() {
           </Button>
         }
       />
+
+      <NicheChips scope={scope} onPick={pickScope} options={scopeOptions} />
 
       {(productions ?? []).length === 0 ? (
         <EmptyState
