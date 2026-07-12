@@ -72,11 +72,21 @@ export function YouTubeDialog({
       const res = await data.syncOwnerAnalytics();
       await qc.invalidateQueries({ queryKey: ["videos"] });
       await qc.invalidateQueries({ queryKey: ["channels"] });
-      toast.success(
-        res.videosUpdated > 0
-          ? `Pulled private analytics for ${res.videosUpdated} videos — CTR, impressions and retention are now live.`
-          : "Sync ran, but no private metrics came back yet. New analytics can take a day to populate after connecting.",
-      );
+      if (res.errors.length > 0) {
+        toast.error(
+          `Couldn't sync ${res.errors.length} channel${res.errors.length === 1 ? "" : "s"}: ` +
+            res.errors.map((e) => `${e.channel} — ${e.error}`).join(" · "),
+          { duration: 12000 },
+        );
+      } else if (res.videosUpdated > 0) {
+        toast.success(
+          `Pulled private analytics for ${res.videosUpdated} videos — CTR, impressions and retention are now live.`,
+        );
+      } else {
+        toast.success(
+          "Sync ran, but no private metrics came back yet. New analytics can take a day to populate after connecting.",
+        );
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : String(err));
     } finally {

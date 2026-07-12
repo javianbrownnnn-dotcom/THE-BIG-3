@@ -96,7 +96,14 @@ async function ytGet(path: string, params: Record<string, string>, key: string) 
 
 async function fetchUploads(channelId: string, key: string, maxVideos = 200) {
   const chan = await ytGet("channels", { part: "contentDetails", id: channelId }, key);
-  const playlist = chan.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+  if (!chan.items?.length) {
+    // A handle/@name or a typo'd id was saved instead of a UC… channel id.
+    throw new Error(
+      `No YouTube channel found for id "${channelId}". Open Channels → this channel → ` +
+        `YouTube and re-link it (paste the channel URL/@handle so the app resolves the correct UC… id).`,
+    );
+  }
+  const playlist = chan.items[0]?.contentDetails?.relatedPlaylists?.uploads;
   if (!playlist) return [];
 
   const ids: string[] = [];
@@ -143,7 +150,9 @@ Deno.serve(async (req) => {
       .not("youtube_channel_id", "is", null);
 
     const results: any[] = [];
+    const errors: Array<{ channel: string; error: string }> = [];
     for (const channel of channels ?? []) {
+      try {
       const uploads = await fetchUploads(channel.youtube_channel_id, apiKey);
 
       const { data: existing } = await db.from("videos")
@@ -211,8 +220,14 @@ Deno.serve(async (req) => {
         ownerConnected,
         privateMetrics: priv.size,
       });
+      } catch (err) {
+        // One channel's bad id or API hiccup must not abort every other
+        // channel's sync — record it and move on.
+        console.error(`sync failed for channel ${channel.name}:`, err);
+        errors.push({ channel: channel.name, error: String(err instanceof Error ? err.message : err) });
+      }
     }
-    return jsonResponse({ ok: true, results });
+    return jsonResponse({ ok: true, results, errors });
   } catch (err) {
     console.error(err);
     return jsonResponse({ error: String(err) }, 500);
