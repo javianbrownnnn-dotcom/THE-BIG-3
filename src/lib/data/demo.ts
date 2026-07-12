@@ -88,6 +88,16 @@ import {
   magnatesMediaIntel,
   magnatesTeardowns,
 } from "./ciBusinessSeed";
+import {
+  cxCompetitorChannels,
+  cxCompetitorVideos,
+  cxIdeas,
+  cxInsights,
+  esotericaIntel,
+  mythMeaningCiGoals,
+  religionTeardowns,
+  rfbIntel,
+} from "./ciChristianitySeed";
 
 // ---------------------------------------------------------------------------
 // Seeded PRNG — data is identical on every load.
@@ -172,6 +182,8 @@ const channels: Channel[] = [
     goals: [
       { id: uid("goal"), channelId: "ch_rel", metric: "ctr", targetValue: 5.5, period: "monthly" },
       { id: uid("goal"), channelId: "ch_rel", metric: "watch_time_hours", targetValue: 30000, period: "monthly" },
+      // Christianity CI cycle (Jul 2026): 12-month projection as goals.
+      ...mythMeaningCiGoals,
     ],
     createdAt: daysAgo(280),
   },
@@ -320,12 +332,17 @@ const competitorChannels: CompetitorChannel[] = [
   // the report calls "MagnatesMedia") — one row, not a duplicate.
   { id: "cc_mag", organizationId: org.id, name: "Magnates Media", niche: "Business documentaries", ...magnatesMediaIntel },
   { id: "cc_hoc", organizationId: org.id, name: "How History Works", niche: "Business / history hybrid" },
-  { id: "cc_rfb", organizationId: org.id, name: "ReligionForBreakfast", niche: "Academic religion" },
-  { id: "cc_eso", organizationId: org.id, name: "Esoterica", niche: "Esoteric religious history" },
+  // Both religion rows extended in place with the Christianity CI cycle's
+  // channel intelligence — one row each, not duplicates.
+  { id: "cc_rfb", organizationId: org.id, name: "ReligionForBreakfast", niche: "Academic religion", ...rfbIntel },
+  { id: "cc_eso", organizationId: org.id, name: "Esoterica", niche: "Esoteric religious history", ...esotericaIntel },
   { id: "cc_chris", organizationId: org.id, name: "Chris Voss (MasterClass clips)", niche: "Negotiation" },
   // 34 business-niche rows from the July 2026 CI research cycle (35 total
   // with Magnates Media above).
   ...ciCompetitorChannels,
+  // 33 Christianity-niche rows from the July 2026 CI research cycle (35
+  // total with ReligionForBreakfast and Esoterica above).
+  ...cxCompetitorChannels,
 ];
 
 const competitorVideos: CompetitorVideo[] = [];
@@ -378,9 +395,9 @@ const competitorVideos: CompetitorVideo[] = [];
 // Business-niche CI teardown cycle (July 2026): outlier videos for the new
 // competitor set, plus teardowns for the two existing Magnates Media outliers
 // — attached in place so the originals keep their ids and stats.
-competitorVideos.push(...ciCompetitorVideos);
+competitorVideos.push(...ciCompetitorVideos, ...cxCompetitorVideos);
 for (const cv of competitorVideos) {
-  const td = magnatesTeardowns[cv.title];
+  const td = magnatesTeardowns[cv.title] ?? religionTeardowns[cv.title];
   if (td && cv.isOutlier && !cv.teardown) {
     cv.teardown = td;
     cv.teardownAt = daysAgo(0);
@@ -430,6 +447,9 @@ const outlierCompIds = competitorVideos.filter((c) => c.isOutlier).map((c) => c.
 const ciTeardowns = competitorVideos.filter((c) => c.id.startsWith("cv_ci_"));
 const ciIdsWhere = (pred: (c: CompetitorVideo) => boolean, n: number) =>
   ciTeardowns.filter(pred).slice(0, n).map((c) => c.id);
+const cxTeardowns = competitorVideos.filter((c) => c.id.startsWith("cv_cx_"));
+const cxIdsWhere = (pred: (c: CompetitorVideo) => boolean, n: number) =>
+  cxTeardowns.filter(pred).slice(0, n).map((c) => c.id);
 
 const sops: SopRow[] = [
   sopWithVersions(
@@ -713,6 +733,221 @@ const sops: SopRow[] = [
       },
     ],
   ),
+
+  // -------------------------------------------------------------------------
+  // Per-niche SOPs — distilled from each niche's CI teardown cycle. The six
+  // SOPs above stay generic/org-wide; niche-specific rules live here, scoped
+  // to a channel so each niche reads its own playbook. The two niches
+  // genuinely conflict (face-led vs artifact-led packaging, proof-then-promise
+  // vs artifact cold-opens), which is why these are separate SOPs.
+  // -------------------------------------------------------------------------
+  sopWithVersions(
+    {
+      id: "sop_biz_hooks", organizationId: org.id, channelId: "ch_founder",
+      title: "Hooks — Business niche", category: "hooks", status: "active",
+      reviewFrequencyDays: 45, nextReviewAt: daysAgo(-45),
+    },
+    [
+      {
+        purpose: "Open business/founder videos so a browsing viewer commits inside 15 seconds.",
+        whenToUse: "Every Founder Reality / Business Storytelling video, before scripting the body.",
+        steps: [
+          "Default to proof-then-promise: concrete proof in the first 5 seconds, payoff by second 15, commitment by 30 (78% retention at 30s vs 67% for question hooks in the CI sample).",
+          "Deliver the title's promise by second 15 — the 10–20s retention cliff is unrecoverable.",
+          "Prefer a direct claim over scene-setting; use first person where honest (+8–12% engagement).",
+          "Open cold inside a decision moment or a single scene of the empire — never a biography preamble (MagnatesMedia teardowns).",
+          "Never open with a statistic without context; read the hook aloud and cut it if it runs past 20 seconds.",
+        ],
+        changeSummary:
+          "Created from the July 2026 business teardown cycle (25 channels): proof-then-promise default, 15-second delivery rule, decision-moment cold opens. Evidence: MagnatesMedia, ColdFusion, How Money Works, Internet Historian teardowns.",
+        source: "ai",
+        createdAt: daysAgo(0),
+      },
+    ],
+    [],
+    ciIdsWhere((c) => c.hook === "story_cold_open" || c.hook === "bold_claim", 4),
+  ),
+  sopWithVersions(
+    {
+      id: "sop_biz_packaging", organizationId: org.id, channelId: "ch_founder",
+      title: "Packaging — Business niche", category: "packaging", status: "active",
+      reviewFrequencyDays: 45, nextReviewAt: daysAgo(-45),
+    },
+    [
+      {
+        purpose: "Title + thumbnail packaging tuned to what wins in the business/founder niche.",
+        whenToUse: "After the script locks, before scheduling, on business-niche videos.",
+        steps: [
+          "Thumbnail: face on the left third + a ≤3-word claim on the right, orange/blue palette (72% success pattern, +25–30% CTR); check on a phone first — 70% of views are mobile.",
+          "Title: draft against [Number/Claim] – [Benefit] – [Curiosity]; numbers +34% CTR, personal pronouns +18%; front-load the first 40 characters.",
+          "Identity-mystery framing ('the man who…', 'the company that…') when the subject genuinely carries it (Magnates Media mechanism).",
+          "Implicate the viewer ('your…') only when the story literally touches them (Luxottica mechanism) — never overclaim; trust damage is permanent.",
+          "Title and thumbnail must not repeat the same words.",
+        ],
+        changeSummary:
+          "Created from the July 2026 business teardown cycle: face-left formula, number/benefit/curiosity titles, identity-mystery and viewer-implication mechanisms. Evidence: MagnatesMedia, Fortune, Company Man, Wall Street Millennial teardowns.",
+        source: "ai",
+        createdAt: daysAgo(0),
+      },
+    ],
+    [],
+    ciIdsWhere((c) => c.hook === "question" || c.hook === "contrarian", 4),
+  ),
+  sopWithVersions(
+    {
+      id: "sop_biz_structure", organizationId: org.id, channelId: "ch_founder",
+      title: "Story Structure — Business niche", category: "storytelling", status: "active",
+      reviewFrequencyDays: 45, nextReviewAt: daysAgo(-45),
+    },
+    [
+      {
+        purpose: "Pick the narrative spine and pacing that maximize retention on founder/company stories.",
+        whenToUse: "At outline stage on business-niche videos.",
+        steps: [
+          "Founder/person stories: hero's journey with failures integrated (74% completion in the CI sample) — never success-only.",
+          "Company stories: rise-and-fall (most shareable, 70% completion).",
+          "Plan 3–5 emotional beats (setback → revelation → triumph) per 12–18 minutes; beats outperform flat narratives by 15–20% retention regardless of spine.",
+          "Pacing: 6–8s average shot length for the 18–45 core; hold longer only on emotional beats.",
+          "Keep one concrete question open across the whole video; end every act on it.",
+        ],
+        changeSummary:
+          "Created from the July 2026 business teardown cycle: failures-integrated default, emotional-beat rule, 6–8s pacing. Evidence: Modern MBA, Internet Historian, Real Stories, Wendover teardowns; patterns §3.4–3.5.",
+        source: "ai",
+        createdAt: daysAgo(0),
+      },
+    ],
+    [],
+    ciIdsWhere((c) => c.storyStructure === "rise_and_fall" || c.storyStructure === "case_study", 4),
+  ),
+  sopWithVersions(
+    {
+      id: "sop_biz_topics", organizationId: org.id, channelId: "ch_founder",
+      title: "Topic Selection — Business niche", category: "research", status: "active",
+      reviewFrequencyDays: 60, nextReviewAt: daysAgo(-60),
+    },
+    [
+      {
+        purpose: "Greenlight only business topics with demonstrated demand and a named competitor blind spot.",
+        whenToUse: "Weekly idea review for the business niche.",
+        steps: [
+          "Check the CI saturation map: generic founder stories and generic advice are declining (−15–30% YoY); the open gaps are failure analysis, female/international founders, creator-economy founders, AI × founders.",
+          "Name the competitor blind spot the topic exploits (20/25 deep-dived channels are AdSense-only and success-only) — if no tracked channel is weak here, rescore.",
+          "Find 3+ comparable videos with above-baseline views/day; log them in the competitor database.",
+          "Score 1-5 on demand, differentiation, and production cost; packaging (title + thumbnail concept) drafted at idea stage.",
+        ],
+        changeSummary:
+          "Created from the July 2026 business teardown cycle: saturation-map gate + blind-spot requirement, sourced from all 25 deep-dive blind-spot lists.",
+        source: "ai",
+        createdAt: daysAgo(0),
+      },
+    ],
+    [],
+    ciIdsWhere((c) => Boolean(c.teardown), 3),
+  ),
+  sopWithVersions(
+    {
+      id: "sop_rel_hooks", organizationId: org.id, channelId: "ch_rel",
+      title: "Hooks — Religion & History niche", category: "hooks", status: "active",
+      reviewFrequencyDays: 45, nextReviewAt: daysAgo(-45),
+    },
+    [
+      {
+        purpose: "Open religious-history videos so curiosity is honest and the promise lands early.",
+        whenToUse: "Every Myth & Meaning video, before scripting the body.",
+        steps: [
+          "Open cold on an artifact, a scene, or a primary-source line — drop the viewer inside the ancient world, not inside a thesis.",
+          "Deliver the title's promise early and honestly; this audience punishes bait permanently.",
+          "Question hooks must be resolved with scholarship by the end — never leave a 'mystery' the video can't cash (the anti-Gnostic-Informant rule).",
+          "State what scholars actually know vs what is debated within the first minute on contested topics.",
+          "Read the hook aloud; atmosphere is allowed to breathe here — slower than business-niche pacing, but every sentence still earns its place.",
+        ],
+        changeSummary:
+          "Created from the July 2026 Christianity teardown cycle (25 channels): artifact/scene cold-opens, honest-promise delivery, resolve-with-scholarship rule. Evidence: Hochelaga, Voices of the Past, Fall of Civilizations, Gnostic Informant teardowns.",
+        source: "ai",
+        createdAt: daysAgo(0),
+      },
+    ],
+    [],
+    cxIdsWhere((c) => c.hook === "story_cold_open" || c.hook === "question", 4),
+  ),
+  sopWithVersions(
+    {
+      id: "sop_rel_packaging", organizationId: org.id, channelId: "ch_rel",
+      title: "Packaging — Religion & History niche", category: "packaging", status: "active",
+      reviewFrequencyDays: 45, nextReviewAt: daysAgo(-45),
+    },
+    [
+      {
+        purpose: "Title + thumbnail packaging tuned to what wins in the religious-history niche — the opposite of the business playbook.",
+        whenToUse: "After the script locks, before scheduling, on religion-niche videos.",
+        steps: [
+          "Thumbnail: artifact/manuscript/icon-led with ≤3 words — faces win only in interview/debate lanes, which we are not in. No arrows, no shocked faces.",
+          "Visibly non-clickbait packaging is itself a trust signal this audience rewards — restraint converts.",
+          "Winning title shapes: 'What X Actually Believed', 'The Forgotten/Lost X', questions the video resolves with scholarship.",
+          "'Banned/forbidden' only when literally descriptive (Book of Enoch), never conspiratorial; watch advertiser sensitivity on contested framings.",
+          "Title and thumbnail must not repeat the same words; check artifact readability at 120px.",
+        ],
+        changeSummary:
+          "Created from the July 2026 Christianity teardown cycle: artifact-led thumbnails (inverse of the business niche), no-clickbait trust packaging, honest 'forbidden' rule. Evidence: Hochelaga, UsefulCharts, Esoterica, ReligionForBreakfast teardowns.",
+        source: "ai",
+        createdAt: daysAgo(0),
+      },
+    ],
+    [],
+    cxIdsWhere((c) => c.isOutlier, 4),
+  ),
+  sopWithVersions(
+    {
+      id: "sop_rel_structure", organizationId: org.id, channelId: "ch_rel",
+      title: "Story Structure — Religion & History niche", category: "storytelling", status: "active",
+      reviewFrequencyDays: 45, nextReviewAt: daysAgo(-45),
+    },
+    [
+      {
+        purpose: "Pick the narrative spine that carries scholarship as story on religious-history topics.",
+        whenToUse: "At outline stage on religion-niche videos.",
+        steps: [
+          "Default spines: mystery-reveal (discoveries), biography-of-a-god/text (franchise entries), textual-detective (manuscript stories).",
+          "Serialize: number arc episodes and end each on a hook into the next — serialization is this niche's patronage engine.",
+          "Voice-act primary sources instead of paraphrasing the narrator over them (Voices of the Past mechanism, with the scholarly framing he omits).",
+          "Hedge reconstruction claims explicitly — 'we think', 'the evidence suggests' — this audience checks.",
+          "Runtimes breathe here: 40–75 min is normal at the top of the niche; cut for tension, not for length.",
+        ],
+        changeSummary:
+          "Created from the July 2026 Christianity teardown cycle: mystery-reveal/biography/detective spines, serialization rule, voice-acted sources. Evidence: Fall of Civilizations, Voices of the Past, History Time, Crecganford teardowns.",
+        source: "ai",
+        createdAt: daysAgo(0),
+      },
+    ],
+    [],
+    cxIdsWhere((c) => c.storyStructure === "chronological" || c.storyStructure === "rise_and_fall", 4),
+  ),
+  sopWithVersions(
+    {
+      id: "sop_rel_credibility", organizationId: org.id, channelId: "ch_rel",
+      title: "Research & Credibility — Religion & History niche", category: "research", status: "active",
+      reviewFrequencyDays: 60, nextReviewAt: daysAgo(-60),
+    },
+    [
+      {
+        purpose: "Protect the channel's credibility — the leading indicator of everything in this niche.",
+        whenToUse: "Every religion-niche video, from topic selection through publish.",
+        steps: [
+          "Sources on screen — the visible contrast with sensationalist channels IS the brand.",
+          "Scholar-review pass required on high-stakes scripts (Yahweh/Asherah/monotheism cluster, anything contested).",
+          "Stay neutral under comment pressure: never be claimed by the apologetics or counter-apologetics camp — the curious middle is the audience.",
+          "Zero-retraction standard: one bad correction does permanent damage with this audience; when scholarship is divided, present the division.",
+          "No conspiracy framing ever — cover apocrypha and 'lost' texts rigorously and inherit sensationalist channels' maturing viewers.",
+        ],
+        changeSummary:
+          "Created from the July 2026 Christianity teardown cycle: sources-on-screen rule, scholar-review gate, neutrality discipline, zero-retraction standard. Evidence: Gnostic Informant (cautionary), ReligionForBreakfast, Kipp Davis, MythVision teardowns.",
+        source: "ai",
+        createdAt: daysAgo(0),
+      },
+    ],
+    [],
+    cxIdsWhere((c) => Boolean(c.teardown), 3),
+  ),
 ];
 
 // ---------------------------------------------------------------------------
@@ -766,6 +1001,10 @@ const ideas: Idea[] = [
   // The deduplicated CI ideas: 19 niche-level opportunities + the 20-video
   // Founder Reality launch slate (opportunity #1 became the channel itself).
   ...ciIdeas,
+  // Christianity cycle: 20 opportunities + 20 video ideas for the existing
+  // Ancient Religions & Storytelling channel (no overlaps with its 3
+  // pre-existing pipeline ideas — checked title-by-title).
+  ...cxIdeas,
 ];
 
 // ---------------------------------------------------------------------------
@@ -805,6 +1044,8 @@ const insights: AiInsight[] = [
   // Knowledge base from the business-niche CI research (quoted findings, not
   // app-detected statistics — see ciBusinessSeed.ts).
   ...ciInsights,
+  // Knowledge base from the Christianity-niche CI research.
+  ...cxInsights,
 ];
 
 const recommendations: AiRecommendation[] = [
@@ -1143,7 +1384,10 @@ const comments: Comment[] = [
 // competitors' outlier videos + the CI-informed SOP versions. Bumping the key
 // reseeds returning browsers; older local edits stay under the old key,
 // orphaned.
-const STORAGE_KEY = "big3.demo.v3";
+// v4: Christianity-niche CI dataset seeded (35 competitors incl. two
+// in-place extensions, ideas, insights, ch_rel projection goals).
+// v5: Christianity teardown cycle + per-niche SOPs (business/religion).
+const STORAGE_KEY = "big3.demo.v5";
 
 function persist() {
   try {
