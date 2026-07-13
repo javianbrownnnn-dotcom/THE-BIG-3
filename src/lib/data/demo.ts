@@ -2582,10 +2582,11 @@ export class DemoProvider implements DataProvider {
     persist();
   }
 
-  async runStudioStep(projectId: string, step: StudioStep): Promise<ContentProject> {
+  async runStudioStep(projectId: string, step: StudioStep, guidance?: string): Promise<ContentProject> {
     await delay(900);
     const row = contentProjects.find((c) => c.id === projectId);
     if (!row) throw new Error("project not found");
+    // Demo templates are canned; live mode injects `guidance` into the prompt.
     switch (step) {
       case "relevance": {
         row.relevance = templateRelevance(row.topic);
@@ -2602,6 +2603,14 @@ export class DemoProvider implements DataProvider {
         break;
       case "thumbnails":
         row.thumbnailLab = templateThumbnails(row);
+        // Surface the creator's direction on the concepts so the demo flow
+        // shows where it lands (live mode actually regenerates around it).
+        if (guidance?.trim()) {
+          for (const c of row.thumbnailLab.concepts) {
+            c.visualDescription = `${c.visualDescription} [Creator direction: ${guidance.trim()}]`;
+            c.providerPromptGemini = `${c.providerPromptGemini}\nCreator direction (must follow): ${guidance.trim()}`;
+          }
+        }
         break;
       case "outline":
         row.outline = templateOutline(row);
@@ -2731,12 +2740,15 @@ export class DemoProvider implements DataProvider {
     return clone(row);
   }
 
-  async generateThumbnailImage(projectId: string, conceptName: string) {
+  async generateThumbnailImage(projectId: string, conceptName: string, promptAddon?: string) {
     await delay(1200);
     const row = contentProjects.find((c) => c.id === projectId);
     if (!row) throw new Error("project not found");
     const concept = row.thumbnailLab?.concepts.find((c) => c.conceptName === conceptName);
     if (!concept) throw new Error("concept not found — run the Thumbnail Studio first");
+    const fullPrompt = promptAddon?.trim()
+      ? `${concept.providerPromptGemini}\nCreator direction (must follow): ${promptAddon.trim()}`
+      : concept.providerPromptGemini;
     // Demo: a labeled placeholder so the save/select flow is fully explorable.
     const svg =
       `<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720">` +
@@ -2749,7 +2761,7 @@ export class DemoProvider implements DataProvider {
       provider: "gemini",
       conceptName,
       imageUrl: `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`,
-      prompt: concept.providerPromptGemini,
+      prompt: fullPrompt,
       pairedTitle: row.selectedTitle,
       relevanceScore: concept.relevanceScore,
       selected: row.thumbnailVariants.length === 0,

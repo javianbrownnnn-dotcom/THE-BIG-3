@@ -1388,13 +1388,14 @@ export class SupabaseProvider implements DataProvider {
     if (error) throw error;
   }
 
-  async runStudioStep(projectId: string, step: StudioStep): Promise<ContentProject> {
+  async runStudioStep(projectId: string, step: StudioStep, guidance?: string): Promise<ContentProject> {
     const orgId = await this.requireOrgId();
     // The edge function loads the project, injects channel identity, personas
     // and active Script Bible rules, runs Claude, writes the artifact back,
     // and returns the updated row.
     const data = await this.invokeFn<{ project: any }>("content-studio", {
       organizationId: orgId, projectId, step,
+      ...(guidance?.trim() ? { guidance: guidance.trim() } : {}),
     });
     return this.mapContentProject(data.project);
   }
@@ -1507,6 +1508,7 @@ export class SupabaseProvider implements DataProvider {
   async generateThumbnailImage(
     projectId: string,
     conceptName: string,
+    promptAddon?: string,
   ): Promise<ContentProject> {
     const orgId = await this.requireOrgId();
     // Gemini renders the concept's image prompt server-side (GEMINI_API_KEY
@@ -1514,7 +1516,10 @@ export class SupabaseProvider implements DataProvider {
     // setup instructions in the error message instead of breaking.
     const data = await this.invokeFn<{ imageUrl: string; prompt: string }>(
       "thumbnail-image",
-      { organizationId: orgId, projectId, conceptName },
+      {
+        organizationId: orgId, projectId, conceptName,
+        ...(promptAddon?.trim() ? { promptAddon: promptAddon.trim() } : {}),
+      },
     );
     const project = await this.getContentProject(projectId);
     return this.saveThumbnailVariant(projectId, {

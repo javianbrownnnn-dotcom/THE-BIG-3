@@ -21,7 +21,7 @@ const API = "https://generativelanguage.googleapis.com/v1beta/models";
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
-    const { organizationId, projectId, conceptName } = await req.json();
+    const { organizationId, projectId, conceptName, promptAddon } = await req.json();
     if (!organizationId || !projectId || !conceptName) {
       return jsonResponse({ error: "organizationId, projectId, conceptName required" }, 400);
     }
@@ -60,7 +60,10 @@ Deno.serve(async (req) => {
       `16:9 aspect ratio, 1280x720 YouTube thumbnail, premium documentary aesthetic, ` +
       `one clear subject, high contrast, mobile-first readability, no clutter, no text overlays, ` +
       `no copyrighted logos, no misleading depictions of real people.` +
-      (concept.negativePrompt ? `\nAvoid: ${concept.negativePrompt}` : "");
+      (concept.negativePrompt ? `\nAvoid: ${concept.negativePrompt}` : "") +
+      (String(promptAddon ?? "").trim()
+        ? `\nCreator direction (must follow): ${String(promptAddon).trim()}`
+        : "");
 
     const res = await fetch(`${API}/${MODEL}:generateContent?key=${apiKey}`, {
       method: "POST",

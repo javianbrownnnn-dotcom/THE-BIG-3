@@ -254,9 +254,11 @@ export interface DataProvider {
    * outline, script, critique, personaReview). Live mode routes to Claude via
    * the content-studio edge function (which injects channel identity,
    * personas, and active Script Bible rules); demo mode uses honest template
-   * scaffolds. Returns the updated project.
+   * scaffolds. Returns the updated project. `guidance` is optional creator
+   * direction ("more artifact close-ups, no faces") injected into the prompt
+   * so a re-run can be steered instead of rolled again.
    */
-  runStudioStep(projectId: string, step: StudioStep): Promise<ContentProject>;
+  runStudioStep(projectId: string, step: StudioStep, guidance?: string): Promise<ContentProject>;
   /** Built-in personas plus AI-proposed ones (unlock at 30/100 videos, 5 max). */
   listStudioPersonas(): Promise<StudioPersona[]>;
   /** The Script Bible. */
@@ -286,10 +288,12 @@ export interface DataProvider {
    * provider (Gemini). Live mode calls the thumbnail-image edge function —
    * if GEMINI_API_KEY isn't configured it returns setup instructions in the
    * error. Demo mode fabricates a placeholder so the flow is explorable.
+   * `promptAddon` is optional creator direction appended to the image prompt.
    */
   generateThumbnailImage(
     projectId: string,
     conceptName: string,
+    promptAddon?: string,
   ): Promise<ContentProject>;
 
   listActivity(): Promise<ActivityItem[]>;

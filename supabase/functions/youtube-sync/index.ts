@@ -87,10 +87,25 @@ async function fetchChannelPrivateMetrics(token: string): Promise<Map<string, Pr
   return out;
 }
 
+class YtError extends Error {
+  constructor(message: string, readonly status: number, readonly reason: string) {
+    super(message);
+  }
+}
+
 async function ytGet(path: string, params: Record<string, string>, key: string) {
   const qs = new URLSearchParams({ ...params, key });
   const res = await fetch(`${API}/${path}?${qs}`);
-  if (!res.ok) throw new Error(`YouTube API ${path} → ${res.status}: ${await res.text()}`);
+  if (!res.ok) {
+    const body = await res.text();
+    let reason = "";
+    try {
+      reason = JSON.parse(body)?.error?.errors?.[0]?.reason ?? "";
+    } catch {
+      // non-JSON body — reason stays empty
+    }
+    throw new YtError(`YouTube API ${path} → ${res.status}: ${body}`, res.status, reason);
+  }
   return res.json();
 }
 
@@ -109,12 +124,21 @@ async function fetchUploads(channelId: string, key: string, maxVideos = 200) {
   const ids: string[] = [];
   let pageToken: string | undefined;
   while (ids.length < maxVideos) {
-    const page = await ytGet("playlistItems", {
-      part: "contentDetails",
-      playlistId: playlist,
-      maxResults: "50",
-      ...(pageToken ? { pageToken } : {}),
-    }, key);
+    let page;
+    try {
+      page = await ytGet("playlistItems", {
+        part: "contentDetails",
+        playlistId: playlist,
+        maxResults: "50",
+        ...(pageToken ? { pageToken } : {}),
+      }, key);
+    } catch (err) {
+      // A channel with no public uploads yet 404s its uploads playlist
+      // (reason: playlistNotFound). That's an empty/brand-new channel, not a
+      // failure — mirror the client's fetchUploads and return what we have.
+      if (err instanceof YtError && err.status === 404) return [];
+      throw err;
+    }
     for (const item of page.items ?? []) {
       if (item.contentDetails?.videoId) ids.push(item.contentDetails.videoId);
     }

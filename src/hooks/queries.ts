@@ -545,8 +545,8 @@ export function useDeleteContentProject() {
 export function useRunStudioStep() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (args: { projectId: string; step: StudioStep }) =>
-      data.runStudioStep(args.projectId, args.step),
+    mutationFn: (args: { projectId: string; step: StudioStep; guidance?: string }) =>
+      data.runStudioStep(args.projectId, args.step, args.guidance),
     onSuccess: (result) => {
       qc.setQueryData(keys.contentProject(result.id), result);
       qc.invalidateQueries({ queryKey: keys.contentProjects });
@@ -609,8 +609,8 @@ export function useSaveThumbnailVariant() {
 export function useGenerateThumbnailImage() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (args: { projectId: string; conceptName: string }) =>
-      data.generateThumbnailImage(args.projectId, args.conceptName),
+    mutationFn: (args: { projectId: string; conceptName: string; promptAddon?: string }) =>
+      data.generateThumbnailImage(args.projectId, args.conceptName, args.promptAddon),
     onSuccess: (result) => {
       qc.setQueryData(keys.contentProject(result.id), result);
     },

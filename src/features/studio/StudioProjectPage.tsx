@@ -228,6 +228,9 @@ export function StudioProjectPage() {
   const [scriptDraft, setScriptDraft] = useState<string | null>(null);
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [notes, setNotes, clearNotes] = usePersistedState(`draft.studio.feedback.${id}`, "");
+  // Creator steering for the Thumbnail Studio: appended to concept
+  // regeneration AND to every image render until cleared.
+  const [thumbDirection, setThumbDirection] = usePersistedState(`draft.studio.thumbdir.${id}`, "");
   const uploadRef = useRef<HTMLInputElement>(null);
   const viewedId = useRef<string>();
 
@@ -295,9 +298,9 @@ export function StudioProjectPage() {
   const current = view ?? project.status;
   const statusIdx = STUDIO_STEPS.indexOf(project.status);
 
-  const runStep = async (step: StudioStep) => {
+  const runStep = async (step: StudioStep, guidance?: string) => {
     try {
-      await run.mutateAsync({ projectId: project.id, step });
+      await run.mutateAsync({ projectId: project.id, step, guidance: guidance?.trim() || undefined });
       toast.success("Done — react to it, then continue.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : String(err));
@@ -314,8 +317,8 @@ export function StudioProjectPage() {
     if (to === "critique" || to === "feedback") void syncToProduction(false);
   };
 
-  const RunButton = ({ step, has, label }: { step: StudioStep; has: boolean; label: string }) => (
-    <Button size="sm" variant={has ? "outline" : "default"} onClick={() => runStep(step)} disabled={run.isPending}>
+  const RunButton = ({ step, has, label, guidance }: { step: StudioStep; has: boolean; label: string; guidance?: string }) => (
+    <Button size="sm" variant={has ? "outline" : "default"} onClick={() => runStep(step, guidance)} disabled={run.isPending}>
       {has ? <RefreshCw className={run.isPending ? "animate-spin" : ""} /> : <Wand2 className={run.isPending ? "animate-pulse" : ""} />}
       {run.isPending ? "Working…" : has ? `Re-run ${label}` : label}
     </Button>
@@ -340,6 +343,11 @@ export function StudioProjectPage() {
 
   const selectConcept = (c: ThumbnailConcept) =>
     update.mutate({ id: project.id, patch: { selectedThumbnail: c } });
+
+  // Fold the creator's thumbnail direction into any prompt leaving the app
+  // (Midjourney/Canva copies) so manual tools get the same steering.
+  const withDirection = (prompt: string) =>
+    thumbDirection.trim() ? `${prompt}\nCreator direction (must follow): ${thumbDirection.trim()}` : prompt;
 
   const pendingFacts = pendingFactChecks(project);
   const setFactCheck = (next: FactCheckItem) =>
@@ -750,9 +758,27 @@ export function StudioProjectPage() {
           <Card>
             <CardHeader className="flex-row items-center justify-between space-y-0">
               <CardTitle>Thumbnail Studio</CardTitle>
-              <RunButton step="thumbnails" has={!!project.thumbnailLab} label="Generate concepts" />
+              <RunButton step="thumbnails" has={!!project.thumbnailLab} label="Generate concepts" guidance={thumbDirection} />
             </CardHeader>
             <CardContent className="space-y-3">
+              {/* Creator steering: add to the prompt or redirect the idea —
+                  applies to concept (re)generation and every image render. */}
+              <div className="space-y-1 rounded-md border border-dashed p-2.5">
+                <Label htmlFor="thumb-direction" className="text-xs font-medium">
+                  Your direction (optional)
+                </Label>
+                <Textarea
+                  id="thumb-direction"
+                  value={thumbDirection}
+                  onChange={(e) => setThumbDirection(e.target.value)}
+                  placeholder='Add to the prompt or redirect the idea — e.g. "one glowing scroll on a stone table, no faces, colder colors, feels like a discovery"'
+                  className="min-h-[56px] text-sm"
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  Used when you {project.thumbnailLab ? "re-run" : "generate"} the concepts and on
+                  every Generate (Gemini) / copied prompt until you clear it.
+                </p>
+              </div>
               {!project.thumbnailLab ? (
                 <p className="text-sm text-muted-foreground">
                   5 concepts that pay off “{project.selectedTitle}” — each with Gemini and Canva
@@ -807,7 +833,11 @@ export function StudioProjectPage() {
                             disabled={genImage.isPending}
                             onClick={() =>
                               genImage.mutate(
-                                { projectId: project.id, conceptName: c.conceptName },
+                                {
+                                  projectId: project.id,
+                                  conceptName: c.conceptName,
+                                  promptAddon: thumbDirection.trim() || undefined,
+                                },
                                 {
                                   onSuccess: () => toast.success("Image generated and saved below"),
                                   onError: (err) =>
@@ -824,7 +854,7 @@ export function StudioProjectPage() {
                             variant="outline"
                             className="h-7 text-xs"
                             onClick={() => {
-                              copyText(c.providerPromptCanva, "Canva brief");
+                              copyText(withDirection(c.providerPromptCanva), "Canva brief");
                               window.open("https://www.canva.com/create/youtube-thumbnails/", "_blank", "noopener");
                             }}
                           >
@@ -839,7 +869,7 @@ export function StudioProjectPage() {
                               // sanctioned path: MJ-formatted prompt + their
                               // imagine page; the result comes back via Upload.
                               copyText(
-                                `${c.providerPromptGemini} --ar 16:9 --style raw`,
+                                `${withDirection(c.providerPromptGemini)} --ar 16:9 --style raw`,
                                 "Midjourney prompt",
                               );
                               window.open("https://www.midjourney.com/imagine", "_blank", "noopener");
@@ -851,7 +881,7 @@ export function StudioProjectPage() {
                             size="sm"
                             variant="ghost"
                             className="h-7 text-xs"
-                            onClick={() => copyText(c.providerPromptGemini, "Image prompt")}
+                            onClick={() => copyText(withDirection(c.providerPromptGemini), "Image prompt")}
                           >
                             <Copy className="h-3 w-3" /> Copy prompt
                           </Button>
@@ -920,8 +950,8 @@ export function StudioProjectPage() {
 
           <ContinueButton
             to="outline"
-            disabled={!project.selectedThumbnail}
-            hint="Select a concept first"
+            disabled={!project.selectedThumbnail && !project.thumbnailVariants.some((v) => v.selected)}
+            hint="Select a concept — or upload your own and tap it as the pick"
           />
         </div>
       )}
