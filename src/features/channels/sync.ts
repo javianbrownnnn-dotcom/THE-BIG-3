@@ -11,6 +11,10 @@ import type { Channel } from "@/types";
 
 export interface SyncResult {
   channelTitle: string;
+  channelId: string;
+  subscriberCount?: number;
+  /** What YouTube says the channel has publicly — vs. what we could fetch. */
+  reportedVideoCount?: number;
   created: number;
   snapshotsAppended: number;
   totalFetched: number;
@@ -74,6 +78,9 @@ export async function syncChannelFromYouTube(
 
   return {
     channelTitle: yt.title,
+    channelId: yt.id,
+    subscriberCount: yt.subscriberCount,
+    reportedVideoCount: yt.videoCount,
     created,
     snapshotsAppended,
     totalFetched: uploads.length,

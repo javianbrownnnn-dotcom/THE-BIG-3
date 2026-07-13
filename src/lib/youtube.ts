@@ -11,6 +11,9 @@ export interface YtChannel {
   title: string;
   uploadsPlaylistId: string;
   subscriberCount?: number;
+  /** Public videos YouTube reports for the channel — the key diagnostic when
+   *  a channel "has posts" but nothing syncs (unlisted videos, wrong handle). */
+  videoCount?: number;
   /** Human-readable topic labels from YouTube's own categorization. */
   topics?: string[];
 }
@@ -118,6 +121,9 @@ export async function resolveChannel(ref: string, apiKey: string): Promise<YtCha
     uploadsPlaylistId: item.contentDetails?.relatedPlaylists?.uploads,
     subscriberCount: item.statistics?.subscriberCount
       ? Number(item.statistics.subscriberCount)
+      : undefined,
+    videoCount: item.statistics?.videoCount != null
+      ? Number(item.statistics.videoCount)
       : undefined,
     topics: topics.length ? topics : undefined,
   };
