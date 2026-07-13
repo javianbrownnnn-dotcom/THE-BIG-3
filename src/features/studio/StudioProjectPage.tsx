@@ -372,8 +372,10 @@ export function StudioProjectPage() {
         </CardHeader>
         <CardContent className="space-y-2">
           <p className="text-xs text-muted-foreground">
-            Every claim below must be verified with a source or consciously waived before the
-            project can finish — this channel is about living people.
+            Each item is a to-do: look up the fact where the task says, then tap{" "}
+            <b>Verified</b> and paste the link that proves it — or <b>Waive</b> with a reason
+            (e.g. cut it from the script, reworded it as a question). All items must be resolved
+            one way or the other before the project can finish.
           </p>
           {(project.factChecks ?? []).map((f) => (
             <FactCheckRow key={f.id} item={f} onChange={setFactCheck} />

@@ -163,6 +163,8 @@ Return STRICT JSON:
 videoPromise is ONE sentence. bestPersona must be one of the provided persona names.`;
 
 const researchPacketPrompt = `You build the research packet for a documentary on this channel (identity provided above). You have no browsing tools: DO NOT INVENT FACTS. Use only widely known, easily verifiable information; put anything uncertain, specific (dates, numbers, quotes) or contested into unverifiedClaims for human fact-checking. Prefer fewer, solid items over many shaky ones.
+unverifiedClaims format — every item is a TASK a non-expert can complete without extra context, never a bare statement. Use exactly: "Confirm: [one specific fact — who/what/when/number, fully spelled out]. How: [where to look — e.g. the ESV text of the verse, the named primary source, a scholarly encyclopedia entry, official records] . Done when: [what counts as confirmed, or what to change in the script if it's wrong]."
+BAD: "Council of Nicaea date". GOOD: "Confirm: the Council of Nicaea met in AD 325 under Constantine. How: check a scholarly reference (e.g. Britannica or an academic church-history source). Done when: a citable source states the year; if it differs, correct the date in the timeline and script."
 Return STRICT JSON:
 { "mainSubject": string, "timeline": string[], "keyEvents": string[], "keyConflicts": string[], "turningPoints": string[], "businessContext": string, "psychologicalContext": string, "culturalContext": string, "controversies": string[], "unverifiedClaims": string[], "bestAngle": string, "emotionalQuestion": string, "endingIdea": string }`;
 
@@ -188,13 +190,14 @@ function scriptPrompt(mins: number): string {
   const [lo, hi] = WORD_RANGES[mins] ?? [2500, 2900];
   return `You write the full voiceover script following the approved outline exactly (section by section, with the outline's timestamps as ## headings). Target ${lo}-${hi} words total (flexible range for a ${mins}-minute video).
 Style: strong narration, not essay writing; written for voiceover; short and medium sentences; create tension every 60-90 seconds; no filler; visually suggestive for B-roll; don't over-explain; don't moralize hard; cinematic but restrained; smart but understandable; emotionally sharp, never melodramatic; built around conflict, tradeoffs, psychology, consequences.
-Facts: use ONLY what the research packet supports. Mark anything uncertain inline as [FACT-CHECK: claim]. ${BANNED}
+Facts: use ONLY what the research packet supports. Mark anything uncertain inline as [FACT-CHECK: claim] — the claim text must be self-contained and specific (full names, dates, numbers spelled out) so it reads as a checkable task outside the script, e.g. [FACT-CHECK: Confirm Codex Sinaiticus was found at St. Catherine's Monastery in 1844 — check a scholarly source]. ${BANNED}
 End with a strong final line. No generic outro.
 Return STRICT JSON: { "script": string }  (markdown, ## timestamp headings per section)`;
 }
 
 const critiquePrompt = `You critique the script like a ruthless retention editor. Score 1-10: hook, titleAlignment, tension, pacing, clarity, originality, retention, ending, voiceover, channelFit, personaFit, thumbnailAlignment.
 Then identify concretely (quote or reference actual lines/sections): where it gets boring, where viewers click off, which sections need more tension, which lines sound generic, which parts read like an essay, what to cut, what to expand, what needs fact-checking.
+Every factCheck item must be an actionable task in the form "Confirm: [specific fact]. How: [where to check]. Done when: [what counts as confirmed]" — never a bare topic. Every item in cut/expand/needsMoreTension must name the section (by its timestamp heading) and say exactly what to do there.
 Also propose reusable writing rules for the Script Bible, and emit warnings when: claims need fact-checking; the topic involves living people + controversial allegations; the thumbnail concept could mislead; the title overpromises; the script sounds speculative.
 Return STRICT JSON:
 { "scores": { "hook": n, "titleAlignment": n, "tension": n, "pacing": n, "clarity": n, "originality": n, "retention": n, "ending": n, "voiceover": n, "channelFit": n, "personaFit": n, "thumbnailAlignment": n },
