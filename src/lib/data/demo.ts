@@ -1579,6 +1579,8 @@ export class DemoProvider implements DataProvider {
     const ch = channels.find((c) => c.id === id);
     if (!ch) throw new Error("channel not found");
     Object.assign(ch, patch);
+    // Empty string clears the YouTube link entirely.
+    if (patch.youtubeChannelId === "") ch.youtubeChannelId = undefined;
     persist();
     return clone(ch);
   }

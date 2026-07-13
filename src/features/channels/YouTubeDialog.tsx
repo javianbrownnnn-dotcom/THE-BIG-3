@@ -66,6 +66,21 @@ export function YouTubeDialog({
     }
   };
 
+  const unlink = async () => {
+    if (!window.confirm(`Unlink YouTube from "${channel.name}"? Its already-synced videos stay; the scheduled sync just stops trying this channel. Re-link any time.`)) return;
+    setBusy(true);
+    try {
+      await data.updateChannel(channel.id, { youtubeChannelId: "" });
+      await qc.invalidateQueries({ queryKey: ["channels"] });
+      setRef("");
+      toast.success(`Unlinked ${channel.name}. Paste the correct channel URL above to re-link.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const pullAnalytics = async () => {
     setBusy(true);
     try {
@@ -156,10 +171,17 @@ export function YouTubeDialog({
                 </button>
               </p>
             )}
-            <Button size="sm" onClick={runSync} disabled={busy}>
-              <RefreshCw className={busy ? "animate-spin" : ""} />
-              {busy ? "Syncing…" : linked ? "Sync now" : "Link & sync"}
-            </Button>
+            <div className="flex items-center gap-1.5">
+              <Button size="sm" onClick={runSync} disabled={busy}>
+                <RefreshCw className={busy ? "animate-spin" : ""} />
+                {busy ? "Syncing…" : linked ? "Sync now" : "Link & sync"}
+              </Button>
+              {linked && (
+                <Button size="sm" variant="ghost" onClick={unlink} disabled={busy}>
+                  Unlink
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 

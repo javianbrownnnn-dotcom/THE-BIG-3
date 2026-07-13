@@ -353,7 +353,9 @@ export class SupabaseProvider implements DataProvider {
     if (patch.niche !== undefined) update.niche = patch.niche;
     if (patch.uploadCadence !== undefined) update.upload_cadence = patch.uploadCadence;
     if (patch.description !== undefined) update.description = patch.description;
-    if (patch.youtubeChannelId !== undefined) update.youtube_channel_id = patch.youtubeChannelId;
+    // Empty string clears the link (→ null) so the scheduled sync stops
+    // trying a channel with a bad/removed YouTube id.
+    if (patch.youtubeChannelId !== undefined) update.youtube_channel_id = patch.youtubeChannelId || null;
     const { error } = await this.db.from("channels").update(update).eq("id", id);
     if (error) throw error;
     const channel = await this.getChannel(id);
