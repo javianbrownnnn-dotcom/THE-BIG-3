@@ -59,7 +59,7 @@ export function templateResearch(project: ContentProject): ResearchPacket {
     culturalContext: "[Why this story matters beyond the subject — what it says about now.]",
     controversies: ["[Anything involving living people needs sourcing before scripting]"],
     unverifiedClaims: [
-      "EVERY claim in this demo packet needs human fact-checking — the system never invents facts.",
+      `Confirm: the key dates and numbers this packet uses for "${t}". How: check one reputable source per fact (official records, a scholarly reference, or the primary text). Done when: each has a link that proves it — the system never invents facts, so every specific claim gets checked by a human.`,
     ],
     bestAngle: `The cost ledger: track what "${t}" created against what it consumed, beat by beat.`,
     emotionalQuestion: "Was it worth it — and would they do it again?",
