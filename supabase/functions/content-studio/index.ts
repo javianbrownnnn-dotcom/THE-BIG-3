@@ -214,7 +214,7 @@ Return STRICT JSON:
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
-    const { organizationId, projectId, step, feedback } = await req.json();
+    const { organizationId, projectId, step, feedback, guidance } = await req.json();
     if (!organizationId || !projectId || !step) {
       return jsonResponse({ error: "organizationId, projectId and step are required" }, 400);
     }
@@ -265,7 +265,14 @@ Deno.serve(async (req) => {
       ...profile.personas,
       ...(personaRows ?? []).map((r: any) => ({ name: r.name, ...r.definition })),
     ];
-    const ground = grounding(project, personas, rules, sops, profile.identity, profile.doctrine);
+    let ground = grounding(project, personas, rules, sops, profile.identity, profile.doctrine);
+    // Optional creator steering for this run: extra direction or a redirect
+    // of the concept ("more artifact close-ups, no faces, colder palette").
+    // Appended last so it wins ties against the general templates.
+    const direction = String(guidance ?? "").trim();
+    if (direction) {
+      ground += `\n\n<creator_direction priority="MUST FOLLOW — the creator's explicit direction for THIS run; it overrides stylistic defaults but never the facts, doctrine, or safety rules">\n${direction}\n</creator_direction>`;
+    }
 
     // Relevance before generation: enforce step preconditions server-side.
     const need = (cond: unknown, msg: string) => {
