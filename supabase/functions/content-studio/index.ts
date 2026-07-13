@@ -15,7 +15,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { askClaudeJson, corsHeaders, jsonResponse } from "../_shared/claude.ts";
 import { CHANNEL_IDENTITY } from "../_shared/identity.ts";
-import { ANCIENT_IDENTITY, ANCIENT_PERSONAS } from "../_shared/identity_ancient.ts";
+import { ANCIENT_IDENTITY, ANCIENT_PERSONAS, SCRIPTURE_DOCTRINE } from "../_shared/identity_ancient.ts";
 
 // Pick the creative profile from the project channel's niche. Mirrors
 // src/features/studio/nicheProfiles.ts — keep in sync.
@@ -23,9 +23,15 @@ const ANCIENT_RE =
   /(religio|myth|christ|bible|biblical|church|theolog|esoteric|gnostic|scriptur|ancient|sacred|storytelling|mytholog)/i;
 function profileForNiche(niche: string | null | undefined) {
   if (ANCIENT_RE.test(niche ?? "")) {
-    return { identity: ANCIENT_IDENTITY, personas: ANCIENT_PERSONAS, label: "Myth & Meaning" };
+    return {
+      identity: ANCIENT_IDENTITY,
+      personas: ANCIENT_PERSONAS,
+      label: "Myth & Meaning",
+      // Trinitarian, ESV-grounded, original-language-checked, NT-primary.
+      doctrine: SCRIPTURE_DOCTRINE,
+    };
   }
-  return { identity: CHANNEL_IDENTITY, personas: BUILTIN_PERSONAS, label: "Modern Ambition" };
+  return { identity: CHANNEL_IDENTITY, personas: BUILTIN_PERSONAS, label: "Modern Ambition", doctrine: "" };
 }
 
 const BUILTIN_PERSONAS = [
@@ -92,11 +98,14 @@ const BANNED = `Never use: "Little did he know", "Everything changed forever", "
 // Prompt templates — each receives the same grounding block.
 // ---------------------------------------------------------------------------
 
-function grounding(project: any, personas: any[], rules: any[], sops: any[] = [], identity: string = CHANNEL_IDENTITY): string {
+function grounding(project: any, personas: any[], rules: any[], sops: any[] = [], identity: string = CHANNEL_IDENTITY, doctrine = ""): string {
   const persona = personas.find((p) => p.name === project.primary_persona) ?? personas[0];
   const secondary = personas.find((p) => p.name === project.secondary_persona);
   return [
     `<channel_identity>\n${identity}\n</channel_identity>`,
+    doctrine
+      ? `<biblical_grounding priority="MUST FOLLOW — Scripture, translation, and doctrine are non-negotiable for this channel">\n${doctrine}\n</biblical_grounding>`
+      : "",
     `<primary_persona>\n${JSON.stringify(persona)}\n</primary_persona>`,
     secondary ? `<secondary_persona>\n${JSON.stringify(secondary)}\n</secondary_persona>` : "",
     `<video_length_minutes>${project.video_length_minutes}</video_length_minutes>`,
@@ -256,7 +265,7 @@ Deno.serve(async (req) => {
       ...profile.personas,
       ...(personaRows ?? []).map((r: any) => ({ name: r.name, ...r.definition })),
     ];
-    const ground = grounding(project, personas, rules, sops, profile.identity);
+    const ground = grounding(project, personas, rules, sops, profile.identity, profile.doctrine);
 
     // Relevance before generation: enforce step preconditions server-side.
     const need = (cond: unknown, msg: string) => {
