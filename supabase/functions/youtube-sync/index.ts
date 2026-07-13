@@ -110,7 +110,7 @@ async function ytGet(path: string, params: Record<string, string>, key: string) 
 }
 
 async function fetchUploads(channelId: string, key: string, maxVideos = 200) {
-  const chan = await ytGet("channels", { part: "contentDetails", id: channelId }, key);
+  const chan = await ytGet("channels", { part: "contentDetails,statistics", id: channelId }, key);
   if (!chan.items?.length) {
     // A handle/@name or a typo'd id was saved instead of a UC… channel id.
     throw new Error(
@@ -118,6 +118,9 @@ async function fetchUploads(channelId: string, key: string, maxVideos = 200) {
         `YouTube and re-link it (paste the channel URL/@handle so the app resolves the correct UC… id).`,
     );
   }
+  // What YouTube claims the channel has — used to tell "brand-new channel"
+  // apart from "has videos, but none of them are public".
+  const reportedVideos = Number(chan.items[0]?.statistics?.videoCount ?? 0);
   const playlist = chan.items[0]?.contentDetails?.relatedPlaylists?.uploads;
   if (!playlist) return [];
 
@@ -133,10 +136,20 @@ async function fetchUploads(channelId: string, key: string, maxVideos = 200) {
         ...(pageToken ? { pageToken } : {}),
       }, key);
     } catch (err) {
-      // A channel with no public uploads yet 404s its uploads playlist
-      // (reason: playlistNotFound). That's an empty/brand-new channel, not a
-      // failure — mirror the client's fetchUploads and return what we have.
-      if (err instanceof YtError && err.status === 404) return [];
+      // A channel with no PUBLIC uploads 404s its uploads playlist (reason:
+      // playlistNotFound). If YouTube counts videos on the channel anyway,
+      // they exist but aren't public — say so instead of failing or going
+      // quiet. A true zero is just a brand-new channel: return empty.
+      if (err instanceof YtError && err.status === 404) {
+        if (reportedVideos > 0) {
+          throw new Error(
+            `YouTube counts ${reportedVideos} videos on this channel but returns none as public — ` +
+              `they're likely Unlisted, Private, scheduled, or members-only ` +
+              `(YouTube Studio → Content → Visibility). Only public videos can be synced.`,
+          );
+        }
+        return [];
+      }
       throw err;
     }
     for (const item of page.items ?? []) {

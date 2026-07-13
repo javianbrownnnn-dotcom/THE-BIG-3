@@ -53,11 +53,28 @@ export function YouTubeDialog({
       const result = await syncChannelFromYouTube(channel, ref, apiKey.trim());
       await qc.invalidateQueries({ queryKey: ["videos"] });
       await qc.invalidateQueries({ queryKey: ["channels"] });
-      toast.success(
-        result.totalFetched === 0
-          ? `Linked ${result.channelTitle} — no public uploads yet. Sync again after your first video goes live.`
-          : `Synced ${result.channelTitle}: ${result.created} new videos, ${result.snapshotsAppended} snapshots updated`,
-      );
+      const subs = result.subscriberCount != null
+        ? `${result.subscriberCount.toLocaleString()} subscribers`
+        : "subscriber count hidden";
+      if (result.totalFetched > 0) {
+        toast.success(
+          `Synced ${result.channelTitle}: ${result.created} new videos, ${result.snapshotsAppended} snapshots updated`,
+        );
+      } else if ((result.reportedVideoCount ?? 0) > 0) {
+        // YouTube counts videos on the channel but exposes none publicly —
+        // almost always unlisted/private/scheduled/members-only uploads.
+        toast.warning(
+          `Linked ${result.channelTitle} (${subs}). YouTube counts ${result.reportedVideoCount} videos on this channel but returns none as public. Check YouTube Studio → Content → Visibility — they're likely Unlisted, Private, scheduled, or members-only. The app can only track public videos.`,
+          { duration: 15000 },
+        );
+      } else {
+        // Zero videos reported at all: the handle may resolve to a different
+        // channel than the one the creator is looking at (personal vs brand).
+        toast.warning(
+          `Linked ${result.channelTitle} (${subs}) — but YouTube reports 0 videos on this exact channel. If your channel page shows videos, this handle may belong to a different channel than your uploads (personal vs brand account — check the handle in YouTube Studio → Settings → Channel), or the posts you see are Community posts, not videos.`,
+          { duration: 15000 },
+        );
+      }
       setEditKey(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : String(err));
