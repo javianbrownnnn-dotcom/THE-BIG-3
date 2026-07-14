@@ -212,9 +212,9 @@ function SectionCard({
           <audio controls src={section.voDataUrl} className="h-9 w-full" preload="metadata" />
         )}
 
-        {/* B-roll */}
+        {/* B-roll — attached items, each with a thumb-sized delete */}
         {section.broll.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto pb-1">
+          <div className="flex gap-2.5 overflow-x-auto pb-1 pt-1.5">
             {section.broll.map((b, i) => (
               <div key={i} className="relative shrink-0">
                 <img
@@ -227,13 +227,14 @@ function SectionCard({
                   <Play className="absolute left-1 top-1 h-3.5 w-3.5 text-white drop-shadow" />
                 )}
                 <button
-                  aria-label="Remove b-roll"
-                  onClick={() =>
-                    onPatch({ broll: section.broll.filter((_, bi) => bi !== i) })
-                  }
-                  className="absolute -right-1.5 -top-1.5 rounded-full bg-background p-0.5 shadow"
+                  aria-label="Delete this b-roll"
+                  onClick={() => {
+                    onPatch({ broll: section.broll.filter((_, bi) => bi !== i) });
+                    toast.success("B-roll removed");
+                  }}
+                  className="absolute -right-1.5 -top-1.5 grid h-7 w-7 place-items-center rounded-full border bg-background shadow-md active:scale-95"
                 >
-                  <Trash2 className="h-3 w-3 text-muted-foreground" />
+                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
                 </button>
               </div>
             ))}

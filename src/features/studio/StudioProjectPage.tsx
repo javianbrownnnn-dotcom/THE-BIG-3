@@ -20,6 +20,7 @@ import {
   RefreshCw,
   Sparkles,
   Star,
+  Trash2,
   Upload,
   Wand2,
 } from "lucide-react";
@@ -424,6 +425,17 @@ export function StudioProjectPage() {
         })),
       },
     });
+
+  const deleteVariant = (variantId: string) =>
+    update.mutate(
+      {
+        id: project.id,
+        patch: {
+          thumbnailVariants: project.thumbnailVariants.filter((v) => v.id !== variantId),
+        },
+      },
+      { onSuccess: () => toast.success("Thumbnail deleted") },
+    );
 
   /**
    * The production doc is created the moment a Studio project starts, and
@@ -914,26 +926,34 @@ export function StudioProjectPage() {
               ) : (
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {project.thumbnailVariants.map((v) => (
-                    <button
+                    <div
                       key={v.id}
-                      onClick={() => selectVariant(v.id)}
                       className={cn(
-                        "relative overflow-hidden rounded-md border text-left",
+                        "relative overflow-hidden rounded-md border",
                         v.selected && "ring-2 ring-primary",
                       )}
                     >
-                      {v.imageUrl ? (
-                        <img src={v.imageUrl} alt={v.conceptName} className="aspect-video w-full object-cover" />
-                      ) : (
-                        <div className="flex aspect-video items-center justify-center bg-muted">
-                          <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                      <button onClick={() => selectVariant(v.id)} className="block w-full text-left">
+                        {v.imageUrl ? (
+                          <img src={v.imageUrl} alt={v.conceptName} className="aspect-video w-full object-cover" />
+                        ) : (
+                          <div className="flex aspect-video items-center justify-center bg-muted">
+                            <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div className="p-1.5 text-[10px] text-muted-foreground">
+                          {v.provider} · {v.conceptName}
+                          {v.selected && <Badge variant="success" className="ml-1 text-[9px]">pick</Badge>}
                         </div>
-                      )}
-                      <div className="p-1.5 text-[10px] text-muted-foreground">
-                        {v.provider} · {v.conceptName}
-                        {v.selected && <Badge variant="success" className="ml-1 text-[9px]">pick</Badge>}
-                      </div>
-                    </button>
+                      </button>
+                      <button
+                        aria-label="Delete this thumbnail"
+                        onClick={() => deleteVariant(v.id)}
+                        className="absolute right-1 top-1 grid h-7 w-7 place-items-center rounded-full border bg-background/90 shadow-md active:scale-95"
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                      </button>
+                    </div>
                   ))}
                 </div>
               )}
