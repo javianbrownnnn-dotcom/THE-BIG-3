@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useChannels, useCompetitorVideos, useCreateIdea } from "@/hooks/queries";
 import { relativeTime } from "@/lib/format";
 import type { CompetitorVideo } from "@/types";
+import { messageOf } from "@/lib/errors";
 
 function TeardownCard({ video }: { video: CompetitorVideo }) {
   const { data: channels } = useChannels();
@@ -30,7 +31,7 @@ function TeardownCard({ video }: { video: CompetitorVideo }) {
       },
       {
         onSuccess: () => toast.success("Saved to the ideas inbox"),
-        onError: (err) => toast.error(err instanceof Error ? err.message : String(err)),
+        onError: (err) => toast.error(messageOf(err)),
       },
     );
   };

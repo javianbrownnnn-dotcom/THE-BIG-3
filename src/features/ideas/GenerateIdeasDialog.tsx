@@ -23,6 +23,7 @@ import { useChannels, useCreateIdea, useGenerateIdeas } from "@/hooks/queries";
 import { cn } from "@/lib/utils";
 import { humanize } from "@/lib/format";
 import type { GeneratedIdea } from "@/types";
+import { messageOf } from "@/lib/errors";
 
 const ALL = "__all__";
 
@@ -65,7 +66,7 @@ export function GenerateIdeasDialog({
         .filter((i) => i >= 0);
       setPicked(new Set(strong.length ? strong : sorted.map((_, i) => i)));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(messageOf(err));
     }
   };
 
@@ -100,7 +101,7 @@ export function GenerateIdeasDialog({
       setPicked(new Set());
       onOpenChange(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(messageOf(err));
     } finally {
       setSaving(false);
     }

@@ -22,6 +22,7 @@ import {
   windowStats,
 } from "@/features/dashboard/stats";
 import { YouTubeDialog } from "./YouTubeDialog";
+import { messageOf } from "@/lib/errors";
 
 export function ChannelDetailPage() {
   const { id = "" } = useParams();
@@ -45,7 +46,7 @@ export function ChannelDetailPage() {
         toast.success("Channel deleted");
         navigate("/channels");
       },
-      onError: (err) => toast.error(err instanceof Error ? err.message : String(err)),
+      onError: (err) => toast.error(messageOf(err)),
     });
   };
   useRecordRecent(

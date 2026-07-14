@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { useChannels, useVideos } from "@/hooks/queries";
 import { data } from "@/lib/data";
+import { messageOf } from "@/lib/errors";
 import {
   FIELD_LABELS,
   IMPORT_FIELDS,
@@ -126,7 +127,7 @@ export function ImportCsvDialog({
       reset();
       onOpenChange(false);
     } catch (err) {
-      toast.error(`Import failed: ${err instanceof Error ? err.message : String(err)}`);
+      toast.error(`Import failed: ${messageOf(err)}`);
     } finally {
       setBusy(false);
     }

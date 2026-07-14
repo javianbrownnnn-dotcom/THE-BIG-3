@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getSupabaseClient } from "@/lib/data";
+import { messageOf } from "@/lib/errors";
 
 function slugify(name: string): string {
   return (
@@ -66,7 +67,7 @@ export function OnboardingPage({ onComplete }: { onComplete: () => void }) {
       toast.success(`${orgName} is ready`);
       onComplete();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(messageOf(err));
     } finally {
       setBusy(false);
     }
@@ -82,7 +83,7 @@ export function OnboardingPage({ onComplete }: { onComplete: () => void }) {
       toast.success("You're in! Welcome to the team.");
       onComplete();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(messageOf(err));
     } finally {
       setBusy(false);
     }

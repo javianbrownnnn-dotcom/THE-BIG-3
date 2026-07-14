@@ -23,6 +23,7 @@ import { useAddSopVersion, useCompetitorVideos, useSop, useVideos } from "@/hook
 import { useRecordRecent } from "@/hooks/useRecents";
 import { relativeTime, shortDate } from "@/lib/format";
 import type { SopVersion } from "@/types";
+import { messageOf } from "@/lib/errors";
 
 function VersionBody({ version }: { version: SopVersion }) {
   return (
@@ -117,7 +118,7 @@ export function SopDetailPage() {
       toast.success(`Version ${(current?.versionNumber ?? 0) + 1} saved — history preserved`);
       setDialogOpen(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(messageOf(err));
     }
   };
 

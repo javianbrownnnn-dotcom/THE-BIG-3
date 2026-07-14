@@ -15,6 +15,7 @@ import {
 import { relativeTime } from "@/lib/format";
 import { usePersistedState } from "@/hooks/usePersistedState";
 import type { CommentEntityType, Member } from "@/types";
+import { messageOf } from "@/lib/errors";
 
 // Render a body with @Name mentions highlighted.
 function renderBody(body: string, memberNames: string[]) {
@@ -80,7 +81,7 @@ export function CommentsThread({
       { entityType, entityId, body: text, mentions: resolveMentions(text) },
       {
         onSuccess: () => clearBody(),
-        onError: (err) => toast.error(err instanceof Error ? err.message : String(err)),
+        onError: (err) => toast.error(messageOf(err)),
       },
     );
   };

@@ -22,6 +22,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useChannels, useCreateChannel, useVideos } from "@/hooks/queries";
 import { percent } from "@/lib/format";
 import { THIRTY_DAYS, windowStats } from "@/features/dashboard/stats";
+import { messageOf } from "@/lib/errors";
 
 export function ChannelsPage() {
   const { data: channels, isLoading } = useChannels();
@@ -48,7 +49,7 @@ export function ChannelsPage() {
       setForm({ name: "", youtube: "", niche: "", uploadCadence: "" });
       setDialogOpen(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(messageOf(err));
     }
   };
 

@@ -42,6 +42,7 @@ import {
 } from "./captions";
 import { renderShort, type RenderProgress } from "./renderShort";
 import { useRecorder } from "./useRecorder";
+import { messageOf } from "@/lib/errors";
 
 function download(filename: string, content: Blob | string, type = "text/plain") {
   const blob = typeof content === "string" ? new Blob([content], { type }) : content;
@@ -116,7 +117,7 @@ function SectionCard({
         setResults(items);
         if (!items.length) toast("No b-roll found — try different words.");
       },
-      onError: (err) => toast.error(err instanceof Error ? err.message : String(err)),
+      onError: (err) => toast.error(messageOf(err)),
     });
   };
 
@@ -304,7 +305,7 @@ export function VideoBuilderPage() {
         id: production.id,
         patch: { builder: { sections: next, updatedAt: new Date().toISOString() } },
       },
-      { onError: (err) => toast.error(err instanceof Error ? err.message : String(err)) },
+      { onError: (err) => toast.error(messageOf(err)) },
     );
   };
 
@@ -352,7 +353,7 @@ export function VideoBuilderPage() {
       download(`${safe}.webm`, blob);
       toast.success("Video rendered — check your downloads. YouTube uploads WebM directly.");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(messageOf(err));
     } finally {
       setRendering(null);
     }

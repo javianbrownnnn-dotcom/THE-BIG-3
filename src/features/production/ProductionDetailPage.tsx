@@ -71,6 +71,7 @@ import {
   type ProductionStage,
 } from "@/types";
 import { critique, estimatedRuntime, sopForStage, wordCount } from "./draft";
+import { messageOf } from "@/lib/errors";
 
 const STAGE_LABELS: Record<ProductionStage, string> = {
   scripting: "Scripting",
@@ -130,7 +131,7 @@ export function ProductionDetailPage() {
         toast.success("Video doc deleted");
         navigate("/production");
       },
-      onError: (err) => toast.error(err instanceof Error ? err.message : String(err)),
+      onError: (err) => toast.error(messageOf(err)),
     });
   };
   const publishToYouTube = usePublishToYouTube();
@@ -213,7 +214,7 @@ export function ProductionDetailPage() {
         // Put the failed changes back so the next edit or flush retries them.
         pendingRef.current = { ...toSave, ...(pendingRef.current ?? {}) };
         setSaveState("idle");
-        toast.error(err instanceof Error ? err.message : String(err));
+        toast.error(messageOf(err));
       }
     }, 800);
   };
@@ -230,7 +231,7 @@ export function ProductionDetailPage() {
         setForm({ ...form, stage: "published" });
         toast.success("Published — a video record was created; metrics will land there.");
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : String(err));
+        toast.error(messageOf(err));
       }
       return;
     }
@@ -250,7 +251,7 @@ export function ProductionDetailPage() {
       );
       window.open(videoUrl, "_blank", "noopener");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(messageOf(err));
     }
   };
 
@@ -265,7 +266,7 @@ export function ProductionDetailPage() {
       });
       toast.success("Draft laid in — it only filled empty fields. Now make it yours.");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(messageOf(err));
     }
   };
 
@@ -283,7 +284,7 @@ export function ProductionDetailPage() {
         },
       );
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(messageOf(err));
     }
   };
 

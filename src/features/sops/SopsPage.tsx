@@ -24,6 +24,7 @@ import { useChannels, useCreateSop, useSops } from "@/hooks/queries";
 import { nicheKeyOf, useNicheScope, type NicheKey } from "@/lib/niches";
 import { NicheChips } from "@/components/layout/NicheChips";
 import { relativeTime } from "@/lib/format";
+import { messageOf } from "@/lib/errors";
 
 export function SopsPage() {
   const { data: sops, isLoading } = useSops();
@@ -64,7 +65,7 @@ export function SopsPage() {
         `Starter Playbook installed — ${missingStarters.length} SOPs added. Make them yours: the loop rewrites them as your data comes in.`,
       );
     } catch (err) {
-      toast.error(`Install failed: ${err instanceof Error ? err.message : String(err)}`);
+      toast.error(`Install failed: ${messageOf(err)}`);
     } finally {
       setInstalling(false);
     }
@@ -86,7 +87,7 @@ export function SopsPage() {
       setForm({ title: "", category: "", purpose: "", steps: "" });
       setDialogOpen(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(messageOf(err));
     }
   };
 

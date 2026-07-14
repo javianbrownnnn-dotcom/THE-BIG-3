@@ -20,6 +20,7 @@ import {
 } from "@/hooks/queries";
 import { buildIdeaBrief } from "@/lib/brief";
 import { data } from "@/lib/data";
+import { messageOf } from "@/lib/errors";
 
 export function BriefDialog({
   open,
@@ -77,7 +78,7 @@ export function BriefDialog({
       setShareUrl(url);
       await copy(url, "Share link copied — paste it into ChatGPT");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(messageOf(err));
     } finally {
       setSharing(false);
     }

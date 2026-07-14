@@ -22,6 +22,7 @@ import {
   useRevokeInvite,
 } from "@/hooks/queries";
 import type { Invite, OrgRole } from "@/types";
+import { messageOf } from "@/lib/errors";
 
 // The link an invitee opens; ?invite lives in the query string so it survives
 // the hash router (which owns everything after #).
@@ -75,7 +76,7 @@ export function TeamInvites() {
       setEmail("");
       await copy(invite.code);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(messageOf(err));
     }
   };
 

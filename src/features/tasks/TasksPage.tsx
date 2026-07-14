@@ -56,6 +56,7 @@ import { notifyTaskCreated, notifyTaskStatus, sendTestPing } from "@/lib/discord
 import { usePersistedState } from "@/hooks/usePersistedState";
 import { cn } from "@/lib/utils";
 import type { Task, TaskStatus } from "@/types";
+import { messageOf } from "@/lib/errors";
 
 const COLUMNS: Array<{ status: TaskStatus; label: string }> = [
   { status: "todo", label: "To do" },
@@ -413,7 +414,7 @@ function DiscordDialog({
       }
       onOpenChange(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(messageOf(err));
     }
   };
 
@@ -511,7 +512,7 @@ export function TasksPage() {
       clearForm();
       setDialogOpen(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(messageOf(err));
     }
   };
 

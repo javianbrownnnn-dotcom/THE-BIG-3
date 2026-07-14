@@ -16,6 +16,7 @@ import { data } from "@/lib/data";
 import { getStoredApiKey, storeApiKey } from "@/lib/youtube";
 import type { Channel } from "@/types";
 import { syncChannelFromYouTube } from "./sync";
+import { messageOf } from "@/lib/errors";
 
 /**
  * One place for everything YouTube on a channel: step 1 links the channel and
@@ -77,7 +78,7 @@ export function YouTubeDialog({
       }
       setEditKey(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(messageOf(err));
     } finally {
       setBusy(false);
     }
@@ -92,7 +93,7 @@ export function YouTubeDialog({
       setRef("");
       toast.success(`Unlinked ${channel.name}. Paste the correct channel URL above to re-link.`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(messageOf(err));
     } finally {
       setBusy(false);
     }
@@ -120,7 +121,7 @@ export function YouTubeDialog({
         );
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(messageOf(err));
     } finally {
       setBusy(false);
     }
@@ -135,7 +136,7 @@ export function YouTubeDialog({
         description: "Once approved, analytics go live and uploads work.",
       });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(messageOf(err));
     } finally {
       setConnecting(false);
     }

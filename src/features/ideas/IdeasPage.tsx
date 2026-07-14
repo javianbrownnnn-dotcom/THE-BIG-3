@@ -40,6 +40,7 @@ import { nicheKeyOf, useNicheScope, type NicheKey } from "@/lib/niches";
 import { NicheChips } from "@/components/layout/NicheChips";
 import { GenerateIdeasDialog } from "./GenerateIdeasDialog";
 import { BriefDialog } from "./BriefDialog";
+import { messageOf } from "@/lib/errors";
 
 const STATUSES: IdeaStatus[] = ["inbox", "researching", "approved", "in_production", "published", "archived"];
 const PRIORITIES: IdeaPriority[] = ["low", "medium", "high", "urgent"];
@@ -73,7 +74,7 @@ function IdeaCard({ idea }: { idea: Idea }) {
       toast.success("Video doc created — everything carried over");
       navigate(`/production/${doc.id}`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(messageOf(err));
     }
   };
 
@@ -89,7 +90,7 @@ function IdeaCard({ idea }: { idea: Idea }) {
       toast.success("Studio project started from this idea");
       navigate(`/studio/${project.id}`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(messageOf(err));
     }
   };
 
@@ -226,7 +227,7 @@ export function IdeasPage() {
       clearForm();
       setDialogOpen(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(messageOf(err));
     }
   };
 
