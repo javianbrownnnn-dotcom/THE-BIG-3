@@ -2011,15 +2011,17 @@ export class DemoProvider implements DataProvider {
 
   async searchBroll(query: string): Promise<BuilderBrollItem[]> {
     await delay(700); // simulate the search
-    // Demo mode has no Pexels key — deterministic placeholder footage keyed to
-    // the query so the builder workflow is fully explorable with zero setup.
+    // Demo mode — deterministic placeholder footage keyed to the query so the
+    // builder workflow is fully explorable with zero setup. Live mode merges
+    // Wikimedia Commons + the Met (public domain) with Pexels stock.
     const slug = query.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 32) || "broll";
+    const sources = ["pexels", "wikimedia", "met"] as const;
     return Array.from({ length: 6 }, (_, i) => ({
       url: `https://picsum.photos/seed/${slug}-${i}/1280/720`,
       thumb: `https://picsum.photos/seed/${slug}-${i}/320/180`,
       kind: "image" as const,
-      source: "pexels" as const,
-      credit: "Simulated (demo) — live mode searches Pexels",
+      source: sources[i % sources.length],
+      credit: "Simulated (demo) — live mode searches Wikimedia, the Met & Pexels",
     }));
   }
 

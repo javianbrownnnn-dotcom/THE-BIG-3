@@ -276,6 +276,8 @@ function SectionCard({
                 />
                 <span className="absolute bottom-0 left-0 right-0 flex items-center justify-center gap-1 bg-black/60 py-0.5 text-[10px] text-white">
                   <ImagePlus className="h-3 w-3" /> {r.kind}
+                  {" · "}
+                  {r.source === "wikimedia" ? "Wikimedia" : r.source === "met" ? "The Met" : r.source}
                 </span>
               </button>
             ))}

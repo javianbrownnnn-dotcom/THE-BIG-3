@@ -488,7 +488,7 @@ export interface BuilderBrollItem {
   /** Preview/canvas image (for video clips this is the poster frame). */
   thumb?: string;
   kind: "video" | "image";
-  source: "pexels" | "upload" | "link";
+  source: "pexels" | "wikimedia" | "met" | "upload" | "link";
   credit?: string;
 }
 
