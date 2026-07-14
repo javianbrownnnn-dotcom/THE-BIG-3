@@ -178,10 +178,11 @@ export interface DataProvider {
    */
   publishToYouTube(productionId: string): Promise<{ videoUrl: string; simulated: boolean }>;
   /**
-   * Search stock b-roll (clips + photos) for a script section. Live mode
-   * proxies Pexels through the broll-search edge function (key stays server
-   * side); demo mode returns simulated placeholder footage so the builder
-   * works with zero setup.
+   * Search b-roll (clips + photos) for a script section. Live mode merges
+   * Wikimedia Commons + the Met open access (public-domain art/artifacts, no
+   * key needed) with Pexels stock (optional PEXELS_API_KEY) via the
+   * broll-search edge function; demo mode returns simulated placeholders so
+   * the builder works with zero setup.
    */
   searchBroll(query: string): Promise<BuilderBrollItem[]>;
 
