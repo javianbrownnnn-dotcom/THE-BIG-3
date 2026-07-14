@@ -109,13 +109,21 @@ export function YouTubeDialog({
         toast.error(
           `Couldn't sync ${res.errors.length} channel${res.errors.length === 1 ? "" : "s"}: ` +
             res.errors.map((e) => `${e.channel} — ${e.error}`).join(" · "),
-          { duration: 12000 },
+          { duration: 15000 },
         );
-      } else if (res.videosUpdated > 0) {
+      }
+      if (res.videosUpdated > 0) {
         toast.success(
           `Pulled private analytics for ${res.videosUpdated} videos — CTR, impressions and retention are now live.`,
         );
-      } else {
+      } else if (res.notConnected.length > 0) {
+        // Private metrics need the owner OAuth per channel — name who's missing.
+        toast.warning(
+          `No private metrics: ${res.notConnected.join(", ")} ${res.notConnected.length === 1 ? "isn't" : "aren't"} connected as owner. ` +
+            `Open each channel's YouTube dialog and tap "Connect with Google" (step 2), choosing the account that owns that channel.`,
+          { duration: 15000 },
+        );
+      } else if (res.errors.length === 0) {
         toast.success(
           "Sync ran, but no private metrics came back yet. New analytics can take a day to populate after connecting.",
         );

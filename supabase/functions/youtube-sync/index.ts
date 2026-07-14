@@ -49,11 +49,33 @@ async function accessTokenFromRefresh(refreshToken: string): Promise<string | nu
 }
 
 /**
- * One Analytics report per channel: private metrics for every video, grouped
- * by the `video` dimension. Best-effort — any failure returns an empty map so
- * the public-stats sync always still succeeds.
+ * The channel the OAuth token actually belongs to. Connecting "as owner" but
+ * picking the personal Google account instead of the brand channel is the #1
+ * silent killer of private metrics: Analytics' channel==MINE then reports a
+ * different channel's videos and nothing matches. Detect it and say so.
  */
-async function fetchChannelPrivateMetrics(token: string): Promise<Map<string, PrivateMetrics>> {
+async function tokenChannel(token: string): Promise<{ id: string; title: string } | null> {
+  try {
+    const res = await fetch(`${API}/channels?part=snippet&mine=true`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const item = data.items?.[0];
+    return item ? { id: item.id, title: item.snippet?.title ?? "(unknown)" } : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * One Analytics report per channel: private metrics for every video, grouped
+ * by the `video` dimension. Failures return an error string so the caller can
+ * surface WHY analytics are empty instead of silently writing nulls.
+ */
+async function fetchChannelPrivateMetrics(
+  token: string,
+): Promise<{ metrics: Map<string, PrivateMetrics>; error?: string }> {
   const out = new Map<string, PrivateMetrics>();
   try {
     const url = new URL(ANALYTICS);
@@ -68,7 +90,22 @@ async function fetchChannelPrivateMetrics(token: string): Promise<Map<string, Pr
     url.searchParams.set("maxResults", "200");
     url.searchParams.set("sort", "-estimatedMinutesWatched");
     const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-    if (!res.ok) return out;
+    if (!res.ok) {
+      const body = await res.text();
+      const reason = (() => {
+        try {
+          return JSON.parse(body)?.error?.errors?.[0]?.reason ?? "";
+        } catch {
+          return "";
+        }
+      })();
+      const hint = res.status === 403 && /accessNotConfigured|SERVICE_DISABLED/i.test(body)
+        ? "The YouTube Analytics API isn't enabled on your Google Cloud project — enable it in the API Library, wait 2 minutes, and reconnect."
+        : res.status === 401
+          ? "The Google connection expired or was revoked — tap Reconnect."
+          : "";
+      return { metrics: out, error: `YouTube Analytics API ${res.status}${reason ? ` (${reason})` : ""}. ${hint}`.trim() };
+    }
     const data = await res.json();
     // columnHeaders order matches the metrics list; row[0] is the video id.
     for (const row of data.rows ?? []) {
@@ -81,10 +118,10 @@ async function fetchChannelPrivateMetrics(token: string): Promise<Map<string, Pr
         watchTimeHours: minutesWatched != null ? Number((minutesWatched / 60).toFixed(1)) : undefined,
       });
     }
-  } catch {
-    // Owner analytics unavailable — public sync continues.
+  } catch (err) {
+    return { metrics: out, error: `Analytics fetch failed: ${err instanceof Error ? err.message : String(err)}` };
   }
-  return out;
+  return { metrics: out };
 }
 
 class YtError extends Error {
@@ -188,6 +225,9 @@ Deno.serve(async (req) => {
 
     const results: any[] = [];
     const errors: Array<{ channel: string; error: string }> = [];
+    // Channels that are linked (public stats flow) but have no owner OAuth —
+    // their CTR/retention will stay empty until the owner connects.
+    const notConnected: string[] = [];
     for (const channel of channels ?? []) {
       try {
       const uploads = await fetchUploads(channel.youtube_channel_id, apiKey);
@@ -208,11 +248,32 @@ Deno.serve(async (req) => {
       let ownerConnected = false;
       const { data: cred } = await db
         .from("youtube_credentials").select("refresh_token").eq("channel_id", channel.id).maybeSingle();
-      if (cred?.refresh_token) {
+      if (!cred?.refresh_token) {
+        notConnected.push(channel.name);
+      } else {
         const token = await accessTokenFromRefresh(cred.refresh_token);
-        if (token) {
-          priv = await fetchChannelPrivateMetrics(token);
-          ownerConnected = true;
+        if (!token) {
+          errors.push({
+            channel: channel.name,
+            error: "The Google connection expired or was revoked — open Channels → YouTube → Reconnect.",
+          });
+        } else {
+          // Guard against the personal-vs-brand account trap: the token must
+          // belong to THIS channel, or Analytics silently reports the wrong one.
+          const me = await tokenChannel(token);
+          if (me && me.id !== channel.youtube_channel_id) {
+            errors.push({
+              channel: channel.name,
+              error:
+                `The Google connection is for a different channel ("${me.title}"), not this one. ` +
+                `Tap Reconnect and, on Google's account screen, pick the brand account that owns this channel.`,
+            });
+          } else {
+            const { metrics, error: privError } = await fetchChannelPrivateMetrics(token);
+            priv = metrics;
+            ownerConnected = true;
+            if (privError) errors.push({ channel: channel.name, error: privError });
+          }
         }
       }
 
@@ -264,7 +325,7 @@ Deno.serve(async (req) => {
         errors.push({ channel: channel.name, error: String(err instanceof Error ? err.message : err) });
       }
     }
-    return jsonResponse({ ok: true, results, errors });
+    return jsonResponse({ ok: true, results, errors, notConnected });
   } catch (err) {
     console.error(err);
     return jsonResponse({ error: String(err) }, 500);

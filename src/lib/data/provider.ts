@@ -98,7 +98,13 @@ export interface DataProvider {
    * and persist them into video snapshots. Returns how many channels were
    * owner-connected and how many videos got private metrics.
    */
-  syncOwnerAnalytics(): Promise<{ channelsConnected: number; videosUpdated: number; errors: Array<{ channel: string; error: string }> }>;
+  syncOwnerAnalytics(): Promise<{
+    channelsConnected: number;
+    videosUpdated: number;
+    errors: Array<{ channel: string; error: string }>;
+    /** Linked channels with no owner (Google) connection — private metrics stay empty for these. */
+    notConnected: string[];
+  }>;
 
   /**
    * Freeze a markdown idea brief behind a public unguessable-token URL that an
