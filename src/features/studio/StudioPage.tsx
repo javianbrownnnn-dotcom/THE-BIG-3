@@ -54,6 +54,7 @@ import { cn } from "@/lib/utils";
 import type { ContentProject, StudioVideoLength } from "@/types";
 import { DEFAULT_VIDEO_LENGTH, MAX_PERSONAS, PERSONA_UNLOCKS, STEP_LABELS, VIDEO_LENGTHS } from "./personas";
 import { STUDIO_STEPS } from "@/types";
+import { messageOf } from "@/lib/errors";
 
 function StepDots({ project }: { project: ContentProject }) {
   const idx = STUDIO_STEPS.indexOf(project.status);
@@ -133,7 +134,7 @@ export function StudioPage() {
       setDialogOpen(false);
       navigate(`/studio/${created.id}`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(messageOf(err));
     }
   };
 
@@ -141,7 +142,7 @@ export function StudioPage() {
     if (!window.confirm(`Delete "${p.topic}"? All its artifacts go with it.`)) return;
     deleteProject.mutate(p.id, {
       onSuccess: () => toast("Project deleted"),
-      onError: (err) => toast.error(err instanceof Error ? err.message : String(err)),
+      onError: (err) => toast.error(messageOf(err)),
     });
   };
 

@@ -30,6 +30,7 @@ import {
 import { useAddVideoSnapshot, useChannel, useVideo } from "@/hooks/queries";
 import { useRecordRecent } from "@/hooks/useRecents";
 import { compactNumber, duration, humanize, percent, shortDate } from "@/lib/format";
+import { messageOf } from "@/lib/errors";
 
 export function VideoDetailPage() {
   const { id = "" } = useParams();
@@ -70,7 +71,7 @@ export function VideoDetailPage() {
       setSnapOpen(false);
       setSnap({ views: "", ctr: "", pct: "", subs: "" });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(messageOf(err));
     }
   };
 

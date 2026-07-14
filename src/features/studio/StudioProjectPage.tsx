@@ -58,6 +58,7 @@ import {
 } from "@/types";
 import { pendingFactChecks } from "./factChecks";
 import { STEP_LABELS, WORD_RANGES } from "./personas";
+import { messageOf } from "@/lib/errors";
 
 const wordCount = (t?: string) => (t?.trim() ? t.trim().split(/\s+/).length : 0);
 
@@ -303,14 +304,14 @@ export function StudioProjectPage() {
       await run.mutateAsync({ projectId: project.id, step, guidance: guidance?.trim() || undefined });
       toast.success("Done — react to it, then continue.");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(messageOf(err));
     }
   };
 
   const advance = (to: StudioStatus) => {
     update.mutate(
       { id: project.id, patch: { status: to } },
-      { onError: (err) => toast.error(err instanceof Error ? err.message : String(err)) },
+      { onError: (err) => toast.error(messageOf(err)) },
     );
     setView(to);
     // Keep the linked production doc current as milestones pass.
@@ -409,7 +410,7 @@ export function StudioProjectPage() {
       });
       toast.success("Thumbnail saved");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(messageOf(err));
     }
   };
 
@@ -480,7 +481,7 @@ export function StudioProjectPage() {
       }
       return docId;
     } catch (err) {
-      if (finalize) toast.error(err instanceof Error ? err.message : String(err));
+      if (finalize) toast.error(messageOf(err));
       return undefined;
     }
   };
@@ -843,7 +844,7 @@ export function StudioProjectPage() {
                                 {
                                   onSuccess: () => toast.success("Image generated and saved below"),
                                   onError: (err) =>
-                                    toast.error(err instanceof Error ? err.message : String(err)),
+                                    toast.error(messageOf(err)),
                                 },
                               )
                             }
@@ -1223,7 +1224,7 @@ export function StudioProjectPage() {
                         void syncToProduction(true);
                       },
                       onError: (err) =>
-                        toast.error(err instanceof Error ? err.message : String(err)),
+                        toast.error(messageOf(err)),
                     },
                   )
                 }

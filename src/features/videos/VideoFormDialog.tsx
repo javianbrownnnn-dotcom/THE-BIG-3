@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useChannels, useCreateVideo } from "@/hooks/queries";
+import { messageOf } from "@/lib/errors";
 
 const schema = z.object({
   channelId: z.string().min(1, "Pick a channel"),
@@ -87,7 +88,7 @@ export function VideoFormDialog({
       form.reset();
       onOpenChange(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(messageOf(err));
     }
   });
 

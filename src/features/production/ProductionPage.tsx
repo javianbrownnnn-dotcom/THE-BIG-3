@@ -54,6 +54,7 @@ import { cn } from "@/lib/utils";
 import { PRODUCTION_STAGES, type Production, type ProductionStage, type VideoFormat } from "@/types";
 import { SPEED_STACK, STARTER_STACK } from "./speedStack";
 import { getThumbnail } from "./thumbnail";
+import { messageOf } from "@/lib/errors";
 
 const STAGE_LABELS: Record<ProductionStage, string> = {
   scripting: "Scripting",
@@ -408,7 +409,7 @@ export function ProductionPage() {
         dueDate: form.dueDate || undefined,
       });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(messageOf(err));
       return;
     }
     setDialogOpen(false);

@@ -52,6 +52,7 @@ import { TeardownLibrary } from "./TeardownLibrary";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { compactNumber, humanize, relativeTime, shortDate } from "@/lib/format";
 import type { CompetitorChannel } from "@/types";
+import { messageOf } from "@/lib/errors";
 
 const VIDEO_PAGE_SIZE = 30;
 
@@ -167,7 +168,7 @@ export function CompetitorsPage() {
         action: { label: "Scan now", onClick: () => runScan(created) },
       });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(messageOf(err));
     }
   };
 
@@ -182,7 +183,7 @@ export function CompetitorsPage() {
           (res.simulated ? " (simulated — add a YouTube API key in Channels to pull real data)" : ""),
       );
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(messageOf(err));
     } finally {
       setScanningId(null);
     }
@@ -207,7 +208,7 @@ export function CompetitorsPage() {
       toast.success("Competitor video tracked");
       setVideoDialogOpen(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(messageOf(err));
     }
   };
 

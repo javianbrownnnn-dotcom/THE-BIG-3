@@ -20,6 +20,7 @@ import {
 import { data } from "@/lib/data";
 import { relativeTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { messageOf } from "@/lib/errors";
 import type {
   AiRecommendation, ChatMessage, ProposedSopChange, RecommendationStatus,
 } from "@/types";
@@ -76,7 +77,7 @@ function RecommendationCard({ rec }: { rec: AiRecommendation }) {
         toast.success(`Applied — "${sop.title}" is now v${sop.currentVersion?.versionNumber}`, {
           description: "The new version is saved to your SOPs; prior versions are kept.",
         }),
-      onError: (err) => toast.error(err instanceof Error ? err.message : String(err)),
+      onError: (err) => toast.error(messageOf(err)),
     });
   };
   const hasChange = !!rec.proposedChange;

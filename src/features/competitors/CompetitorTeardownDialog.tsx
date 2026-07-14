@@ -21,6 +21,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useChannels, useCreateIdea, useGenerateTeardown } from "@/hooks/queries";
 import type { CompetitorTeardown, CompetitorVideo } from "@/types";
+import { messageOf } from "@/lib/errors";
 
 export function CompetitorTeardownDialog({ video }: { video: CompetitorVideo }) {
   const { data: channels } = useChannels();
@@ -40,7 +41,7 @@ export function CompetitorTeardownDialog({ video }: { video: CompetitorVideo }) 
       { competitorVideoId: video.id, targetChannelId },
       {
         onSuccess: (t) => setTeardown(t),
-        onError: (err) => toast.error(err instanceof Error ? err.message : String(err)),
+        onError: (err) => toast.error(messageOf(err)),
       },
     );
   };
@@ -71,7 +72,7 @@ export function CompetitorTeardownDialog({ video }: { video: CompetitorVideo }) 
           setSaved(true);
           toast.success("Idea saved to your Ideas inbox");
         },
-        onError: (err) => toast.error(err instanceof Error ? err.message : String(err)),
+        onError: (err) => toast.error(messageOf(err)),
       },
     );
   };
