@@ -220,7 +220,7 @@ Deno.serve(async (req) => {
 
   try {
     const { data: channels } = await db.from("channels")
-      .select("id, name, youtube_channel_id")
+      .select("id, name, youtube_channel_id, youtube_connected_at")
       .not("youtube_channel_id", "is", null);
 
     const results: any[] = [];
@@ -246,10 +246,31 @@ Deno.serve(async (req) => {
       // the videos list, the KPI row, and the dashboard graph.
       let priv = new Map<string, PrivateMetrics>();
       let ownerConnected = false;
-      const { data: cred } = await db
+      const { data: cred, error: credReadError } = await db
         .from("youtube_credentials").select("refresh_token").eq("channel_id", channel.id).maybeSingle();
-      if (!cred?.refresh_token) {
-        notConnected.push(channel.name);
+      if (credReadError) {
+        // Most likely the youtube_credentials table is missing from a
+        // hand-migrated database — name the fix instead of reporting "not
+        // connected" against a green badge.
+        errors.push({
+          channel: channel.name,
+          error:
+            `Couldn't read the stored Google connection (${credReadError.message}). ` +
+            `Run supabase/catchup_2026_07.sql in the Supabase SQL Editor, then Reconnect.`,
+        });
+      } else if (!cred?.refresh_token) {
+        if (channel.youtube_connected_at) {
+          // The app shows "connected" but no token exists — the connection was
+          // never actually stored. Reconnect re-runs consent and saves it.
+          errors.push({
+            channel: channel.name,
+            error:
+              "Shows connected, but no Google token is stored — the connection didn't save. " +
+              "Tap Reconnect and approve again; if this repeats, run supabase/catchup_2026_07.sql first.",
+          });
+        } else {
+          notConnected.push(channel.name);
+        }
       } else {
         const token = await accessTokenFromRefresh(cred.refresh_token);
         if (!token) {
