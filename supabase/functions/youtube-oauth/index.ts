@@ -56,21 +56,36 @@ Deno.serve(async (req) => {
         }),
       });
       const tokens = await tokenRes.json();
+      const fail = (title: string, detail: string) =>
+        new Response(
+          `<!doctype html><html><body style="font-family:system-ui;background:#0d0d0d;color:#fff;display:grid;place-items:center;height:100vh;padding:24px"><div style="max-width:520px;text-align:center"><h2 style="color:#f87171">${title}</h2><p style="line-height:1.5">${detail}</p></div></body></html>`,
+          { status: 200, headers: { "content-type": "text/html; charset=utf-8" } },
+        );
       if (!tokens.refresh_token) {
-        return jsonResponse(
-          { error: "No refresh token returned. Revoke prior access and reconnect with prompt=consent." },
-          400,
+        return fail(
+          "Connection not saved",
+          "Google didn't return a refresh token. Go to myaccount.google.com/permissions, remove this app's access, then tap Reconnect in the app and approve again.",
         );
       }
       const db = createClient(
         Deno.env.get("SUPABASE_URL")!,
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
       );
-      await db.from("youtube_credentials").upsert({
+      const { error: credError } = await db.from("youtube_credentials").upsert({
         channel_id: channelId,
         refresh_token: tokens.refresh_token,
         scope: tokens.scope,
       });
+      if (credError) {
+        // Do NOT mark the channel connected — a green badge with no stored
+        // token is exactly the silent failure that hides missing analytics.
+        console.error("credential store failed:", credError);
+        return fail(
+          "Google approved, but storing the connection failed",
+          `${credError.message}. If the youtube_credentials table is missing from your database, ` +
+            `run supabase/catchup_2026_07.sql in the Supabase SQL Editor, then tap Reconnect in the app.`,
+        );
+      }
       // Safe, non-secret status flag the app can read to show "connected".
       await db.from("channels")
         .update({ youtube_connected_at: new Date().toISOString() })
