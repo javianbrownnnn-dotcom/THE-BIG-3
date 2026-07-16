@@ -1,8 +1,11 @@
 // Deep audience analytics for one video via the YouTube Analytics API.
-// Pulls the retention curve, traffic-source mix, and reach (impressions/CTR)
-// using the channel's stored OAuth refresh token. Invoked with the caller's
-// JWT (RLS scopes the video lookup); the refresh token is read with the
-// service role so members never see it.
+// Pulls the retention curve, traffic-source mix, views and average % viewed
+// using the channel's stored OAuth refresh token. Thumbnail impressions and
+// impression CTR are deliberately not requested — the Analytics API doesn't
+// expose them (they live only in YouTube Studio's Reach tab), and asking for
+// them 400s the query. Invoked with the caller's JWT (RLS scopes the video
+// lookup); the refresh token is read with the service role so members never
+// see it.
 //
 // Requires secrets: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET.
 
@@ -87,14 +90,19 @@ Deno.serve(async (req) => {
     }
     const token = await accessTokenFromRefresh(cred.refresh_token);
 
-    const startDate = "2005-02-14"; // YouTube's birthday — "lifetime" of the video
+    // 2008 is the earliest the Analytics API accepts (data predates nothing
+    // useful anyway); 2005 is rejected as 400 (invalid). Thumbnail impressions
+    // and impression CTR are NOT exposed by this API — they live only in
+    // YouTube Studio's Reach tab — so we never request them (doing so 400s the
+    // whole query). CTR remains a manually-logged metric.
+    const startDate = "2008-01-01";
     const endDate = new Date().toISOString().slice(0, 10);
     const base = { filters: `video==${ytId}`, startDate, endDate };
 
     const [retentionRes, trafficRes, reachRes] = await Promise.all([
       report(token, { ...base, metrics: "audienceWatchRatio", dimensions: "elapsedVideoTimeRatio" }),
       report(token, { ...base, metrics: "views", dimensions: "insightTrafficSourceType", sort: "-views" }),
-      report(token, { ...base, metrics: "views,impressions,impressionsCtr,averageViewPercentage" }),
+      report(token, { ...base, metrics: "views,averageViewPercentage" }),
     ]);
 
     const retention = (retentionRes.rows ?? []).map((r: any[]) => ({
@@ -112,9 +120,7 @@ Deno.serve(async (req) => {
       retention,
       trafficSources,
       views: reach[0],
-      impressions: reach[1],
-      ctr: reach[2] != null ? Number((reach[2] * 100).toFixed(2)) : undefined,
-      avgPercentViewed: reach[3] != null ? Number(reach[3].toFixed(1)) : undefined,
+      avgPercentViewed: reach[1] != null ? Number(reach[1].toFixed(1)) : undefined,
       source: "youtube",
     });
   } catch (err) {

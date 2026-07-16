@@ -124,9 +124,10 @@ async function analyticsReport(
 }
 
 /**
- * Private metrics per channel via two reports: core retention/watch-time
- * (broadly supported) and impressions/CTR (stricter rules on Google's side —
- * best-effort, its failure never blanks retention). Failures return an error
+ * Private metrics per channel: retention, watch time, views. Thumbnail
+ * impressions and CTR are NOT exposed by the YouTube Analytics API (they
+ * live only inside YouTube Studio) — asking for them is a guaranteed 400,
+ * so we don't; CTR stays a manually-logged metric. Failures return an error
  * string so the caller can surface WHY analytics are empty.
  */
 async function fetchChannelPrivateMetrics(
@@ -140,15 +141,8 @@ async function fetchChannelPrivateMetrics(
   );
   if (core.error && core.rows.size === 0) return { metrics: out, error: core.error };
 
-  const imp = await analyticsReport(token, "impressions,impressionsCtr", "-impressions");
-
-  const vids = new Set([...core.rows.keys(), ...imp.rows.keys()]);
-  for (const vid of vids) {
-    const c = core.rows.get(vid) ?? {};
-    const i = imp.rows.get(vid) ?? {};
+  for (const [vid, c] of core.rows) {
     out.set(vid, {
-      impressions: i.impressions,
-      ctr: i.impressionsCtr != null ? Number((i.impressionsCtr * 100).toFixed(2)) : undefined,
       avgViewDurationSecs: c.averageViewDuration,
       avgPercentViewed: c.averageViewPercentage != null
         ? Number(c.averageViewPercentage.toFixed(1))
@@ -158,13 +152,7 @@ async function fetchChannelPrivateMetrics(
         : undefined,
     });
   }
-  // Retention landed but impressions didn't — report it without failing.
-  const error = imp.error && out.size > 0
-    ? `Retention/watch-time synced, but impressions/CTR didn't: ${imp.error}`
-    : imp.error && core.error
-      ? core.error
-      : undefined;
-  return { metrics: out, error };
+  return { metrics: out };
 }
 
 class YtError extends Error {
