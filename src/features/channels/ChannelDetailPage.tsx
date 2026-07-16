@@ -131,6 +131,7 @@ export function ChannelDetailPage() {
           value={percent(current.avgCtr)}
           delta={pctDelta(current.avgCtr, prior.avgCtr)}
           spark={last30Spark(videos ?? [], (v) => v.metrics?.ctr)}
+          hint="Enter this manually — YouTube's API doesn't share impression CTR (it's Studio-only). Add it per video (YouTube Studio → the video → Reach)."
         />
         <MetricCard
           label="Avg percent viewed"
