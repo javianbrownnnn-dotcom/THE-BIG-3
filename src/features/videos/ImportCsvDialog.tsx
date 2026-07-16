@@ -152,13 +152,36 @@ export function ImportCsvDialog({
         </DialogHeader>
 
         {!fileName ? (
-          <button
-            onClick={() => fileRef.current?.click()}
-            className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed py-12 text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
-          >
-            <FileUp className="h-6 w-6" />
-            Tap to choose a .csv file
-          </button>
+          <div className="space-y-3">
+            {/* Impression CTR + thumbnail impressions are the only metrics the
+                YouTube API won't share (Studio-only). This export is how they
+                get into the app — spell out exactly which one to grab. */}
+            <div className="rounded-md border bg-muted/40 p-3 text-xs leading-relaxed text-muted-foreground">
+              <p className="mb-1 font-medium text-foreground">
+                Get CTR &amp; impressions from YouTube Studio
+              </p>
+              <p className="text-[11px]">
+                Retention and watch-time sync automatically — but impression CTR and
+                thumbnail impressions aren't in YouTube's API, so bring them in here:
+              </p>
+              <ol className="mt-1.5 list-decimal space-y-0.5 pl-4">
+                <li>YouTube Studio → <b>Analytics</b> → <b>Advanced mode</b> (top-right).</li>
+                <li>Content tab, pick a date range, then <b>Export</b> (↧) → <b>Comma-separated values</b>.</li>
+                <li>Unzip and upload <b>Table data.csv</b> below.</li>
+              </ol>
+              <p className="mt-1.5 text-[11px]">
+                It carries Impressions and “Impressions click-through rate” per video; matching
+                titles get those numbers as a fresh snapshot — no duplicates.
+              </p>
+            </div>
+            <button
+              onClick={() => fileRef.current?.click()}
+              className="flex w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed py-10 text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+            >
+              <FileUp className="h-6 w-6" />
+              Tap to choose a .csv file
+            </button>
+          </div>
         ) : (
           <div className="space-y-4">
             <div className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">

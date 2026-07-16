@@ -277,7 +277,7 @@ export function DashboardPage() {
           value={percent(current.avgCtr)}
           delta={pctDelta(current.avgCtr, prior.avgCtr)}
           spark={last30Spark(videos, (v) => v.metrics?.ctr)}
-          hint="Enter this manually — YouTube's API doesn't share impression CTR (it's Studio-only). Add it per video (YouTube Studio → the video → Reach). Rough guide for long-form: 2–10% is the normal band, 4–6% is typical, 8%+ is excellent."
+          hint="YouTube's API doesn't share impression CTR (it's Studio-only). Bring it in on the Videos page → Import CSV → a YouTube Studio Advanced-mode export. Rough guide for long-form: 2–10% is the normal band, 4–6% is typical, 8%+ is excellent."
         />
         <MetricCard
           label="Avg view duration"
