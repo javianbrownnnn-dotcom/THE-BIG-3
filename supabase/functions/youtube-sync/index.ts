@@ -69,26 +69,27 @@ async function tokenChannel(token: string): Promise<{ id: string; title: string 
 }
 
 /**
- * One Analytics report per channel: private metrics for every video, grouped
- * by the `video` dimension. Failures return an error string so the caller can
- * surface WHY analytics are empty instead of silently writing nulls.
+ * Run one Analytics report (dimensions=video) and return rows keyed by video
+ * id with columns keyed by metric NAME (parsed from columnHeaders, never by
+ * position — metric sets vary between calls).
  */
-async function fetchChannelPrivateMetrics(
+async function analyticsReport(
   token: string,
-): Promise<{ metrics: Map<string, PrivateMetrics>; error?: string }> {
-  const out = new Map<string, PrivateMetrics>();
+  metrics: string,
+  sort: string,
+): Promise<{ rows: Map<string, Record<string, number>>; error?: string }> {
+  const rows = new Map<string, Record<string, number>>();
   try {
     const url = new URL(ANALYTICS);
     url.searchParams.set("ids", "channel==MINE");
-    url.searchParams.set("startDate", "2005-02-14"); // video lifetime
+    // Analytics data simply doesn't exist before 2008 — the API rejects
+    // out-of-range dates as 400 (invalid), which blanked ALL private metrics.
+    url.searchParams.set("startDate", "2008-01-01");
     url.searchParams.set("endDate", new Date().toISOString().slice(0, 10));
     url.searchParams.set("dimensions", "video");
-    url.searchParams.set(
-      "metrics",
-      "impressions,impressionsCtr,averageViewDuration,averageViewPercentage,estimatedMinutesWatched",
-    );
+    url.searchParams.set("metrics", metrics);
     url.searchParams.set("maxResults", "200");
-    url.searchParams.set("sort", "-estimatedMinutesWatched");
+    url.searchParams.set("sort", sort);
     const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
     if (!res.ok) {
       const body = await res.text();
@@ -104,24 +105,66 @@ async function fetchChannelPrivateMetrics(
         : res.status === 401
           ? "The Google connection expired or was revoked — tap Reconnect."
           : "";
-      return { metrics: out, error: `YouTube Analytics API ${res.status}${reason ? ` (${reason})` : ""}. ${hint}`.trim() };
+      return { rows, error: `YouTube Analytics API ${res.status}${reason ? ` (${reason})` : ""}. ${hint}`.trim() };
     }
     const data = await res.json();
-    // columnHeaders order matches the metrics list; row[0] is the video id.
+    const headers: string[] = (data.columnHeaders ?? []).map((h: any) => h.name);
     for (const row of data.rows ?? []) {
-      const [vid, impressions, ctr, avgDur, avgPct, minutesWatched] = row;
-      out.set(String(vid), {
-        impressions: impressions != null ? Number(impressions) : undefined,
-        ctr: ctr != null ? Number((ctr * 100).toFixed(2)) : undefined,
-        avgViewDurationSecs: avgDur != null ? Number(avgDur) : undefined,
-        avgPercentViewed: avgPct != null ? Number(avgPct.toFixed(1)) : undefined,
-        watchTimeHours: minutesWatched != null ? Number((minutesWatched / 60).toFixed(1)) : undefined,
+      const vid = String(row[headers.indexOf("video")] ?? row[0]);
+      const cols: Record<string, number> = {};
+      headers.forEach((name, i) => {
+        if (name !== "video" && row[i] != null) cols[name] = Number(row[i]);
       });
+      rows.set(vid, cols);
     }
   } catch (err) {
-    return { metrics: out, error: `Analytics fetch failed: ${err instanceof Error ? err.message : String(err)}` };
+    return { rows, error: `Analytics fetch failed: ${err instanceof Error ? err.message : String(err)}` };
   }
-  return { metrics: out };
+  return { rows };
+}
+
+/**
+ * Private metrics per channel via two reports: core retention/watch-time
+ * (broadly supported) and impressions/CTR (stricter rules on Google's side —
+ * best-effort, its failure never blanks retention). Failures return an error
+ * string so the caller can surface WHY analytics are empty.
+ */
+async function fetchChannelPrivateMetrics(
+  token: string,
+): Promise<{ metrics: Map<string, PrivateMetrics>; error?: string }> {
+  const out = new Map<string, PrivateMetrics>();
+  const core = await analyticsReport(
+    token,
+    "views,averageViewDuration,averageViewPercentage,estimatedMinutesWatched",
+    "-estimatedMinutesWatched",
+  );
+  if (core.error && core.rows.size === 0) return { metrics: out, error: core.error };
+
+  const imp = await analyticsReport(token, "impressions,impressionsCtr", "-impressions");
+
+  const vids = new Set([...core.rows.keys(), ...imp.rows.keys()]);
+  for (const vid of vids) {
+    const c = core.rows.get(vid) ?? {};
+    const i = imp.rows.get(vid) ?? {};
+    out.set(vid, {
+      impressions: i.impressions,
+      ctr: i.impressionsCtr != null ? Number((i.impressionsCtr * 100).toFixed(2)) : undefined,
+      avgViewDurationSecs: c.averageViewDuration,
+      avgPercentViewed: c.averageViewPercentage != null
+        ? Number(c.averageViewPercentage.toFixed(1))
+        : undefined,
+      watchTimeHours: c.estimatedMinutesWatched != null
+        ? Number((c.estimatedMinutesWatched / 60).toFixed(1))
+        : undefined,
+    });
+  }
+  // Retention landed but impressions didn't — report it without failing.
+  const error = imp.error && out.size > 0
+    ? `Retention/watch-time synced, but impressions/CTR didn't: ${imp.error}`
+    : imp.error && core.error
+      ? core.error
+      : undefined;
+  return { metrics: out, error };
 }
 
 class YtError extends Error {
